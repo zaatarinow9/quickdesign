@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  description  String
+  image        String
+  basePrice    Float
+  isActive     Boolean         @default(true)
+  order        Int             @default(0)
+  
+  hasDesigner    Boolean       @default(false)
+  hasColorPicker Boolean       @default(false)
+  fileLimit      Int           @default(0)
+  
+  designerType String          @default("none")
+  pricingMode  String?
+  configJson   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  options      ServiceOption[]
+}
+
+model ServiceOption {
+  id          String        @id @default(cuid())
+  serviceId   String
+  service     Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  key         String?
+  name        String
+  type        String
+  isRequired  Boolean       @default(true)
+  order       Int           @default(0)
+  helperText  String?
+  pricingMode String?
+  configJson  String?
+  values      OptionValue[]
+  createdAt   DateTime      @default(now())
+}
+
+model OptionValue {
+  id           String        @id @default(cuid())
+  optionId     String
+  option       ServiceOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  name         String
+  price        Float         @default(0)
+  order        Int           @default(0)
+  metadataJson String?
+  createdAt    DateTime      @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     Int         @unique 
+  customerName    String
+  customerEmail   String
+  totalAmount     Float
+  status          String      @default("PAID") // PAID, PROCESSING, SHIPPED, DELIVERED, CANCELED
+  trackingNumber  String?     // رقم التتبع لشركات الشحن
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  serviceId       String
+  serviceName     String
+  quantity        Int
+  price           Float
+  selectedOptions Json?   
+  textInputs      Json?   
+  designData      Json?   
+  orderNotes      String?
+}
