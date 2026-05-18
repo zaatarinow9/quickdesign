@@ -64,7 +64,13 @@ model Order {
   totalAmount     Float
   status          String      @default("PAID") // PAID, PROCESSING, SHIPPED, DELIVERED, CANCELED
   trackingNumber  String?     // رقم التتبع لشركات الشحن
+  assignedToId    String?
+  assignedTo      AdminUser?  @relation("AssignedOrders", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt      DateTime?
+  internalStatus  String      @default("NEW")
+  priority        String      @default("NORMAL")
   items           OrderItem[]
+  activities      OrderActivity[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
@@ -81,4 +87,29 @@ model OrderItem {
   textInputs      Json?   
   designData      Json?   
   orderNotes      String?
+}
+
+model AdminUser {
+  id              String          @id @default(cuid())
+  name            String
+  username        String          @unique
+  email           String?         @unique
+  passwordHash    String
+  role            String          @default("STAFF")
+  isActive        Boolean         @default(true)
+  assignedOrders  Order[]         @relation("AssignedOrders")
+  activities      OrderActivity[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model OrderActivity {
+  id            String      @id @default(cuid())
+  orderId       String
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  adminUserId   String?
+  adminUser     AdminUser?  @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+  type          String
+  message       String
+  createdAt     DateTime    @default(now())
 }

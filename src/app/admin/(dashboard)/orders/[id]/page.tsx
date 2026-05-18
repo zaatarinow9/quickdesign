@@ -6,11 +6,24 @@ import {
   Save,
   Download,
   Truck,
+  UserCheck,
+  MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateOrderStatus } from "@/app/actions/order";
+import {
+  addOrderInternalNote,
+  assignOrder,
+  claimOrder,
+  updateOrderStatus,
+} from "@/app/actions/order";
+import { requireAdminPermission } from "@/lib/admin/auth";
+import {
+  canUpdateOrder,
+  hasAdminPermission,
+} from "@/lib/admin/permissions";
 import {
   extractStoredOrderTextInputs,
   getPricingModelLabel,
@@ -288,14 +301,53 @@ export default async function OrderDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const currentUser = await requireAdminPermission("canManageOrders");
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { items: true },
+    include: {
+      items: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          role: true,
+        },
+      },
+      activities: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          adminUser: {
+            select: {
+              name: true,
+              role: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!order) {
     return notFound();
   }
+
+  const canAssignOrders = hasAdminPermission(currentUser, "canAssignOrders");
+  const canClaimOrders = hasAdminPermission(currentUser, "canClaimOrders");
+  const canEditOrder = canUpdateOrder(currentUser, {
+    assignedToId: order.assignedToId,
+  });
+  const activeStaff = canAssignOrders
+    ? await prisma.adminUser.findMany({
+        where: { isActive: true },
+        orderBy: [{ role: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          role: true,
+        },
+      })
+    : [];
 
   return (
     <div className="p-12 space-y-8 max-w-7xl mx-auto">
@@ -322,6 +374,124 @@ export default async function OrderDetailsPage({
           <p className="text-3xl font-bold tracking-tighter">
             {formatCurrency(order.totalAmount)}
           </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
+            <UserCheck className="w-4 h-4" /> Zustaendigkeit
+          </h2>
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Zugewiesen an
+            </p>
+            <p className="text-lg font-bold text-neutral-950">
+              {order.assignedTo
+                ? `${order.assignedTo.name} (${order.assignedTo.role})`
+                : "Nicht zugewiesen"}
+            </p>
+            {order.assignedAt && (
+              <p className="text-[11px] font-bold text-neutral-500">
+                Seit {format(new Date(order.assignedAt), "dd.MM.yyyy HH:mm")}
+              </p>
+            )}
+          </div>
+
+          {canAssignOrders && (
+            <form action={assignOrder} className="space-y-4">
+              <input type="hidden" name="orderId" value={order.id} />
+              <select
+                name="assignedToId"
+                defaultValue={order.assignedToId ?? ""}
+                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+              >
+                <option value="">Nicht zugewiesen</option>
+                {activeStaff.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.role})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+              >
+                Zuweisung speichern
+              </button>
+            </form>
+          )}
+
+          {!order.assignedToId && canClaimOrders && !canAssignOrders && (
+            <form action={claimOrder}>
+              <input type="hidden" name="orderId" value={order.id} />
+              <button
+                type="submit"
+                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+              >
+                Auftrag uebernehmen
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" /> Interne Steuerung
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Interner Status
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {order.internalStatus}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Prioritaet
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {order.priority}
+              </p>
+            </div>
+          </div>
+          {!canEditOrder && (
+            <p className="text-xs font-bold leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 p-4">
+              Statusaenderungen sind nur fuer Super Admins oder den zugewiesenen
+              Mitarbeiter moeglich.
+            </p>
+          )}
+        </div>
+
+        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" /> Interne Notiz
+          </h2>
+          {canEditOrder ? (
+            <form action={addOrderInternalNote} className="space-y-4">
+              <input type="hidden" name="orderId" value={order.id} />
+              <textarea
+                name="message"
+                required
+                rows={4}
+                placeholder="Interne Notiz hinzufuegen..."
+                className="w-full border border-neutral-200 p-4 text-xs bg-neutral-50 outline-none focus:border-neutral-950 resize-none"
+              />
+              <button
+                type="submit"
+                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+              >
+                Notiz speichern
+              </button>
+            </form>
+          ) : (
+            <p className="text-xs font-bold leading-relaxed text-neutral-500">
+              Uebernehmen Sie den Auftrag zuerst oder lassen Sie ihn durch einen
+              Super Admin zuweisen.
+            </p>
+          )}
         </div>
       </div>
 
@@ -364,7 +534,7 @@ export default async function OrderDetailsPage({
           </h2>
           <form
             action={updateOrderStatus}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"
+            className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end"
           >
             <input type="hidden" name="orderId" value={order.id} />
             <div className="space-y-3">
@@ -374,6 +544,7 @@ export default async function OrderDetailsPage({
               <select
                 name="status"
                 defaultValue={order.status}
+                disabled={!canEditOrder}
                 className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
               >
                 <option value="PAID">Neu / Bezahlt</option>
@@ -385,18 +556,54 @@ export default async function OrderDetailsPage({
             </div>
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-widest block">
+                Interner Status
+              </label>
+              <select
+                name="internalStatus"
+                defaultValue={order.internalStatus}
+                disabled={!canEditOrder}
+                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+              >
+                <option value="NEW">Neu</option>
+                <option value="IN_REVIEW">In Pruefung</option>
+                <option value="IN_PRODUCTION">In Produktion</option>
+                <option value="WAITING_CUSTOMER">Wartet auf Kunde</option>
+                <option value="READY">Bereit</option>
+                <option value="DONE">Erledigt</option>
+              </select>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest block">
+                Prioritaet
+              </label>
+              <select
+                name="priority"
+                defaultValue={order.priority}
+                disabled={!canEditOrder}
+                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+              >
+                <option value="LOW">Niedrig</option>
+                <option value="NORMAL">Normal</option>
+                <option value="HIGH">Hoch</option>
+                <option value="URGENT">Dringend</option>
+              </select>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest block">
                 Sendungsnummer (Tracking)
               </label>
               <input
                 name="trackingNumber"
                 defaultValue={order.trackingNumber ?? ""}
                 placeholder="z.B. DHL12345678"
+                disabled={!canEditOrder}
                 className="w-full border border-neutral-200 p-4 text-xs font-bold bg-neutral-50 outline-none focus:border-neutral-950"
               />
             </div>
             <button
               type="submit"
-              className="bg-neutral-950 text-white p-4 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all h-[50px]"
+              disabled={!canEditOrder}
+              className="bg-neutral-950 text-white p-4 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all h-[50px] disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" /> Speichern
             </button>
@@ -497,6 +704,45 @@ export default async function OrderDetailsPage({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-200 p-8 shadow-sm">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 mb-8 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4" /> Interner Verlauf
+        </h2>
+        <div className="space-y-4">
+          {order.activities.map((activity) => (
+            <div
+              key={activity.id}
+              className="border border-neutral-200 bg-neutral-50 p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    {activity.type}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-neutral-950">
+                    {activity.adminUser
+                      ? `${activity.adminUser.name} (${activity.adminUser.role})`
+                      : "System"}
+                  </p>
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  {format(new Date(activity.createdAt), "dd.MM.yyyy HH:mm")}
+                </p>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-neutral-700">
+                {activity.message}
+              </p>
+            </div>
+          ))}
+
+          {order.activities.length === 0 && (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-300">
+              Noch keine internen Aktivitaeten vorhanden.
+            </p>
+          )}
         </div>
       </div>
     </div>

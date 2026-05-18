@@ -14,7 +14,7 @@ function LoginForm() {
       
       {hasError && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest text-center">
-          Ungültige Anmeldedaten
+          Ungueltige Anmeldedaten
         </div>
       )}
 

@@ -4,6 +4,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { CartItem } from "@/lib/store/cart";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requireAdminPermission, requireAdminUser } from "@/lib/admin/auth";
+import { canUpdateOrder, hasAdminPermission } from "@/lib/admin/permissions";
 import {
   getSnapshotOrBuildLegacy,
   wrapOrderTextInputsWithSnapshot,
@@ -25,6 +28,62 @@ type TrackableOrderRow = {
 };
 
 type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
+
+function getFormString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeOrderStatus(value: string): string {
+  const allowedStatuses = new Set([
+    "PAID",
+    "PROCESSING",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELED",
+  ]);
+
+  return allowedStatuses.has(value) ? value : "PAID";
+}
+
+function normalizeInternalStatus(value: string): string {
+  const allowedStatuses = new Set([
+    "NEW",
+    "IN_REVIEW",
+    "IN_PRODUCTION",
+    "WAITING_CUSTOMER",
+    "READY",
+    "DONE",
+  ]);
+
+  return allowedStatuses.has(value) ? value : "NEW";
+}
+
+function normalizePriority(value: string): string {
+  const allowedPriorities = new Set(["LOW", "NORMAL", "HIGH", "URGENT"]);
+  return allowedPriorities.has(value) ? value : "NORMAL";
+}
+
+async function addOrderActivity({
+  orderId,
+  adminUserId,
+  type,
+  message,
+}: {
+  orderId: string;
+  adminUserId: string | null;
+  type: string;
+  message: string;
+}): Promise<void> {
+  await prisma.orderActivity.create({
+    data: {
+      orderId,
+      adminUserId,
+      type,
+      message,
+    },
+  });
+}
 
 function serializeSelectedOptions(
   selectedOptions: LegacyConfigurationSelectedOptions,
@@ -260,24 +319,170 @@ export async function createOrder(data: {
 }
 
 export async function updateOrderStatus(formData: FormData) {
-  const orderId = formData.get("orderId") as string;
-  const status = formData.get("status") as string;
-  const trackingNumber = formData.get("trackingNumber");
-  const normalizedTrackingNumber =
-    typeof trackingNumber === "string" && trackingNumber.trim() !== ""
-      ? trackingNumber.trim()
-      : null;
+  const currentUser = await requireAdminUser();
+  const orderId = getFormString(formData, "orderId");
+  const status = normalizeOrderStatus(getFormString(formData, "status"));
+  const internalStatus = normalizeInternalStatus(
+    getFormString(formData, "internalStatus"),
+  );
+  const priority = normalizePriority(getFormString(formData, "priority"));
+  const trackingNumber = getFormString(formData, "trackingNumber");
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      status: true,
+      internalStatus: true,
+      priority: true,
+      assignedToId: true,
+    },
+  });
+
+  if (!order) {
+    redirect("/admin/orders");
+  }
+
+  if (!canUpdateOrder(currentUser, order)) {
+    redirect(`/admin/orders/${orderId}?forbidden=1`);
+  }
 
   await prisma.order.update({
     where: { id: orderId },
     data: {
       status,
-      trackingNumber: normalizedTrackingNumber,
+      internalStatus,
+      priority,
+      trackingNumber: trackingNumber || null,
     },
+  });
+
+  await addOrderActivity({
+    orderId,
+    adminUserId: currentUser.id,
+    type: "STATUS_UPDATED",
+    message: `Status: ${order.status} -> ${status}; intern: ${order.internalStatus} -> ${internalStatus}; Prioritaet: ${order.priority} -> ${priority}`,
   });
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath(`/admin/orders`);
+}
+
+export async function claimOrder(formData: FormData): Promise<void> {
+  const currentUser = await requireAdminPermission("canClaimOrders");
+  const orderId = getFormString(formData, "orderId");
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, assignedToId: true },
+  });
+
+  if (!order) {
+    redirect("/admin/orders");
+  }
+
+  if (order.assignedToId && order.assignedToId !== currentUser.id) {
+    redirect(`/admin/orders/${orderId}?assigned=1`);
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      assignedToId: currentUser.id,
+      assignedAt: new Date(),
+    },
+  });
+
+  await addOrderActivity({
+    orderId,
+    adminUserId: currentUser.id,
+    type: "CLAIMED",
+    message: `${currentUser.name} hat den Auftrag uebernommen.`,
+  });
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+}
+
+export async function assignOrder(formData: FormData): Promise<void> {
+  const currentUser = await requireAdminPermission("canAssignOrders");
+  const orderId = getFormString(formData, "orderId");
+  const assignedToId = getFormString(formData, "assignedToId");
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true },
+  });
+
+  if (!order) {
+    redirect("/admin/orders");
+  }
+
+  const assignee = assignedToId
+    ? await prisma.adminUser.findFirst({
+        where: { id: assignedToId, isActive: true },
+        select: { id: true, name: true },
+      })
+    : null;
+
+  if (assignedToId && !assignee) {
+    redirect(`/admin/orders/${orderId}?assignError=1`);
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      assignedToId: assignee?.id ?? null,
+      assignedAt: assignee ? new Date() : null,
+    },
+  });
+
+  await addOrderActivity({
+    orderId,
+    adminUserId: currentUser.id,
+    type: "ASSIGNED",
+    message: assignee
+      ? `${currentUser.name} hat den Auftrag ${assignee.name} zugewiesen.`
+      : `${currentUser.name} hat die Zuweisung entfernt.`,
+  });
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+}
+
+export async function addOrderInternalNote(formData: FormData): Promise<void> {
+  const currentUser = await requireAdminUser();
+  const orderId = getFormString(formData, "orderId");
+  const message = getFormString(formData, "message");
+
+  if (!message) {
+    redirect(`/admin/orders/${orderId}`);
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, assignedToId: true },
+  });
+
+  if (!order) {
+    redirect("/admin/orders");
+  }
+
+  if (
+    !canUpdateOrder(currentUser, order) &&
+    !hasAdminPermission(currentUser, "canAssignOrders")
+  ) {
+    redirect(`/admin/orders/${orderId}?forbidden=1`);
+  }
+
+  await addOrderActivity({
+    orderId,
+    adminUserId: currentUser.id,
+    type: "INTERNAL_NOTE",
+    message,
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
 }
 
 export async function trackOrder(orderNumberStr: string) {

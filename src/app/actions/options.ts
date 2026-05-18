@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { requireAdminPermission } from "@/lib/admin/auth"
 
 const OPTION_TYPE_MAP = {
   select: { storedType: "select", usesValues: true },
@@ -240,6 +241,7 @@ export async function createServiceOption(
   serviceId: string,
   data: OptionData,
 ): Promise<OptionActionResult> {
+  await requireAdminPermission("canManageServices")
   const normalized = normalizeOptionData(data)
   if (!normalized.success) {
     return normalized
@@ -292,6 +294,7 @@ export async function updateServiceOption(
   optionId: string,
   data: OptionData,
 ): Promise<OptionActionResult> {
+  await requireAdminPermission("canManageServices")
   const normalized = normalizeOptionData(data)
   if (!normalized.success) {
     return normalized
@@ -363,6 +366,7 @@ export async function deleteServiceOption(
   optionId: string,
   serviceId: string,
 ): Promise<OptionActionResult> {
+  await requireAdminPermission("canManageServices")
   try {
     await prisma.serviceOption.delete({
       where: { id: optionId }

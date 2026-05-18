@@ -1,23 +1,43 @@
-'use server'
+"use server";
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { clearAdminSession, setAdminSession } from "@/lib/admin/auth";
+import { verifyAdminPassword } from "@/lib/admin/password";
+
+function getFormString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export async function loginAdmin(formData: FormData): Promise<void> {
-  const username = formData.get('username')
-  const password = formData.get('password')
+  const username = getFormString(formData, "username");
+  const password = getFormString(formData, "password");
 
-  if (username === 'admin' && password === 'admin123') {
-    const cookieStore = await cookies()
-    cookieStore.set('admin_session', 'authenticated', { secure: true, httpOnly: true })
-    redirect('/admin')
+  if (!username || !password) {
+    redirect("/admin/login?error=1");
   }
 
-  redirect('/admin/login?error=1')
+  const user = await prisma.adminUser.findFirst({
+    where: {
+      isActive: true,
+      OR: [{ username }, { email: username }],
+    },
+    select: {
+      id: true,
+      passwordHash: true,
+    },
+  });
+
+  if (user && (await verifyAdminPassword(password, user.passwordHash))) {
+    await setAdminSession(user.id);
+    redirect("/admin");
+  }
+
+  redirect("/admin/login?error=1");
 }
 
 export async function logoutAdmin(): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.delete('admin_session')
-  redirect('/admin/login')
+  await clearAdminSession();
+  redirect("/admin/login");
 }

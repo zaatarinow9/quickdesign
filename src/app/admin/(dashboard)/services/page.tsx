@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus, Settings2, Edit } from "lucide-react";
+import { requireAdminPermission } from "@/lib/admin/auth";
 
 export default async function AdminServices() {
+  await requireAdminPermission("canManageServices");
   const services = await prisma.service.findMany({ orderBy: { createdAt: 'desc' } });
 
   return (

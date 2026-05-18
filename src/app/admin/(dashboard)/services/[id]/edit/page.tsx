@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { updateService } from "@/app/actions/service";
 import ServicePricingEditor from "@/components/admin/ServicePricingEditor";
 import ServiceUploadFieldsEditor from "@/components/admin/ServiceUploadFieldsEditor";
+import { requireAdminPermission } from "@/lib/admin/auth";
 
 export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPermission("canManageServices");
   const { id } = await params;
   const service = await prisma.service.findUnique({ where: { id } });
 

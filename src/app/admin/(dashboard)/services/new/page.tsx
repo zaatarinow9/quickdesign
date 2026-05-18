@@ -1,10 +1,11 @@
-"use client"
-
 import { createService } from "@/app/actions/service"
 import ServicePricingEditor from "@/components/admin/ServicePricingEditor"
 import ServiceUploadFieldsEditor from "@/components/admin/ServiceUploadFieldsEditor"
+import { requireAdminPermission } from "@/lib/admin/auth"
 
-export default function NewService() {
+export default async function NewService() {
+  await requireAdminPermission("canManageServices")
+
   return (
     <div className="max-w-4xl">
       <h1 className="text-3xl font-bold text-neutral-950 mb-10 uppercase tracking-tighter">

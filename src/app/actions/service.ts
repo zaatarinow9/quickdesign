@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { requireAdminPermission } from "@/lib/admin/auth"
 
 const DEFAULT_SERVICE_IMAGE =
   "https://images.unsplash.com/photo-1562664377-709f2c337eb2?q=80&w=2070&auto=format&fit=crop"
@@ -402,6 +403,7 @@ function buildServiceInput(formData: FormData) {
 }
 
 export async function createService(formData: FormData): Promise<void> {
+  await requireAdminPermission("canManageServices")
   const serviceInput = buildServiceInput(formData)
 
   await prisma.service.create({
@@ -412,6 +414,7 @@ export async function createService(formData: FormData): Promise<void> {
 }
 
 export async function updateService(id: string, formData: FormData): Promise<void> {
+  await requireAdminPermission("canManageServices")
   const serviceInput = buildServiceInput(formData)
 
   await prisma.service.update({

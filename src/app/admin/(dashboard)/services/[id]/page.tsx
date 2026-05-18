@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import OptionsBuilder from "@/components/admin/OptionsBuilder";
+import { requireAdminPermission } from "@/lib/admin/auth";
 
 export default async function ManageService({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPermission("canManageServices");
   const { id } = await params;
 
   const service = await prisma.service.findUnique({
