@@ -48,6 +48,11 @@ import {
 import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting";
 import { prisma } from "@/lib/prisma";
 import {
+  buildAdminOrderFileDownloadHref,
+  getSnapshotUploadFileRecords,
+  isInlineBrowserUrl,
+} from "@/lib/storage/order-files";
+import {
   extractStoredOrderTextInputs,
   getPricingModelLabel,
   getSnapshotOrBuildLegacy,
@@ -135,13 +140,45 @@ function formatCurrency(value: number, currency = "EUR"): string {
   return `${value.toFixed(2)} ${currency}`;
 }
 
+function formatFileSize(size: number | null): string {
+  if (size === null || !Number.isFinite(size)) {
+    return "Unbekannt";
+  }
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatUploadTimestamp(value: string | null): string {
+  if (!value) {
+    return "Legacy";
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Unbekannt";
+  }
+
+  return format(parsedDate, "dd.MM.yyyy HH:mm");
+}
+
 function formatDateInputValue(value: Date | null): string {
   return value ? format(new Date(value), "yyyy-MM-dd") : "";
 }
 
 function OrderSnapshotDetails({
+  orderId,
   snapshot,
 }: {
+  orderId: string;
   snapshot: ServiceConfigurationSnapshot;
 }) {
   return (
@@ -290,37 +327,57 @@ function OrderSnapshotDetails({
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-950">
             Uploads
           </h4>
-          {snapshot.uploadFields.flatMap((field) =>
-            field.files.map((file, index) => (
+          {getSnapshotUploadFileRecords(snapshot).map((file, index) => {
+            const hasLegacyInlineUrl = isInlineBrowserUrl(file.fileUrl);
+
+            return (
               <div
-                key={`${field.fieldKey}-${index}`}
-                className="flex items-center justify-between border border-neutral-200 bg-white p-4"
+                key={`${file.fieldKey}-${file.path ?? file.originalName}-${index}`}
+                className="flex flex-col gap-4 border border-neutral-200 bg-white p-4 md:flex-row md:items-center md:justify-between"
               >
-                <div>
+                <div className="space-y-2">
                   <span className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-neutral-400">
-                    {field.fieldLabel}
+                    {file.fieldLabel}
                   </span>
                   <span className="block text-xs font-bold text-neutral-950">
-                    {file.fileName}
+                    {file.originalName}
                   </span>
+                  <div className="flex flex-wrap gap-3 text-[11px] text-neutral-500">
+                    <span>Groesse: {formatFileSize(file.size)}</span>
+                    <span>Typ: {file.contentType ?? "Unbekannt"}</span>
+                    <span>
+                      Upload:
+                      {" "}
+                      {file.isStored
+                        ? formatUploadTimestamp(file.uploadedAt)
+                        : "Legacy"}
+                    </span>
+                  </div>
                   {file.customerLabel && (
-                    <span className="text-[11px] text-neutral-500">
-                      Label: {file.customerLabel}
+                    <span className="block text-[11px] text-neutral-500">
+                      Kundenlabel: {file.customerLabel}
+                    </span>
+                  )}
+                  {!file.isStored && (
+                    <span className="block text-[11px] text-amber-700">
+                      {hasLegacyInlineUrl
+                        ? "Legacy-Upload mit alter data-URL."
+                        : "Legacy-Upload ohne Storage-Metadaten."}
                     </span>
                   )}
                 </div>
-                {file.fileUrl && (
-                  <a
-                    href={file.fileUrl}
-                    download={file.fileName}
-                    className="flex items-center gap-2 bg-neutral-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
+
+                {file.isStored && file.path ? (
+                  <Link
+                    href={buildAdminOrderFileDownloadHref(orderId, file.path)}
+                    className="flex items-center justify-center gap-2 bg-neutral-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
                   >
                     <Download className="h-3 w-3" /> Download
-                  </a>
-                )}
+                  </Link>
+                ) : null}
               </div>
-            )),
-          )}
+            );
+          })}
         </div>
       )}
 
@@ -1212,7 +1269,7 @@ export default async function OrderDetailsPage({
                       </div>
                     </div>
 
-                    <OrderSnapshotDetails snapshot={snapshot} />
+                    <OrderSnapshotDetails orderId={order.id} snapshot={snapshot} />
                   </div>
 
                   {designPreview && (

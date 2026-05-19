@@ -55,10 +55,15 @@ export interface ServiceConfigurationSnapshotArea {
 
 export interface ServiceConfigurationSnapshotUploadFile {
   fileName: string;
+  originalName?: string | null;
   customerLabel: string | null;
   fileType: string | null;
+  contentType?: string | null;
   fileSize: number | null;
   fileUrl: string | null;
+  bucket?: string | null;
+  path?: string | null;
+  uploadedAt?: string | null;
 }
 
 export interface ServiceConfigurationSnapshotUploadField {
@@ -282,10 +287,15 @@ function parseUploadFields(
 
     currentGroup.files.push({
       fileName: input.value,
+      originalName: input.value,
       customerLabel,
       fileType: getFileTypeFromName(input.value),
+      contentType: null,
       fileSize: null,
       fileUrl: normalizeOptionalString(input.url),
+      bucket: null,
+      path: null,
+      uploadedAt: null,
     });
 
     uploadGroups.set(groupKey, currentGroup);
@@ -608,10 +618,15 @@ function parseUploadFile(
 
   return {
     fileName,
+    originalName: normalizeOptionalString(value.originalName) ?? fileName,
     customerLabel: normalizeOptionalString(value.customerLabel),
     fileType: normalizeOptionalString(value.fileType),
+    contentType: normalizeOptionalString(value.contentType),
     fileSize: parsedFileSize >= 0 ? parsedFileSize : null,
     fileUrl: normalizeOptionalString(value.fileUrl),
+    bucket: normalizeOptionalString(value.bucket),
+    path: normalizeOptionalString(value.path),
+    uploadedAt: normalizeOptionalString(value.uploadedAt),
   };
 }
 

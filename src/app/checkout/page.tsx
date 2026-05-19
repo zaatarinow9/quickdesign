@@ -3,6 +3,7 @@
 import { createOrder } from "@/app/actions/order";
 import { useCartStore, type CartItem } from "@/lib/store/cart";
 import type { LegacyConfigurationTextInput } from "@/lib/services/configuration/snapshot";
+import { isInlineBrowserUrl } from "@/lib/storage/order-files";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -12,11 +13,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-function isInlineBrowserUrl(value: string): boolean {
-  const normalizedValue = value.trim().toLowerCase();
-  return normalizedValue.startsWith("data:") || normalizedValue.startsWith("blob:");
-}
 
 function sanitizeOptionalUrl(value: string | null | undefined): string | undefined {
   if (!value) {
@@ -93,16 +89,68 @@ function sanitizeConfigurationSnapshot(
 }
 
 function sanitizeCartItemForCheckout(item: CartItem): CartItem {
+  const { pendingUploads, ...safeItem } = item;
+
   return {
-    ...item,
-    image: sanitizeRequiredUrl(item.image),
-    selectedOptions: item.selectedOptions ?? {},
-    textInputs: sanitizeTextInputs(item.textInputs),
-    designData: sanitizeDesignData(item.designData),
+    ...safeItem,
+    image: sanitizeRequiredUrl(safeItem.image),
+    selectedOptions: safeItem.selectedOptions ?? {},
+    textInputs: sanitizeTextInputs(safeItem.textInputs),
+    designData: sanitizeDesignData(safeItem.designData),
     configurationSnapshot: sanitizeConfigurationSnapshot(
-      item.configurationSnapshot,
+      safeItem.configurationSnapshot,
     ),
   };
+}
+
+function buildCheckoutFormData(
+  customerName: string,
+  customerEmail: string,
+  items: CartItem[],
+  totalAmount: number,
+): FormData {
+  const checkoutFormData = new FormData();
+  const checkoutItems = items.map(sanitizeCartItemForCheckout);
+  const uploads: Array<{
+    formKey: string;
+    cartItemId: string;
+    source: "option" | "upload";
+    fieldKey: string;
+    fieldLabel: string;
+    slotIndex: number;
+    customerLabel: string;
+  }> = [];
+
+  items.forEach((item) => {
+    item.pendingUploads?.forEach((upload) => {
+      const formKey = `upload_${uploads.length}`;
+
+      uploads.push({
+        formKey,
+        cartItemId: item.cartItemId,
+        source: upload.source,
+        fieldKey: upload.fieldKey,
+        fieldLabel: upload.fieldLabel,
+        slotIndex: upload.slotIndex,
+        customerLabel: upload.customerLabel,
+      });
+
+      checkoutFormData.append(formKey, upload.file, upload.file.name);
+    });
+  });
+
+  checkoutFormData.set("name", customerName);
+  checkoutFormData.set("email", customerEmail);
+  checkoutFormData.set(
+    "payload",
+    JSON.stringify({
+      items: checkoutItems,
+      totalAmount,
+      uploads,
+    }),
+  );
+
+  return checkoutFormData;
 }
 
 function normalizeDisplayPrice(value: number): number {
@@ -150,14 +198,13 @@ export default function CheckoutPage() {
       const formData = new FormData(event.currentTarget);
       const customerName = String(formData.get("name") ?? "");
       const customerEmail = String(formData.get("email") ?? "");
-      const checkoutItems = items.map(sanitizeCartItemForCheckout);
-
-      const result = await createOrder({
+      const checkoutFormData = buildCheckoutFormData(
         customerName,
         customerEmail,
-        items: checkoutItems,
-        totalAmount: cartTotal,
-      });
+        items,
+        cartTotal,
+      );
+      const result = await createOrder(checkoutFormData);
 
       if (!result.ok) {
         setErrorMessage(result.error);

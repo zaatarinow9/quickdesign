@@ -31,6 +31,10 @@ import {
   type ServiceConfigurationSnapshotUploadField,
   type ServiceConfigurationSnapshotValue,
 } from "@/lib/services/configuration/snapshot";
+import {
+  validateSelectedFile,
+  type CartPendingUpload,
+} from "@/lib/storage/order-files";
 import type {
   NormalizedServiceConfig,
   NormalizedServiceField,
@@ -58,15 +62,16 @@ type ServiceSummary = {
 
 type OptionUploadPreview = {
   name: string;
-  url: string;
+  file: File;
   sizeBytes: number;
-  fileType: string;
+  contentType: string;
 };
 
 type UploadFieldFile = {
   name: string;
-  url: string;
+  file: File;
   sizeBytes: number;
+  contentType: string;
   customerLabel: string;
 };
 
@@ -309,27 +314,33 @@ export default function ServiceConfigurator({
 
   const handleOptionFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fieldId: string,
+    field: NormalizedServiceField & { kind: "file" },
   ) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const result = loadEvent.target?.result;
-      if (typeof result !== "string") return;
+    const validationResult = validateSelectedFile(file, {
+      accept: field.accept ?? "*/*",
+      maxFileSizeMb: null,
+    });
 
-      setOptionFileValues((previous) => ({
-        ...previous,
-        [fieldId]: {
-          name: file.name,
-          url: result,
-          sizeBytes: file.size,
-          fileType: file.type,
-        },
-      }));
-    };
-    reader.readAsDataURL(file);
+    if (!validationResult.ok) {
+      alert(validationResult.message);
+      event.target.value = "";
+      return;
+    }
+
+    setOptionFileValues((previous) => ({
+      ...previous,
+      [field.id]: {
+        name: file.name,
+        file,
+        sizeBytes: file.size,
+        contentType: file.type,
+      },
+    }));
   };
 
   const handleConfiguredUpload = (
@@ -338,37 +349,35 @@ export default function ServiceConfigurator({
     slotIndex: number,
   ) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    if (
-      field.maxFileSizeMb !== null &&
-      file.size > field.maxFileSizeMb * 1024 * 1024
-    ) {
-      alert(`Die Datei "${file.name}" ist groesser als ${field.maxFileSizeMb} MB.`);
+    const validationResult = validateSelectedFile(file, {
+      accept: field.accept,
+      maxFileSizeMb: field.maxFileSizeMb,
+    });
+
+    if (!validationResult.ok) {
+      alert(validationResult.message);
       event.target.value = "";
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const result = loadEvent.target?.result;
-      if (typeof result !== "string") return;
-
-      setUploadFieldFiles((previous) => ({
-        ...previous,
-        [field.id]: {
-          ...(previous[field.id] ?? {}),
-          [slotIndex]: {
-            name: file.name,
-            url: result,
-            sizeBytes: file.size,
-            customerLabel:
-              previous[field.id]?.[slotIndex]?.customerLabel ?? "",
-          },
+    setUploadFieldFiles((previous) => ({
+      ...previous,
+      [field.id]: {
+        ...(previous[field.id] ?? {}),
+        [slotIndex]: {
+          name: file.name,
+          file,
+          sizeBytes: file.size,
+          contentType: file.type,
+          customerLabel:
+            previous[field.id]?.[slotIndex]?.customerLabel ?? "",
         },
-      }));
-    };
-    reader.readAsDataURL(file);
+      },
+    }));
   };
 
   const updateConfiguredUploadLabel = (
@@ -486,12 +495,12 @@ export default function ServiceConfigurator({
               <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500 transition-colors group-hover:text-neutral-950">
                 Datei auswaehlen
               </span>
-              <input
-                type="file"
-                className="hidden"
-                accept={field.accept}
-                onChange={(event) => handleOptionFileUpload(event, field.id)}
-              />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept={field.accept}
+                  onChange={(event) => handleOptionFileUpload(event, field)}
+                />
             </label>
           ) : (
             <div className="flex items-center justify-between gap-4 rounded-2xl bg-neutral-950 p-4 text-white">
@@ -691,6 +700,7 @@ export default function ServiceConfigurator({
       string,
       { optionName: string; valueName: string; price: number }
     > = {};
+    const pendingUploads: CartPendingUpload[] = [];
     const textInputs: LegacyConfigurationTextInputs = {};
     const snapshotSelectedOptions: ServiceConfigurationSnapshotSelectedOption[] = [];
     const snapshotTextFields: ServiceConfigurationSnapshotTextField[] = [];
@@ -764,8 +774,16 @@ export default function ServiceConfigurator({
         textInputs[field.key] = {
           optionName: field.label,
           value: fileValue.name,
-          url: fileValue.url,
         };
+
+        pendingUploads.push({
+          source: "option",
+          fieldKey: field.key,
+          fieldLabel: field.label,
+          slotIndex: 0,
+          customerLabel: "",
+          file: fileValue.file,
+        });
 
         snapshotUploadFields.push({
           fieldKey: field.key,
@@ -773,10 +791,15 @@ export default function ServiceConfigurator({
           files: [
             {
               fileName: fileValue.name,
+              originalName: fileValue.name,
               customerLabel: null,
-              fileType: fileValue.fileType || null,
+              fileType: null,
+              contentType: fileValue.contentType || null,
               fileSize: fileValue.sizeBytes,
-              fileUrl: fileValue.url,
+              fileUrl: null,
+              bucket: null,
+              path: null,
+              uploadedAt: null,
             },
           ],
         });
@@ -840,7 +863,6 @@ export default function ServiceConfigurator({
           textInputs[baseKey] = {
             optionName,
             value: file.name,
-            url: file.url,
           };
 
           if (field.allowCustomerFileLabel && file.customerLabel.trim() !== "") {
@@ -850,15 +872,32 @@ export default function ServiceConfigurator({
             };
           }
 
+          pendingUploads.push({
+            source: "upload",
+            fieldKey: field.key,
+            fieldLabel: field.label,
+            slotIndex,
+            customerLabel:
+              field.allowCustomerFileLabel && file.customerLabel.trim() !== ""
+                ? file.customerLabel.trim()
+                : "",
+            file: file.file,
+          });
+
           return {
             fileName: file.name,
+            originalName: file.name,
             customerLabel:
               field.allowCustomerFileLabel && file.customerLabel.trim() !== ""
                 ? file.customerLabel.trim()
                 : null,
             fileType: null,
+            contentType: file.contentType || null,
             fileSize: file.sizeBytes,
-            fileUrl: file.url,
+            fileUrl: null,
+            bucket: null,
+            path: null,
+            uploadedAt: null,
           };
         });
 
@@ -945,6 +984,7 @@ export default function ServiceConfigurator({
       designData: normalizedDesignData,
       configurationSnapshot,
       orderNotes,
+      pendingUploads,
     });
 
     setIsAdded(true);

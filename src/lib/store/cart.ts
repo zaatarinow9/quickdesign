@@ -5,6 +5,7 @@ import type {
   LegacyConfigurationTextInputs,
   ServiceConfigurationSnapshot,
 } from "@/lib/services/configuration/snapshot";
+import type { CartPendingUpload } from "@/lib/storage/order-files";
 
 export type CartOption = LegacyConfigurationSelectedOption;
 
@@ -37,6 +38,7 @@ export type CartItem = {
   designData?: FullDesignData;
   configurationSnapshot?: ServiceConfigurationSnapshot;
   orderNotes?: string; 
+  pendingUploads?: CartPendingUpload[];
 };
 
 interface CartState {
@@ -81,6 +83,11 @@ export const useCartStore = create<CartState>()(
       })),
       clearCart: () => set({ items: [] }),
     }),
-    { name: 'print-studio-cart' }
+    {
+      name: 'print-studio-cart',
+      partialize: (state) => ({
+        items: state.items.map(({ pendingUploads, ...item }) => item),
+      }),
+    }
   )
 );

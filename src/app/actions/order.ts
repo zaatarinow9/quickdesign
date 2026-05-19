@@ -12,6 +12,18 @@ import {
 } from "@/lib/admin/permissions";
 import { createOrLinkCustomer } from "@/lib/customers";
 import {
+  buildOrderStoragePath,
+  buildSnapshotUploadFile,
+  isInlineBrowserUrl,
+  validateSelectedFile,
+  type CartPendingUploadSource,
+  type OrderStoredFileMetadata,
+} from "@/lib/storage/order-files";
+import {
+  deleteFilesFromSupabaseStorage,
+  uploadFileToSupabaseStorage,
+} from "@/lib/storage/supabase-storage";
+import {
   DEFAULT_GERMAN_TAX_RATE,
   DEFAULT_ORDER_CURRENCY,
   calculateOrderFinancials,
@@ -28,7 +40,10 @@ import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting
 import type { CartItem } from "@/lib/store/cart";
 import { normalizeServiceConfiguration } from "@/lib/services/configuration/normalize";
 import {
+  extractStoredOrderTextInputs,
   getSnapshotOrBuildLegacy,
+  normalizeLegacySelectedOptions,
+  parseConfigurationSnapshot,
   wrapOrderTextInputsWithSnapshot,
   type LegacyConfigurationSelectedOptions,
   type LegacyConfigurationTextInputs,
@@ -70,12 +85,69 @@ export type CreateOrderResult =
   | { ok: true; orderId: string; orderNumber: string }
   | { ok: false; error: string };
 
+type CreateOrderItemInput = {
+  cartItemId: string;
+  serviceId: string;
+  name: string;
+  basePrice: number;
+  quantity: number;
+  selectedOptions: LegacyConfigurationSelectedOptions;
+  textInputs: LegacyConfigurationTextInputs;
+  totalPrice: number;
+  designData?: CartItem["designData"];
+  configurationSnapshot?: ServiceConfigurationSnapshot;
+  orderNotes?: string;
+};
+
 type CreateOrderInput = {
-  customerName: string;
-  customerEmail: string;
-  items: CartItem[];
+  items: CreateOrderItemInput[];
   totalAmount: number;
 };
+
+type CheckoutUploadDescriptor = {
+  formKey: string;
+  cartItemId: string;
+  source: CartPendingUploadSource;
+  fieldKey: string;
+  fieldLabel: string;
+  slotIndex: number;
+  customerLabel: string;
+};
+
+type ParsedCheckoutRequest = {
+  customerName: string;
+  customerEmail: string;
+  payload: CreateOrderInput;
+  uploads: CheckoutUploadDescriptor[];
+};
+
+type UploadFieldDefinition = {
+  source: CartPendingUploadSource;
+  key: string;
+  label: string;
+  accept: string;
+  maxFiles: number;
+  maxFileSizeMb: number | null;
+  allowCustomerFileLabel: boolean;
+};
+
+type UploadedOrderFileRecord = OrderStoredFileMetadata & {
+  cartItemId: string;
+  slotIndex: number;
+};
+
+class CheckoutUploadError extends Error {
+  constructor(
+    message:
+      | "Datei ist zu gro\u00df."
+      | "Dateityp ist nicht erlaubt."
+      | "Datei konnte nicht hochgeladen werden."
+      | "Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.",
+  ) {
+    super(message);
+    this.name = "CheckoutUploadError";
+  }
+}
 
 function getFormString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -125,6 +197,12 @@ function normalizeOrderQuantity(value: number): number {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.max(1, Math.trunc(value))
     : 1;
+}
+
+function normalizeUnknownMoneyValue(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? normalizeMoneyValue(value, fallback)
+    : fallback;
 }
 
 function normalizeDateInput(value: string): Date | null {
@@ -278,10 +356,15 @@ function serializeConfigurationSnapshot(
       fieldLabel: field.fieldLabel,
       files: field.files.map((file) => ({
         fileName: file.fileName,
+        originalName: file.originalName ?? file.fileName,
         customerLabel: file.customerLabel,
         fileType: file.fileType,
+        contentType: file.contentType ?? null,
         fileSize: file.fileSize,
         fileUrl: file.fileUrl,
+        bucket: file.bucket ?? null,
+        path: file.path ?? null,
+        uploadedAt: file.uploadedAt ?? null,
       })),
     })),
     textFields: snapshot.textFields.map((field) => ({
@@ -365,6 +448,530 @@ function serializeDesignData(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function sanitizeStoredUrl(value: string | null | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return isInlineBrowserUrl(value) ? undefined : value;
+}
+
+function sanitizeStoredTextInputs(
+  textInputs: LegacyConfigurationTextInputs,
+): LegacyConfigurationTextInputs {
+  const sanitizedInputs: LegacyConfigurationTextInputs = {};
+
+  Object.entries(textInputs).forEach(([key, input]) => {
+    const sanitizedUrl = sanitizeStoredUrl(input.url);
+
+    sanitizedInputs[key] = sanitizedUrl
+      ? {
+          optionName: input.optionName,
+          value: input.value,
+          url: sanitizedUrl,
+        }
+      : {
+          optionName: input.optionName,
+          value: input.value,
+        };
+  });
+
+  return sanitizedInputs;
+}
+
+function sanitizeStoredConfigurationSnapshot(
+  snapshot: ServiceConfigurationSnapshot | undefined,
+): ServiceConfigurationSnapshot | undefined {
+  if (!snapshot) {
+    return undefined;
+  }
+
+  return {
+    ...snapshot,
+    uploadFields: snapshot.uploadFields.map((field) => ({
+      ...field,
+      files: field.files.map((file) => ({
+        ...file,
+        originalName: file.originalName ?? file.fileName,
+        contentType: file.contentType ?? file.fileType,
+        fileUrl: sanitizeStoredUrl(file.fileUrl) ?? null,
+        bucket: file.bucket ?? null,
+        path: file.path ?? null,
+        uploadedAt: file.uploadedAt ?? null,
+      })),
+    })),
+  };
+}
+
+function parseDesignData(value: unknown): CartItem["designData"] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const model = normalizeOptionalString(
+    typeof value.model === "string" ? value.model : null,
+  );
+  const color = normalizeOptionalString(
+    typeof value.color === "string" ? value.color : null,
+  );
+
+  if (!model || !color) {
+    return undefined;
+  }
+
+  const parseLogos = (
+    logosValue: unknown,
+  ): NonNullable<CartItem["designData"]>["frontLogos"] => {
+    if (!Array.isArray(logosValue)) {
+      return [];
+    }
+
+    return logosValue
+      .map((logo) => {
+        if (!isRecord(logo)) {
+          return null;
+        }
+
+        const id = normalizeOptionalString(
+          typeof logo.id === "string" ? logo.id : null,
+        );
+        const url = sanitizeStoredUrl(
+          typeof logo.url === "string" ? logo.url : null,
+        );
+        const x =
+          typeof logo.x === "number" && Number.isFinite(logo.x) ? logo.x : null;
+        const y =
+          typeof logo.y === "number" && Number.isFinite(logo.y) ? logo.y : null;
+        const width =
+          typeof logo.width === "number" && Number.isFinite(logo.width)
+            ? logo.width
+            : null;
+        const height =
+          typeof logo.height === "number" && Number.isFinite(logo.height)
+            ? logo.height
+            : null;
+
+        if (!id || url === undefined || x === null || y === null) {
+          return null;
+        }
+
+        if (width === null || height === null) {
+          return null;
+        }
+
+        return {
+          id,
+          url,
+          x,
+          y,
+          width,
+          height,
+        };
+      })
+      .filter(
+        (
+          logo,
+        ): logo is NonNullable<CartItem["designData"]>["frontLogos"][number] =>
+          logo !== null,
+      );
+  };
+
+  return {
+    model:
+      model === "tee" ||
+      model === "tank" ||
+      model === "hoodie" ||
+      model === "pullover" ||
+      model === "longsleeve" ||
+      model === "jacket"
+        ? model
+        : "tee",
+    color,
+    frontLogos: parseLogos(value.frontLogos),
+    backLogos: parseLogos(value.backLogos),
+  };
+}
+
+function parseCheckoutItem(value: unknown): CreateOrderItemInput | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const cartItemId = normalizeOptionalString(
+    typeof value.cartItemId === "string" ? value.cartItemId : null,
+  );
+  const serviceId = normalizeOptionalString(
+    typeof value.serviceId === "string" ? value.serviceId : null,
+  );
+  const name = normalizeOptionalString(
+    typeof value.name === "string" ? value.name : null,
+  );
+
+  if (!cartItemId || !serviceId || !name) {
+    return null;
+  }
+
+  const parsedTextInputs = extractStoredOrderTextInputs(value.textInputs);
+
+  return {
+    cartItemId,
+    serviceId,
+    name,
+    basePrice: normalizeUnknownMoneyValue(value.basePrice),
+    quantity:
+      typeof value.quantity === "number" && Number.isFinite(value.quantity)
+        ? value.quantity
+        : 1,
+    selectedOptions: normalizeLegacySelectedOptions(value.selectedOptions),
+    textInputs: sanitizeStoredTextInputs(parsedTextInputs.textInputs),
+    totalPrice: normalizeUnknownMoneyValue(value.totalPrice),
+    designData: parseDesignData(value.designData),
+    configurationSnapshot: sanitizeStoredConfigurationSnapshot(
+      parseConfigurationSnapshot(value.configurationSnapshot) ??
+        parsedTextInputs.configurationSnapshot ??
+        undefined,
+    ),
+    orderNotes:
+      normalizeOptionalString(
+        typeof value.orderNotes === "string" ? value.orderNotes : null,
+      ) ?? undefined,
+  };
+}
+
+function parseCheckoutUploadDescriptor(
+  value: unknown,
+): CheckoutUploadDescriptor | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const formKey = normalizeOptionalString(
+    typeof value.formKey === "string" ? value.formKey : null,
+  );
+  const cartItemId = normalizeOptionalString(
+    typeof value.cartItemId === "string" ? value.cartItemId : null,
+  );
+  const source =
+    value.source === "option" || value.source === "upload"
+      ? value.source
+      : null;
+  const fieldKey = normalizeOptionalString(
+    typeof value.fieldKey === "string" ? value.fieldKey : null,
+  );
+  const fieldLabel = normalizeOptionalString(
+    typeof value.fieldLabel === "string" ? value.fieldLabel : null,
+  );
+  const slotIndex =
+    typeof value.slotIndex === "number" && Number.isFinite(value.slotIndex)
+      ? Math.max(0, Math.trunc(value.slotIndex))
+      : null;
+
+  if (!formKey || !cartItemId || !source || !fieldKey || !fieldLabel) {
+    return null;
+  }
+
+  if (slotIndex === null) {
+    return null;
+  }
+
+  return {
+    formKey,
+    cartItemId,
+    source,
+    fieldKey,
+    fieldLabel,
+    slotIndex,
+    customerLabel:
+      normalizeOptionalString(
+        typeof value.customerLabel === "string" ? value.customerLabel : null,
+      ) ?? "",
+  };
+}
+
+function parseCheckoutRequest(formData: FormData): ParsedCheckoutRequest | null {
+  const payloadRaw = getFormString(formData, "payload");
+
+  if (!payloadRaw) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(payloadRaw) as unknown;
+
+    if (!isRecord(payload) || !Array.isArray(payload.items)) {
+      return null;
+    }
+
+    const items = payload.items
+      .map((item) => parseCheckoutItem(item))
+      .filter((item): item is CreateOrderItemInput => item !== null);
+    const rawUploads = Array.isArray(payload.uploads) ? payload.uploads : [];
+    const uploads = rawUploads
+      .map((upload) => parseCheckoutUploadDescriptor(upload))
+      .filter((upload): upload is CheckoutUploadDescriptor => upload !== null);
+
+    if (items.length !== payload.items.length) {
+      return null;
+    }
+
+    if (uploads.length !== rawUploads.length) {
+      return null;
+    }
+
+    return {
+      customerName: normalizeCheckoutString(getFormString(formData, "name")),
+      customerEmail: normalizeCheckoutString(getFormString(formData, "email")),
+      payload: {
+        items,
+        totalAmount: normalizeUnknownMoneyValue(payload.totalAmount),
+      },
+      uploads,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildUploadFieldDefinitionMap(
+  config: ReturnType<typeof normalizeServiceConfiguration>,
+): Map<string, UploadFieldDefinition> {
+  const definitions = new Map<string, UploadFieldDefinition>();
+
+  config.fields.forEach((field) => {
+    if (field.kind !== "file") {
+      return;
+    }
+
+    definitions.set(`option:${field.key}`, {
+      source: "option",
+      key: field.key,
+      label: field.label,
+      accept: field.accept ?? "*/*",
+      maxFiles: 1,
+      maxFileSizeMb: null,
+      allowCustomerFileLabel: false,
+    });
+  });
+
+  config.uploadSettings.fields.forEach((field) => {
+    definitions.set(`upload:${field.key}`, {
+      source: "upload",
+      key: field.key,
+      label: field.label,
+      accept: field.accept,
+      maxFiles: field.maxFiles,
+      maxFileSizeMb: field.maxFileSizeMb,
+      allowCustomerFileLabel: field.allowCustomerFileLabel,
+    });
+  });
+
+  return definitions;
+}
+
+async function uploadCheckoutFiles(input: {
+  formData: FormData;
+  orderNumber: number;
+  items: Array<{
+    item: CreateOrderItemInput;
+    itemIndex: number;
+  }>;
+  uploads: CheckoutUploadDescriptor[];
+}): Promise<UploadedOrderFileRecord[]> {
+  if (input.uploads.length === 0) {
+    return [];
+  }
+
+  const itemsByCartItemId = new Map(
+    input.items.map((entry) => [entry.item.cartItemId, entry]),
+  );
+  const serviceIds = Array.from(
+    new Set(
+      input.uploads
+        .map((upload) => itemsByCartItemId.get(upload.cartItemId)?.item.serviceId)
+        .filter((serviceId): serviceId is string => typeof serviceId === "string"),
+    ),
+  );
+  const services = await prisma.service.findMany({
+    where: {
+      id: { in: serviceIds },
+    },
+    include: {
+      options: {
+        include: {
+          values: true,
+        },
+      },
+    },
+  });
+  const serviceConfigById = new Map(
+    services.map((service) => [
+      service.id,
+      buildUploadFieldDefinitionMap(normalizeServiceConfiguration(service)),
+    ]),
+  );
+  const uploadsByField = new Map<string, number>();
+  const uploadsBySlot = new Set<string>();
+
+  input.uploads.forEach((upload) => {
+    const counterKey = `${upload.cartItemId}:${upload.source}:${upload.fieldKey}`;
+    uploadsByField.set(counterKey, (uploadsByField.get(counterKey) ?? 0) + 1);
+
+    const slotKey = `${counterKey}:${upload.slotIndex}`;
+    if (uploadsBySlot.has(slotKey)) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    uploadsBySlot.add(slotKey);
+  });
+
+  const uploadedFiles: UploadedOrderFileRecord[] = [];
+
+  for (const upload of input.uploads) {
+    const itemEntry = itemsByCartItemId.get(upload.cartItemId);
+
+    if (!itemEntry) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    const fieldDefinitions = serviceConfigById.get(itemEntry.item.serviceId);
+
+    if (!fieldDefinitions) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    const fieldDefinition = fieldDefinitions.get(
+      `${upload.source}:${upload.fieldKey}`,
+    );
+
+    if (!fieldDefinition) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    const filesForField =
+      uploadsByField.get(
+        `${upload.cartItemId}:${upload.source}:${upload.fieldKey}`,
+      ) ?? 0;
+
+    if (filesForField > fieldDefinition.maxFiles) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    if (upload.slotIndex >= fieldDefinition.maxFiles) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    const uploadedFile = input.formData.get(upload.formKey);
+
+    if (!(uploadedFile instanceof File)) {
+      throw new CheckoutUploadError("Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.");
+    }
+
+    const validationResult = validateSelectedFile(uploadedFile, {
+      accept: fieldDefinition.accept,
+      maxFileSizeMb: fieldDefinition.maxFileSizeMb,
+    });
+
+    if (!validationResult.ok) {
+      throw new CheckoutUploadError(validationResult.message);
+    }
+
+    const path = buildOrderStoragePath({
+      orderNumber: input.orderNumber,
+      itemIndex: itemEntry.itemIndex + 1,
+      fieldKey: fieldDefinition.key,
+      slotIndex: upload.slotIndex,
+      fileName: uploadedFile.name,
+    });
+
+    try {
+      const storedFile = await uploadFileToSupabaseStorage({
+        path,
+        file: uploadedFile,
+      });
+
+      uploadedFiles.push({
+        cartItemId: upload.cartItemId,
+        slotIndex: upload.slotIndex,
+        bucket: storedFile.bucket,
+        path: storedFile.path,
+        originalName: uploadedFile.name,
+        customerLabel:
+          fieldDefinition.allowCustomerFileLabel &&
+          upload.customerLabel.trim() !== ""
+            ? upload.customerLabel.trim()
+            : null,
+        fieldKey: fieldDefinition.key,
+        fieldLabel: fieldDefinition.label,
+        contentType:
+          uploadedFile.type.trim() !== "" ? uploadedFile.type.trim() : null,
+        size: uploadedFile.size,
+        uploadedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Supabase Storage upload failed:", error);
+      throw new CheckoutUploadError("Datei konnte nicht hochgeladen werden.");
+    }
+  }
+
+  return uploadedFiles;
+}
+
+function mergeUploadedFilesIntoSnapshot(
+  snapshot: ServiceConfigurationSnapshot,
+  uploadedFiles: UploadedOrderFileRecord[],
+): ServiceConfigurationSnapshot {
+  if (uploadedFiles.length === 0) {
+    return snapshot;
+  }
+
+  const uploadedFilesByField = new Map<string, UploadedOrderFileRecord[]>();
+
+  uploadedFiles.forEach((file) => {
+    const currentFiles = uploadedFilesByField.get(file.fieldKey) ?? [];
+    currentFiles.push(file);
+    uploadedFilesByField.set(file.fieldKey, currentFiles);
+  });
+
+  const nextUploadFields = snapshot.uploadFields.map((field) => {
+    const filesForField = uploadedFilesByField.get(field.fieldKey);
+
+    if (!filesForField) {
+      return field;
+    }
+
+    return {
+      ...field,
+      fieldLabel: filesForField[0]?.fieldLabel ?? field.fieldLabel,
+      files: filesForField
+        .sort((left, right) => left.slotIndex - right.slotIndex)
+        .map((file) => buildSnapshotUploadFile(file)),
+    };
+  });
+
+  uploadedFilesByField.forEach((filesForField, fieldKey) => {
+    if (nextUploadFields.some((field) => field.fieldKey === fieldKey)) {
+      return;
+    }
+
+    nextUploadFields.push({
+      fieldKey,
+      fieldLabel: filesForField[0]?.fieldLabel ?? fieldKey,
+      files: filesForField
+        .sort((left, right) => left.slotIndex - right.slotIndex)
+        .map((file) => buildSnapshotUploadFile(file)),
+    });
+  });
+
+  return {
+    ...snapshot,
+    uploadFields: nextUploadFields,
+  };
+}
+
 function buildOrderFinancialUpdateData(input: OrderFinancialUpdateSource) {
   const financials = calculateOrderFinancials({
     subtotalNet: input.subtotalNet,
@@ -395,10 +1002,21 @@ function buildOrderFinancialUpdateData(input: OrderFinancialUpdateSource) {
   };
 }
 
-export async function createOrder(data: CreateOrderInput): Promise<CreateOrderResult> {
+export async function createOrder(formData: FormData): Promise<CreateOrderResult> {
+  const parsedRequest = parseCheckoutRequest(formData);
+
+  if (!parsedRequest) {
+    return {
+      ok: false,
+      error:
+        "Die Bestellung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    };
+  }
+
+  const uploadedStoragePaths: string[] = [];
+
   try {
-    const customerName = normalizeCheckoutString(data.customerName);
-    const customerEmail = normalizeCheckoutString(data.customerEmail);
+    const { customerName, customerEmail, payload, uploads } = parsedRequest;
 
     if (!customerName || !customerEmail) {
       return {
@@ -407,7 +1025,7 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
       };
     }
 
-    if (data.items.length === 0) {
+    if (payload.items.length === 0) {
       return {
         ok: false,
         error: "Ihr Warenkorb ist leer.",
@@ -415,12 +1033,40 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
     }
 
     const totalAmount = normalizeMoneyValue(
-      data.totalAmount,
-      data.items.reduce(
+      payload.totalAmount,
+      payload.items.reduce(
         (sum, item) => sum + normalizeMoneyValue(item.totalPrice),
         0,
       ),
     );
+    const preparedItems = payload.items.map((item, itemIndex) => {
+      const quantity = normalizeOrderQuantity(item.quantity);
+      const totalPrice = normalizeMoneyValue(item.totalPrice);
+      const sanitizedTextInputs = sanitizeStoredTextInputs(item.textInputs);
+      const baseSnapshot = getSnapshotOrBuildLegacy({
+        serviceId: item.serviceId,
+        serviceName: item.name,
+        basePrice: normalizeMoneyValue(item.basePrice),
+        totalPrice,
+        quantity,
+        selectedOptions: item.selectedOptions,
+        textInputs: sanitizedTextInputs,
+        designData: item.designData,
+        orderNotes: item.orderNotes,
+        configurationSnapshot: sanitizeStoredConfigurationSnapshot(
+          item.configurationSnapshot,
+        ),
+      });
+
+      return {
+        item,
+        itemIndex,
+        quantity,
+        totalPrice,
+        sanitizedTextInputs,
+        configurationSnapshot: baseSnapshot,
+      };
+    });
     const customer = await createOrLinkCustomer({
       name: customerName,
       email: customerEmail,
@@ -432,6 +1078,23 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
       discountValue: 0,
       taxRate: 0,
       currency: DEFAULT_ORDER_CURRENCY,
+    });
+    const uploadedFiles = await uploadCheckoutFiles({
+      formData,
+      orderNumber: nextOrderNumber,
+      items: preparedItems.map((entry) => ({
+        item: entry.item,
+        itemIndex: entry.itemIndex,
+      })),
+      uploads,
+    });
+    uploadedFiles.forEach((file) => uploadedStoragePaths.push(file.path));
+    const uploadedFilesByCartItemId = new Map<string, UploadedOrderFileRecord[]>();
+
+    uploadedFiles.forEach((file) => {
+      const currentFiles = uploadedFilesByCartItemId.get(file.cartItemId) ?? [];
+      currentFiles.push(file);
+      uploadedFilesByCartItemId.set(file.cartItemId, currentFiles);
     });
 
     const order = await prisma.order.create({
@@ -456,37 +1119,33 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
         paymentMethod: "Simulierte Zahlung",
         documentType: "ORDER",
         items: {
-          create: data.items.map((item) => {
-            const quantity = normalizeOrderQuantity(item.quantity);
-            const totalPrice = normalizeMoneyValue(item.totalPrice);
-            const configurationSnapshot = getSnapshotOrBuildLegacy({
-              serviceId: item.serviceId,
-              serviceName: item.name,
-              basePrice: normalizeMoneyValue(item.basePrice),
-              totalPrice,
-              quantity,
-              selectedOptions: item.selectedOptions,
-              textInputs: item.textInputs,
-              designData: item.designData,
-              orderNotes: item.orderNotes,
-              configurationSnapshot: item.configurationSnapshot,
-            });
-            const serializedDesignData = serializeDesignData(item.designData);
+          create: preparedItems.map((preparedItem) => {
+            const uploadedFilesForItem =
+              uploadedFilesByCartItemId.get(preparedItem.item.cartItemId) ?? [];
+            const configurationSnapshot = mergeUploadedFilesIntoSnapshot(
+              preparedItem.configurationSnapshot,
+              uploadedFilesForItem,
+            );
+            const serializedDesignData = serializeDesignData(
+              preparedItem.item.designData,
+            );
 
             return {
-              serviceId: item.serviceId,
-              serviceName: item.name,
-              quantity,
-              price: totalPrice,
-              selectedOptions: serializeSelectedOptions(item.selectedOptions),
+              serviceId: preparedItem.item.serviceId,
+              serviceName: preparedItem.item.name,
+              quantity: preparedItem.quantity,
+              price: preparedItem.totalPrice,
+              selectedOptions: serializeSelectedOptions(
+                preparedItem.item.selectedOptions,
+              ),
               textInputs: serializeStoredOrderTextInputs(
-                item.textInputs,
+                preparedItem.sanitizedTextInputs,
                 configurationSnapshot,
               ),
               ...(serializedDesignData !== undefined
                 ? { designData: serializedDesignData }
                 : {}),
-              orderNotes: item.orderNotes || "",
+              orderNotes: preparedItem.item.orderNotes || "",
             };
           }),
         },
@@ -496,6 +1155,7 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
         orderNumber: true,
       },
     });
+    uploadedStoragePaths.length = 0;
 
     await addOrderActivity({
       orderId: order.id,
@@ -510,7 +1170,23 @@ export async function createOrder(data: CreateOrderInput): Promise<CreateOrderRe
       orderNumber: String(order.orderNumber),
     };
   } catch (error) {
+    if (uploadedStoragePaths.length > 0) {
+      try {
+        await deleteFilesFromSupabaseStorage(uploadedStoragePaths);
+      } catch (cleanupError) {
+        console.error("Supabase Storage cleanup failed:", cleanupError);
+      }
+    }
+
     console.error("Order Error:", error);
+
+    if (error instanceof CheckoutUploadError) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
+
     return {
       ok: false,
       error:
