@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "seed:admin": "node prisma/seed-admin.cjs",
+    "seed:services": "node prisma/seed-services.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
