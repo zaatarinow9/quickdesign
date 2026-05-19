@@ -29,6 +29,17 @@ type TrackableOrderRow = {
 
 type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
 
+export type CreateOrderResult =
+  | { ok: true; orderId: string; orderNumber: string }
+  | { ok: false; error: string };
+
+type CreateOrderInput = {
+  customerName: string;
+  customerEmail: string;
+  items: CartItem[];
+  totalAmount: number;
+};
+
 function getFormString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -62,6 +73,22 @@ function normalizeInternalStatus(value: string): string {
 function normalizePriority(value: string): string {
   const allowedPriorities = new Set(["LOW", "NORMAL", "HIGH", "URGENT"]);
   return allowedPriorities.has(value) ? value : "NORMAL";
+}
+
+function normalizeCheckoutString(value: string): string {
+  return value.trim();
+}
+
+function normalizeNonNegativeNumber(value: number, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, value)
+    : fallback;
+}
+
+function normalizeOrderQuantity(value: number): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(1, Math.trunc(value))
+    : 1;
 }
 
 async function addOrderActivity({
@@ -256,13 +283,33 @@ function serializeDesignData(
   };
 }
 
-export async function createOrder(data: {
-  customerName: string;
-  customerEmail: string;
-  items: CartItem[];
-  totalAmount: number;
-}) {
+export async function createOrder(data: CreateOrderInput): Promise<CreateOrderResult> {
   try {
+    const customerName = normalizeCheckoutString(data.customerName);
+    const customerEmail = normalizeCheckoutString(data.customerEmail);
+
+    if (!customerName || !customerEmail) {
+      return {
+        ok: false,
+        error: "Bitte geben Sie Name und E-Mail-Adresse ein.",
+      };
+    }
+
+    if (data.items.length === 0) {
+      return {
+        ok: false,
+        error: "Ihr Warenkorb ist leer.",
+      };
+    }
+
+    const totalAmount = normalizeNonNegativeNumber(
+      data.totalAmount,
+      data.items.reduce(
+        (sum, item) => sum + normalizeNonNegativeNumber(item.totalPrice),
+        0,
+      ),
+    );
+
     const lastOrder = await prisma.order.findFirst({
       orderBy: { orderNumber: 'desc' }
     });
@@ -271,18 +318,20 @@ export async function createOrder(data: {
     const order = await prisma.order.create({
       data: {
         orderNumber: nextOrderNumber,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        totalAmount: data.totalAmount,
+        customerName,
+        customerEmail,
+        totalAmount,
         status: "PAID", 
         items: {
           create: data.items.map((item) => {
+            const quantity = normalizeOrderQuantity(item.quantity);
+            const totalPrice = normalizeNonNegativeNumber(item.totalPrice);
             const configurationSnapshot = getSnapshotOrBuildLegacy({
               serviceId: item.serviceId,
               serviceName: item.name,
-              basePrice: item.basePrice,
-              totalPrice: item.totalPrice,
-              quantity: item.quantity,
+              basePrice: normalizeNonNegativeNumber(item.basePrice),
+              totalPrice,
+              quantity,
               selectedOptions: item.selectedOptions,
               textInputs: item.textInputs,
               designData: item.designData,
@@ -294,8 +343,8 @@ export async function createOrder(data: {
             return {
               serviceId: item.serviceId,
               serviceName: item.name,
-              quantity: item.quantity,
-              price: item.totalPrice,
+              quantity,
+              price: totalPrice,
               selectedOptions: serializeSelectedOptions(item.selectedOptions),
               textInputs: serializeStoredOrderTextInputs(
                 item.textInputs,
@@ -311,10 +360,17 @@ export async function createOrder(data: {
       },
     });
 
-    return { success: true, orderId: order.id, orderNumber: order.orderNumber };
+    return {
+      ok: true,
+      orderId: order.id,
+      orderNumber: String(order.orderNumber),
+    };
   } catch (error) {
     console.error("Order Error:", error);
-    return { success: false, error: "Fehler beim Speichern der Bestellung" };
+    return {
+      ok: false,
+      error: "Die Bestellung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    };
   }
 }
 
