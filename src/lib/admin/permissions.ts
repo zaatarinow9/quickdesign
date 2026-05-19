@@ -7,7 +7,14 @@ export type AdminPermission =
   | "canAssignOrders"
   | "canClaimOrders"
   | "canUpdateAssignedOrders"
-  | "canViewReports";
+  | "canViewReports"
+  | "canViewAllReports"
+  | "canViewCustomers"
+  | "canManageCustomers"
+  | "canCreateManualOrders"
+  | "canApplyDiscounts"
+  | "canEditFinancials"
+  | "canArchiveOrders";
 
 export type AdminPermissionUser = {
   id: string;
@@ -48,15 +55,57 @@ export function hasAdminPermission(
     case "canManageOrders":
     case "canClaimOrders":
     case "canUpdateAssignedOrders":
+    case "canViewReports":
+    case "canViewCustomers":
+    case "canCreateManualOrders":
       return role === "ADMIN" || role === "STAFF";
+    case "canViewAllReports":
+    case "canApplyDiscounts":
+    case "canEditFinancials":
+    case "canArchiveOrders":
+      return role === "ADMIN";
     case "canManageServices":
     case "canManageUsers":
     case "canAssignOrders":
-    case "canViewReports":
+    case "canManageCustomers":
       return false;
     default:
       return false;
   }
+}
+
+export function canManageCustomers(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canManageCustomers");
+}
+
+export function canViewCustomers(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canViewCustomers");
+}
+
+export function canCreateManualOrders(
+  user: AdminPermissionUser | null,
+): boolean {
+  return hasAdminPermission(user, "canCreateManualOrders");
+}
+
+export function canApplyDiscounts(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canApplyDiscounts");
+}
+
+export function canEditFinancials(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canEditFinancials");
+}
+
+export function canViewReports(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canViewReports");
+}
+
+export function canViewAllReports(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canViewAllReports");
+}
+
+export function canArchiveOrders(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canArchiveOrders");
 }
 
 export function canUpdateOrder(

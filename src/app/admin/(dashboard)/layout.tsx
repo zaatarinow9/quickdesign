@@ -1,10 +1,12 @@
 import Link from "next/link";
 import {
+  BarChart3,
   LayoutDashboard,
   LogOut,
   Package,
   ShoppingBag,
   Users,
+  UserRound,
 } from "lucide-react";
 import { logoutAdmin } from "@/app/actions/auth";
 import { requireAdminUser } from "@/lib/admin/auth";
@@ -21,6 +23,8 @@ export default async function AdminLayout({
     "canManageServices",
   );
   const canManageUsers = hasAdminPermission(currentUser, "canManageUsers");
+  const canViewCustomers = hasAdminPermission(currentUser, "canViewCustomers");
+  const canViewReports = hasAdminPermission(currentUser, "canViewReports");
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-950">
@@ -44,6 +48,24 @@ export default async function AdminLayout({
           >
             <ShoppingBag className="h-4 w-4" /> Bestellungen
           </Link>
+
+          {canViewCustomers && (
+            <Link
+              href="/admin/customers"
+              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
+            >
+              <UserRound className="h-4 w-4" /> Kunden
+            </Link>
+          )}
+
+          {canViewReports && (
+            <Link
+              href="/admin/reports"
+              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
+            >
+              <BarChart3 className="h-4 w-4" /> Reports
+            </Link>
+          )}
 
           {canManageServices && (
             <Link

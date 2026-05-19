@@ -1,29 +1,43 @@
 import { format } from "date-fns";
 import {
+  Archive,
   ArrowLeft,
-  MapPin,
   CreditCard,
-  Save,
   Download,
+  FileText,
+  MapPin,
+  MessageSquare,
+  RotateCcw,
+  Save,
+  ShieldCheck,
   Truck,
   UserCheck,
-  MessageSquare,
-  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import {
   addOrderInternalNote,
+  archiveOrder,
   assignOrder,
   claimOrder,
+  restoreArchivedOrder,
+  updateOrderFinancials,
   updateOrderStatus,
 } from "@/app/actions/order";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import {
   canUpdateOrder,
   hasAdminPermission,
+  isSuperAdmin,
 } from "@/lib/admin/permissions";
+import { formatCustomerLocation } from "@/lib/customers";
+import {
+  getOrderFinancials,
+  getOrderPaymentStatus,
+  normalizeDocumentType,
+} from "@/lib/orders/finance";
+import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting";
+import { prisma } from "@/lib/prisma";
 import {
   extractStoredOrderTextInputs,
   getPricingModelLabel,
@@ -31,6 +45,19 @@ import {
   normalizeLegacySelectedOptions,
   type ServiceConfigurationSnapshot,
 } from "@/lib/services/configuration/snapshot";
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  UNPAID: "Unbezahlt",
+  PARTIALLY_PAID: "Teilweise bezahlt",
+  PAID: "Bezahlt",
+  REFUNDED: "Erstattet",
+};
+
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  ORDER: "Auftrag",
+  OFFER: "Angebot",
+  INVOICE: "Rechnung",
+};
 
 type DesignPreviewLogo = {
   id: string;
@@ -95,8 +122,12 @@ function parseStoredDesignPreview(value: unknown): OrderDesignPreview | null {
   };
 }
 
-function formatCurrency(value: number): string {
-  return `${value.toFixed(2)} EUR`;
+function formatCurrency(value: number, currency = "EUR"): string {
+  return `${value.toFixed(2)} ${currency}`;
+}
+
+function formatDateInputValue(value: Date | null): string {
+  return value ? format(new Date(value), "yyyy-MM-dd") : "";
 }
 
 function OrderSnapshotDetails({
@@ -106,26 +137,26 @@ function OrderSnapshotDetails({
 }) {
   return (
     <div className="space-y-6">
-      <div className="bg-neutral-50 p-6 border border-neutral-100">
-        <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 mb-4">
+      <div className="border border-neutral-100 bg-neutral-50 p-6">
+        <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-950">
           Konfigurations-Snapshot
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="text-xs font-bold text-neutral-600">
-            <span className="text-neutral-400 block text-[9px] uppercase">
+            <span className="block text-[9px] uppercase text-neutral-400">
               Preismodell
             </span>
             {getPricingModelLabel(snapshot.pricingModel)}
           </div>
           <div className="text-xs font-bold text-neutral-600">
-            <span className="text-neutral-400 block text-[9px] uppercase">
+            <span className="block text-[9px] uppercase text-neutral-400">
               Berechneter Gesamtpreis
             </span>
             {formatCurrency(snapshot.calculatedPrice.total)}
           </div>
           {snapshot.selectedPricingTier && (
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 Mengenstaffel
               </span>
               {snapshot.selectedPricingTier.label}
@@ -133,7 +164,7 @@ function OrderSnapshotDetails({
           )}
           {snapshot.size && (
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 {snapshot.size.fieldLabel}
               </span>
               {snapshot.size.value}
@@ -141,12 +172,12 @@ function OrderSnapshotDetails({
           )}
           {snapshot.color && (
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 {snapshot.color.fieldLabel}
               </span>
               <span className="inline-flex items-center gap-2">
                 <span
-                  className="w-3 h-3 rounded-full border border-neutral-300"
+                  className="h-3 w-3 rounded-full border border-neutral-300"
                   style={{ backgroundColor: snapshot.color.hex }}
                 ></span>
                 {snapshot.color.value}
@@ -155,7 +186,7 @@ function OrderSnapshotDetails({
           )}
           {snapshot.customQuote && (
             <div className="text-xs font-bold text-amber-700">
-              <span className="text-amber-500 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-amber-500">
                 Preisstatus
               </span>
               Preis auf Anfrage
@@ -165,31 +196,31 @@ function OrderSnapshotDetails({
       </div>
 
       {snapshot.area && (
-        <div className="bg-white border border-neutral-200 p-6">
-          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 mb-4">
+        <div className="border border-neutral-200 bg-white p-6">
+          <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-950">
             Flaechenberechnung
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 Breite
               </span>
               {snapshot.area.widthCm.toFixed(1)} cm
             </div>
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 Hoehe
               </span>
               {snapshot.area.heightCm.toFixed(1)} cm
             </div>
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 Flaeche
               </span>
               {snapshot.area.areaSqm.toFixed(3)} m2
             </div>
             <div className="text-xs font-bold text-neutral-600">
-              <span className="text-neutral-400 block text-[9px] uppercase">
+              <span className="block text-[9px] uppercase text-neutral-400">
                 Preis pro m2
               </span>
               {formatCurrency(snapshot.area.pricePerSqm)}
@@ -199,14 +230,17 @@ function OrderSnapshotDetails({
       )}
 
       {snapshot.selectedOptions.length > 0 && (
-        <div className="bg-white border border-neutral-200 p-6">
-          <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 mb-4">
+        <div className="border border-neutral-200 bg-white p-6">
+          <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-950">
             Gewaehlte Optionen
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {snapshot.selectedOptions.map((option) => (
-              <div key={`${option.fieldKey}-${option.valueLabel}`} className="text-xs font-bold text-neutral-600">
-                <span className="text-neutral-400 block text-[9px] uppercase">
+              <div
+                key={`${option.fieldKey}-${option.valueLabel}`}
+                className="text-xs font-bold text-neutral-600"
+              >
+                <span className="block text-[9px] uppercase text-neutral-400">
                   {option.fieldLabel}
                 </span>
                 {option.valueLabel}
@@ -227,10 +261,10 @@ function OrderSnapshotDetails({
           {snapshot.textFields.map((field) => (
             <div
               key={field.fieldKey}
-              className="flex items-center justify-between bg-white border border-neutral-200 p-4"
+              className="flex items-center justify-between border border-neutral-200 bg-white p-4"
             >
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 block mb-1">
+                <span className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-neutral-400">
                   {field.fieldLabel}
                 </span>
                 <span className="text-xs font-bold text-neutral-950">
@@ -251,13 +285,13 @@ function OrderSnapshotDetails({
             field.files.map((file, index) => (
               <div
                 key={`${field.fieldKey}-${index}`}
-                className="flex items-center justify-between bg-white border border-neutral-200 p-4"
+                className="flex items-center justify-between border border-neutral-200 bg-white p-4"
               >
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 block mb-1">
+                  <span className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-neutral-400">
                     {field.fieldLabel}
                   </span>
-                  <span className="text-xs font-bold text-neutral-950 block">
+                  <span className="block text-xs font-bold text-neutral-950">
                     {file.fileName}
                   </span>
                   {file.customerLabel && (
@@ -270,9 +304,9 @@ function OrderSnapshotDetails({
                   <a
                     href={file.fileUrl}
                     download={file.fileName}
-                    className="flex items-center gap-2 bg-neutral-950 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+                    className="flex items-center gap-2 bg-neutral-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
                   >
-                    <Download className="w-3 h-3" /> Download
+                    <Download className="h-3 w-3" /> Download
                   </a>
                 )}
               </div>
@@ -282,11 +316,11 @@ function OrderSnapshotDetails({
       )}
 
       {snapshot.orderNotes && (
-        <div className="bg-yellow-50/50 border border-yellow-100 p-6">
-          <h4 className="text-[10px] font-bold uppercase tracking-widest text-yellow-800 mb-2">
+        <div className="border border-yellow-100 bg-yellow-50/50 p-6">
+          <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-yellow-800">
             Kundenanmerkung
           </h4>
-          <p className="text-xs text-neutral-700 font-bold leading-relaxed">
+          <p className="text-xs font-bold leading-relaxed text-neutral-700">
             {snapshot.orderNotes}
           </p>
         </div>
@@ -297,20 +331,36 @@ function OrderSnapshotDetails({
 
 export default async function OrderDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{
+    archiveError?: string;
+    archived?: string;
+    created?: string;
+    forbidden?: string;
+    restored?: string;
+  }>;
 }) {
   const { id } = await params;
+  const pageParams = searchParams ? await searchParams : {};
   const currentUser = await requireAdminPermission("canManageOrders");
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
+      customer: true,
       items: true,
       assignedTo: {
         select: {
           id: true,
           name: true,
           username: true,
+          role: true,
+        },
+      },
+      archivedBy: {
+        select: {
+          name: true,
           role: true,
         },
       },
@@ -332,11 +382,25 @@ export default async function OrderDetailsPage({
     return notFound();
   }
 
+  const financials = getOrderFinancials(order);
   const canAssignOrders = hasAdminPermission(currentUser, "canAssignOrders");
   const canClaimOrders = hasAdminPermission(currentUser, "canClaimOrders");
   const canEditOrder = canUpdateOrder(currentUser, {
     assignedToId: order.assignedToId,
   });
+  const canEditOrderFinancials = hasAdminPermission(
+    currentUser,
+    "canEditFinancials",
+  );
+  const canUseArchiveWorkflow = hasAdminPermission(
+    currentUser,
+    "canArchiveOrders",
+  );
+  const canArchiveCurrentOrder =
+    canUseArchiveWorkflow && canArchiveOrderRecord(order);
+  const canRestoreArchivedOrder =
+    isSuperAdmin(currentUser) && Boolean(order.isArchived);
+  const isArchivedOrder = Boolean(order.isArchived);
   const activeStaff = canAssignOrders
     ? await prisma.adminUser.findMany({
         where: { isActive: true },
@@ -348,39 +412,135 @@ export default async function OrderDetailsPage({
         },
       })
     : [];
+  const customerLocation = order.customer
+    ? formatCustomerLocation(order.customer)
+    : "";
+  const paymentStatus = getOrderPaymentStatus(order);
+  const documentType = normalizeDocumentType(order.documentType);
 
   return (
-    <div className="p-12 space-y-8 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-8">
       <Link
         href="/admin/orders"
-        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors mb-4"
+        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="w-3 h-3" /> Zurueck zur Uebersicht
+        <ArrowLeft className="h-3 w-3" /> Zurueck zur Uebersicht
       </Link>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      {pageParams.created && (
+        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
+          Auftrag wurde erstellt.
+        </div>
+      )}
+      {pageParams.archived && (
+        <div className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold uppercase tracking-widest text-amber-800">
+          Auftrag wurde archiviert.
+        </div>
+      )}
+      {pageParams.restored && (
+        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
+          Auftrag wurde aus dem Archiv wiederhergestellt.
+        </div>
+      )}
+      {pageParams.archiveError && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Archivieren ist erst moeglich, wenn der Auftrag abgeschlossen oder storniert ist.
+        </div>
+      )}
+      {pageParams.forbidden && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Sie haben fuer diese Aktion keine Berechtigung.
+        </div>
+      )}
+      {isArchivedOrder && (
+        <div className="border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-800">
+            Archivierter Auftrag
+          </p>
+          <p className="mt-2 font-medium">
+            Dieser Auftrag befindet sich im Archiv und bleibt in der Admin-Oberflaeche
+            schreibgeschuetzt.
+          </p>
+          {(order.archivedAt || order.archivedBy) && (
+            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-amber-700">
+              {order.archivedAt
+                ? `Archiviert am ${format(new Date(order.archivedAt), "dd.MM.yyyy HH:mm")}`
+                : "Archiviert"}
+              {order.archivedBy ? ` von ${order.archivedBy.name}` : ""}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-6 border-b border-neutral-100 pb-8 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-4xl font-bold uppercase tracking-tighter">
             Bestellung #{order.orderNumber}
           </h1>
-          <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-2">
+          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
             Eingegangen am {format(new Date(order.createdAt), "dd.MM.yyyy 'um' HH:mm")}
           </p>
         </div>
-        <div className="bg-neutral-950 text-white px-8 py-4 text-center">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-1">
-            Gesamtbetrag
+        <div className="bg-neutral-950 px-8 py-4 text-center text-white">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            Brutto gesamt
           </p>
           <p className="text-3xl font-bold tracking-tighter">
-            {formatCurrency(order.totalAmount)}
+            {formatCurrency(financials.totalGross, financials.currency)}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
-            <UserCheck className="w-4 h-4" /> Zustaendigkeit
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-5 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <MapPin className="h-4 w-4" /> Kunde
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-bold text-neutral-950">
+                {order.customerName}
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                {order.customerEmail || "Keine E-Mail hinterlegt"}
+              </p>
+              {order.customer?.companyName && (
+                <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+                  {order.customer.companyName}
+                </p>
+              )}
+            </div>
+
+            {order.customer && (
+              <div className="space-y-2 border-t border-neutral-100 pt-4">
+                <p className="text-xs font-bold text-neutral-950">
+                  {order.customer.phone || "Kein Telefon hinterlegt"}
+                </p>
+                <p className="text-sm text-neutral-600">
+                  {order.customer.address || "Keine Adresse hinterlegt"}
+                </p>
+                {customerLocation && (
+                  <p className="text-sm text-neutral-600">{customerLocation}</p>
+                )}
+                {order.customer.taxId && (
+                  <p className="text-[11px] font-bold text-neutral-500">
+                    Steuer-ID: {order.customer.taxId}
+                  </p>
+                )}
+                <Link
+                  href={`/admin/customers/${order.customer.id}`}
+                  className="inline-flex items-center gap-2 pt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+                >
+                  Kundenprofil oeffnen
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-5 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <UserCheck className="h-4 w-4" /> Zustaendigkeit
           </h2>
           <div className="space-y-2">
             <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
@@ -398,13 +558,13 @@ export default async function OrderDetailsPage({
             )}
           </div>
 
-          {canAssignOrders && (
+          {canAssignOrders && !isArchivedOrder && (
             <form action={assignOrder} className="space-y-4">
               <input type="hidden" name="orderId" value={order.id} />
               <select
                 name="assignedToId"
                 defaultValue={order.assignedToId ?? ""}
-                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+                className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
               >
                 <option value="">Nicht zugewiesen</option>
                 {activeStaff.map((user) => (
@@ -415,29 +575,38 @@ export default async function OrderDetailsPage({
               </select>
               <button
                 type="submit"
-                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+                className="w-full bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
               >
                 Zuweisung speichern
               </button>
             </form>
           )}
 
-          {!order.assignedToId && canClaimOrders && !canAssignOrders && (
+          {!order.assignedToId &&
+            canClaimOrders &&
+            !canAssignOrders &&
+            !isArchivedOrder && (
             <form action={claimOrder}>
               <input type="hidden" name="orderId" value={order.id} />
               <button
                 type="submit"
-                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+                className="w-full bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
               >
                 Auftrag uebernehmen
               </button>
             </form>
           )}
+
+          {isArchivedOrder && (
+            <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
+              Archivierte Auftraege koennen nicht neu zugewiesen oder uebernommen werden.
+            </p>
+          )}
         </div>
 
-        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4" /> Interne Steuerung
+        <div className="space-y-5 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <ShieldCheck className="h-4 w-4" /> Interne Steuerung
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -457,97 +626,90 @@ export default async function OrderDetailsPage({
               </p>
             </div>
           </div>
+          <div className="grid grid-cols-1 gap-4 border-t border-neutral-100 pt-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Archivstatus
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {isArchivedOrder ? "Archiviert" : "Aktiv"}
+              </p>
+              {order.archivedAt && (
+                <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                  {format(new Date(order.archivedAt), "dd.MM.yyyy HH:mm")}
+                </p>
+              )}
+              {order.archivedBy && (
+                <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                  Durch {order.archivedBy.name} ({order.archivedBy.role})
+                </p>
+              )}
+            </div>
+          </div>
           {!canEditOrder && (
-            <p className="text-xs font-bold leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 p-4">
+            <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
               Statusaenderungen sind nur fuer Super Admins oder den zugewiesenen
               Mitarbeiter moeglich.
             </p>
           )}
-        </div>
-
-        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-5">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" /> Interne Notiz
-          </h2>
-          {canEditOrder ? (
-            <form action={addOrderInternalNote} className="space-y-4">
+          {canArchiveCurrentOrder && (
+            <form action={archiveOrder}>
               <input type="hidden" name="orderId" value={order.id} />
-              <textarea
-                name="message"
-                required
-                rows={4}
-                placeholder="Interne Notiz hinzufuegen..."
-                className="w-full border border-neutral-200 p-4 text-xs bg-neutral-50 outline-none focus:border-neutral-950 resize-none"
-              />
               <button
                 type="submit"
-                className="w-full bg-neutral-950 text-white p-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
+                className="flex w-full items-center justify-center gap-2 border border-amber-200 bg-amber-50 p-4 text-xs font-bold uppercase tracking-widest text-amber-900 transition-colors hover:bg-amber-100"
               >
-                Notiz speichern
+                <Archive className="h-4 w-4" /> Auftrag archivieren
               </button>
             </form>
-          ) : (
+          )}
+          {canRestoreArchivedOrder && (
+            <form action={restoreArchivedOrder}>
+              <input type="hidden" name="orderId" value={order.id} />
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 border border-neutral-200 bg-white p-4 text-xs font-bold uppercase tracking-widest text-neutral-950 transition-colors hover:border-neutral-950"
+              >
+                <RotateCcw className="h-4 w-4" /> Aus Archiv wiederherstellen
+              </button>
+            </form>
+          )}
+          {!isArchivedOrder && canUseArchiveWorkflow && !canArchiveCurrentOrder && (
             <p className="text-xs font-bold leading-relaxed text-neutral-500">
-              Uebernehmen Sie den Auftrag zuerst oder lassen Sie ihn durch einen
-              Super Admin zuweisen.
+              Archivierung ist verfuegbar, sobald der Auftrag abgeschlossen oder
+              storniert wurde.
+            </p>
+          )}
+          {!isArchivedOrder && !canUseArchiveWorkflow && (
+            <p className="text-xs font-bold leading-relaxed text-neutral-500">
+              Archivierung und Wiederherstellung stehen nur Admins und Super Admins
+              zur Verfuegung.
             </p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white border border-neutral-200 p-8 shadow-sm space-y-6">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4">
-            Kundeninformationen
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-neutral-100 flex items-center justify-center rounded-full shrink-0">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-neutral-950">
-                  {order.customerName}
-                </p>
-                <p className="text-[11px] font-bold text-neutral-500 mt-1">
-                  {order.customerEmail}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 pt-4 border-t border-neutral-50">
-              <div className="w-10 h-10 bg-neutral-100 flex items-center justify-center rounded-full shrink-0">
-                <CreditCard className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-neutral-950">Zahlungsstatus</p>
-                <p className="text-[11px] font-bold text-green-600 mt-1 uppercase tracking-widest">
-                  Erfolgreich bezahlt
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 bg-white border border-neutral-200 p-8 shadow-sm space-y-6">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 flex items-center gap-2">
-            <Truck className="w-4 h-4" /> Auftragsstatus & Tracking
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="space-y-6 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <Truck className="h-4 w-4" /> Auftragsstatus & Tracking
           </h2>
           <form
             action={updateOrderStatus}
-            className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end"
+            className="grid grid-cols-1 gap-6 md:grid-cols-5 md:items-end"
           >
             <input type="hidden" name="orderId" value={order.id} />
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest block">
+              <label className="block text-[10px] font-bold uppercase tracking-widest">
                 Status
               </label>
               <select
                 name="status"
                 defaultValue={order.status}
-                disabled={!canEditOrder}
-                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+                disabled={!canEditOrder || isArchivedOrder}
+                className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
               >
-                <option value="PAID">Neu / Bezahlt</option>
+                <option value="PAID">Neu</option>
                 <option value="PROCESSING">In Produktion</option>
                 <option value="SHIPPED">Versendet</option>
                 <option value="DELIVERED">Zugestellt</option>
@@ -555,14 +717,14 @@ export default async function OrderDetailsPage({
               </select>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest block">
+              <label className="block text-[10px] font-bold uppercase tracking-widest">
                 Interner Status
               </label>
               <select
                 name="internalStatus"
                 defaultValue={order.internalStatus}
-                disabled={!canEditOrder}
-                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+                disabled={!canEditOrder || isArchivedOrder}
+                className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
               >
                 <option value="NEW">Neu</option>
                 <option value="IN_REVIEW">In Pruefung</option>
@@ -573,14 +735,14 @@ export default async function OrderDetailsPage({
               </select>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest block">
+              <label className="block text-[10px] font-bold uppercase tracking-widest">
                 Prioritaet
               </label>
               <select
                 name="priority"
                 defaultValue={order.priority}
-                disabled={!canEditOrder}
-                className="w-full border border-neutral-200 p-4 text-xs font-bold uppercase tracking-widest bg-neutral-50 outline-none focus:border-neutral-950"
+                disabled={!canEditOrder || isArchivedOrder}
+                className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
               >
                 <option value="LOW">Niedrig</option>
                 <option value="NORMAL">Normal</option>
@@ -589,31 +751,338 @@ export default async function OrderDetailsPage({
               </select>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest block">
-                Sendungsnummer (Tracking)
+              <label className="block text-[10px] font-bold uppercase tracking-widest">
+                Sendungsnummer
               </label>
               <input
                 name="trackingNumber"
                 defaultValue={order.trackingNumber ?? ""}
-                placeholder="z.B. DHL12345678"
-                disabled={!canEditOrder}
-                className="w-full border border-neutral-200 p-4 text-xs font-bold bg-neutral-50 outline-none focus:border-neutral-950"
+                placeholder="z. B. DHL12345678"
+                disabled={!canEditOrder || isArchivedOrder}
+                className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold outline-none focus:border-neutral-950"
               />
             </div>
             <button
               type="submit"
-              disabled={!canEditOrder}
-              className="bg-neutral-950 text-white p-4 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all h-[50px] disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed"
+              disabled={!canEditOrder || isArchivedOrder}
+              className="flex h-[50px] items-center justify-center gap-2 bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500"
             >
-              <Save className="w-4 h-4" /> Speichern
+              <Save className="h-4 w-4" /> Speichern
             </button>
           </form>
+          {isArchivedOrder && (
+            <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
+              Archivierte Auftraege koennen nicht mehr in Status oder Tracking
+              veraendert werden.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-6 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <MessageSquare className="h-4 w-4" /> Interne Notiz
+          </h2>
+          {canEditOrder && !isArchivedOrder ? (
+            <form action={addOrderInternalNote} className="space-y-4">
+              <input type="hidden" name="orderId" value={order.id} />
+              <textarea
+                name="message"
+                required
+                rows={5}
+                placeholder="Interne Notiz hinzufuegen..."
+                className="w-full resize-none border border-neutral-200 bg-neutral-50 p-4 text-xs outline-none focus:border-neutral-950"
+              />
+              <button
+                type="submit"
+                className="w-full bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
+              >
+                Notiz speichern
+              </button>
+            </form>
+          ) : isArchivedOrder ? (
+            <p className="text-xs font-bold leading-relaxed text-neutral-500">
+              Archivierte Auftraege bleiben im Verlauf sichtbar, koennen aber nicht
+              mehr mit neuen internen Notizen erweitert werden.
+            </p>
+          ) : (
+            <p className="text-xs font-bold leading-relaxed text-neutral-500">
+              Uebernehmen Sie den Auftrag zuerst oder lassen Sie ihn durch einen
+              Super Admin zuweisen.
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="bg-white border border-neutral-200 p-8 shadow-sm">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 mb-8">
-          Bestellte Artikel & Druckdaten
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+        <div className="space-y-6 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <CreditCard className="h-4 w-4" /> Zahlung, Netto / Brutto & Dokument
+          </h2>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Zwischensumme netto
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {formatCurrency(financials.subtotalNet, financials.currency)}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Rabatt
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {order.discountType ?? "NONE"} / {financials.discountAmount.toFixed(2)}{" "}
+                {financials.currency}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Netto gesamt
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {formatCurrency(financials.totalNet, financials.currency)}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                MwSt
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {financials.taxRate.toFixed(2)}% /{" "}
+                {formatCurrency(financials.taxAmount, financials.currency)}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Brutto gesamt
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {formatCurrency(financials.totalGross, financials.currency)}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Zahlungsstatus
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {PAYMENT_STATUS_LABELS[paymentStatus]}
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                Bezahlt: {formatCurrency(order.paidAmount ?? 0, financials.currency)}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Dokumenttyp
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {DOCUMENT_TYPE_LABELS[documentType]}
+              </p>
+            </div>
+            <div className="border border-neutral-100 bg-neutral-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Belegnummer
+              </p>
+              <p className="mt-3 text-lg font-bold text-neutral-950">
+                {order.invoiceNumber || "Nicht gesetzt"}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Rechnungsdatum
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {order.invoiceDate
+                  ? format(new Date(order.invoiceDate), "dd.MM.yyyy")
+                  : "Nicht gesetzt"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Faelligkeit
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {order.dueDate
+                  ? format(new Date(order.dueDate), "dd.MM.yyyy")
+                  : "Nicht gesetzt"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Zahlungsmethode
+              </p>
+              <p className="mt-2 text-sm font-bold text-neutral-950">
+                {order.paymentMethod || "Nicht gesetzt"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Zahlungsnotizen
+              </p>
+              <p className="mt-2 text-sm text-neutral-700">
+                {order.paymentNotes || "Keine Notizen"}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-neutral-100 pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Kundenhinweis
+            </p>
+            <p className="text-sm leading-7 text-neutral-700">
+              {order.customerNotes || "Kein Kundenhinweis hinterlegt."}
+            </p>
+          </div>
+
+          <div className="space-y-3 border-t border-neutral-100 pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Interne Auftragsnotiz
+            </p>
+            <p className="text-sm leading-7 text-neutral-700">
+              {order.internalNotes || "Keine interne Auftragsnotiz hinterlegt."}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-6 border border-neutral-200 bg-white p-8 shadow-sm">
+          <h2 className="flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+            <FileText className="h-4 w-4" /> Finanzdaten aktualisieren
+          </h2>
+
+          {canEditOrderFinancials && !isArchivedOrder ? (
+            <form action={updateOrderFinancials} className="space-y-4">
+              <input type="hidden" name="orderId" value={order.id} />
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <select
+                  name="discountType"
+                  defaultValue={order.discountType ?? "NONE"}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                >
+                  <option value="NONE">Kein Rabatt</option>
+                  <option value="PERCENTAGE">Rabatt in %</option>
+                  <option value="FIXED">Fixer Rabatt</option>
+                </select>
+                <input
+                  name="discountValue"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={order.discountValue ?? 0}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <input
+                  name="taxRate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={order.taxRate ?? financials.taxRate}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <select
+                  name="paymentStatus"
+                  defaultValue={paymentStatus}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                >
+                  <option value="UNPAID">Unbezahlt</option>
+                  <option value="PARTIALLY_PAID">Teilweise bezahlt</option>
+                  <option value="PAID">Bezahlt</option>
+                  <option value="REFUNDED">Erstattet</option>
+                </select>
+                <input
+                  name="paidAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={order.paidAmount ?? 0}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <input
+                  name="paymentMethod"
+                  defaultValue={order.paymentMethod ?? ""}
+                  placeholder="Zahlungsmethode"
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <select
+                  name="documentType"
+                  defaultValue={documentType}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                >
+                  <option value="ORDER">Auftrag</option>
+                  <option value="OFFER">Angebot</option>
+                  <option value="INVOICE">Rechnung</option>
+                </select>
+                <input
+                  name="invoiceNumber"
+                  defaultValue={order.invoiceNumber ?? ""}
+                  placeholder="Belegnummer"
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <input
+                  name="invoiceDate"
+                  type="date"
+                  defaultValue={formatDateInputValue(order.invoiceDate)}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+                <input
+                  name="dueDate"
+                  type="date"
+                  defaultValue={formatDateInputValue(order.dueDate)}
+                  className="border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+                />
+              </div>
+
+              <textarea
+                name="paymentNotes"
+                rows={3}
+                defaultValue={order.paymentNotes ?? ""}
+                placeholder="Zahlungsnotizen"
+                className="w-full resize-none border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+              />
+              <textarea
+                name="customerNotes"
+                rows={4}
+                defaultValue={order.customerNotes ?? ""}
+                placeholder="Hinweis fuer Kunde / Angebot / Rechnung"
+                className="w-full resize-none border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+              />
+              <textarea
+                name="internalNotes"
+                rows={4}
+                defaultValue={order.internalNotes ?? ""}
+                placeholder="Interne Auftragsnotiz"
+                className="w-full resize-none border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
+              />
+
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
+              >
+                <Save className="h-4 w-4" /> Finanzdaten speichern
+              </button>
+            </form>
+          ) : isArchivedOrder ? (
+            <p className="text-sm leading-7 text-neutral-500">
+              Archivierte Auftraege sind finanziell eingefroren. Stellen Sie den
+              Auftrag erst wieder her, wenn weitere Anpassungen notwendig sind.
+            </p>
+          ) : (
+            <p className="text-sm leading-7 text-neutral-500">
+              Diese Felder koennen nur von Super Admins und Admins mit
+              Finanzfreigabe bearbeitet werden.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="border border-neutral-200 bg-white p-8 shadow-sm">
+        <h2 className="mb-8 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+          Bestellte Artikel & Konfiguration
         </h2>
         <div className="space-y-12">
           {order.items.map((item, index) => {
@@ -638,17 +1107,24 @@ export default async function OrderDetailsPage({
             return (
               <div
                 key={item.id}
-                className={`pb-12 ${index !== order.items.length - 1 ? "border-b border-neutral-100" : ""}`}
+                className={`pb-12 ${
+                  index !== order.items.length - 1 ? "border-b border-neutral-100" : ""
+                }`}
               >
-                <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex flex-col gap-8 md:flex-row">
                   <div className="flex-1 space-y-6">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between gap-4">
                       <div>
                         <h3 className="text-xl font-bold uppercase tracking-tighter text-neutral-950">
                           {item.serviceName}
                         </h3>
-                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-2">
-                          Menge: {item.quantity} | Preis: {formatCurrency(item.price)}
+                        {item.itemDescription && (
+                          <p className="mt-2 max-w-2xl text-sm leading-7 text-neutral-600">
+                            {item.itemDescription}
+                          </p>
+                        )}
+                        <p className="mt-3 text-xs font-bold uppercase tracking-widest text-neutral-400">
+                          Menge: {item.quantity} | Positionspreis: {formatCurrency(item.price, financials.currency)}
                         </p>
                       </div>
                     </div>
@@ -657,16 +1133,16 @@ export default async function OrderDetailsPage({
                   </div>
 
                   {designPreview && (
-                    <div className="w-full md:w-72 bg-neutral-50 border border-neutral-200 p-6">
-                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 mb-4 text-center">
+                    <div className="w-full border border-neutral-200 bg-neutral-50 p-6 md:w-72">
+                      <h4 className="mb-4 text-center text-[10px] font-bold uppercase tracking-widest text-neutral-950">
                         Design Vorschau
                       </h4>
-                      <div className="aspect-square bg-white border border-neutral-200 flex flex-col items-center justify-center p-4 relative mb-4">
-                        <span className="absolute top-2 left-2 text-[9px] font-bold uppercase text-neutral-400">
+                      <div className="relative mb-4 flex aspect-square flex-col items-center justify-center border border-neutral-200 bg-white p-4">
+                        <span className="absolute left-2 top-2 text-[9px] font-bold uppercase text-neutral-400">
                           Modell: {designPreview.model}
                         </span>
                         <div
-                          className="w-12 h-12 rounded-full border border-neutral-200 shadow-inner mt-4"
+                          className="mt-4 h-12 w-12 rounded-full border border-neutral-200 shadow-inner"
                           style={{ backgroundColor: designPreview.color }}
                         ></div>
                         <span className="mt-4 text-[9px] font-bold uppercase tracking-widest">
@@ -680,10 +1156,10 @@ export default async function OrderDetailsPage({
                             key={logo.id}
                             href={logo.url}
                             download={`front_logo_${logoIndex + 1}.png`}
-                            className="flex items-center justify-between border border-neutral-200 p-3 bg-white hover:bg-neutral-50 text-[10px] font-bold uppercase"
+                            className="flex items-center justify-between border border-neutral-200 bg-white p-3 text-[10px] font-bold uppercase hover:bg-neutral-50"
                           >
                             Front Logo {logoIndex + 1}
-                            <Download className="w-3 h-3 text-neutral-400" />
+                            <Download className="h-3 w-3 text-neutral-400" />
                           </a>
                         ))}
                         {designPreview.backLogos.map((logo, logoIndex) => (
@@ -691,10 +1167,10 @@ export default async function OrderDetailsPage({
                             key={logo.id}
                             href={logo.url}
                             download={`back_logo_${logoIndex + 1}.png`}
-                            className="flex items-center justify-between border border-neutral-200 p-3 bg-white hover:bg-neutral-50 text-[10px] font-bold uppercase"
+                            className="flex items-center justify-between border border-neutral-200 bg-white p-3 text-[10px] font-bold uppercase hover:bg-neutral-50"
                           >
                             Back Logo {logoIndex + 1}
-                            <Download className="w-3 h-3 text-neutral-400" />
+                            <Download className="h-3 w-3 text-neutral-400" />
                           </a>
                         ))}
                       </div>
@@ -707,9 +1183,9 @@ export default async function OrderDetailsPage({
         </div>
       </div>
 
-      <div className="bg-white border border-neutral-200 p-8 shadow-sm">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-4 mb-8 flex items-center gap-2">
-          <MessageSquare className="w-4 h-4" /> Interner Verlauf
+      <div className="border border-neutral-200 bg-white p-8 shadow-sm">
+        <h2 className="mb-8 flex items-center gap-2 border-b border-neutral-100 pb-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
+          <MessageSquare className="h-4 w-4" /> Interner Verlauf
         </h2>
         <div className="space-y-4">
           {order.activities.map((activity) => (

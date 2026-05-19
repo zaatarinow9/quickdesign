@@ -8,25 +8,25 @@ datasource db {
 }
 
 model Service {
-  id           String          @id @default(cuid())
-  name         String
-  slug         String          @unique
-  description  String
-  image        String
-  basePrice    Float
-  isActive     Boolean         @default(true)
-  order        Int             @default(0)
-  
-  hasDesigner    Boolean       @default(false)
-  hasColorPicker Boolean       @default(false)
-  fileLimit      Int           @default(0)
-  
-  designerType String          @default("none")
-  pricingMode  String?
-  configJson   String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  options      ServiceOption[]
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  description    String
+  image          String
+  basePrice      Float
+  isActive       Boolean         @default(true)
+  order          Int             @default(0)
+
+  hasDesigner    Boolean         @default(false)
+  hasColorPicker Boolean         @default(false)
+  fileLimit      Int             @default(0)
+
+  designerType   String          @default("none")
+  pricingMode    String?
+  configJson     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  options        ServiceOption[]
 }
 
 model ServiceOption {
@@ -56,23 +56,76 @@ model OptionValue {
   createdAt    DateTime      @default(now())
 }
 
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  companyName String?
+  email       String?  @unique
+  phone       String?
+  address     String?
+  city        String?
+  postalCode  String?
+  country     String?
+  taxId       String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([phone])
+  @@index([name])
+}
+
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     Int         @unique 
-  customerName    String
-  customerEmail   String
-  totalAmount     Float
-  status          String      @default("PAID") // PAID, PROCESSING, SHIPPED, DELIVERED, CANCELED
-  trackingNumber  String?     // رقم التتبع لشركات الشحن
-  assignedToId    String?
-  assignedTo      AdminUser?  @relation("AssignedOrders", fields: [assignedToId], references: [id], onDelete: SetNull)
-  assignedAt      DateTime?
-  internalStatus  String      @default("NEW")
-  priority        String      @default("NORMAL")
-  items           OrderItem[]
-  activities      OrderActivity[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String          @id @default(cuid())
+  orderNumber    Int             @unique
+  customerName   String
+  customerEmail  String?
+  customerId     String?
+  customer       Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  totalAmount    Float
+  status         String          @default("PAID")
+  trackingNumber String?
+  assignedToId   String?
+  assignedTo     AdminUser?      @relation("AssignedOrders", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt     DateTime?
+  internalStatus String          @default("NEW")
+  priority       String          @default("NORMAL")
+  internalNotes  String?
+  customerNotes  String?
+  subtotalNet    Float?
+  discountType   String?
+  discountValue  Float?
+  discountAmount Float?
+  taxRate        Float?
+  taxAmount      Float?
+  totalNet       Float?
+  totalGross     Float?
+  currency       String?
+  paymentStatus  String?
+  paidAmount     Float?
+  paymentMethod  String?
+  paymentNotes   String?
+  documentType   String?
+  invoiceNumber  String?
+  invoiceDate    DateTime?
+  dueDate        DateTime?
+  isArchived     Boolean         @default(false)
+  archivedAt     DateTime?
+  archivedById   String?
+  archivedBy     AdminUser?      @relation("ArchivedOrders", fields: [archivedById], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+  activities     OrderActivity[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([assignedToId])
+  @@index([archivedById])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([isArchived])
 }
 
 model OrderItem {
@@ -81,35 +134,37 @@ model OrderItem {
   order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   serviceId       String
   serviceName     String
+  itemDescription String?
   quantity        Int
   price           Float
-  selectedOptions Json?   
-  textInputs      Json?   
-  designData      Json?   
+  selectedOptions Json?
+  textInputs      Json?
+  designData      Json?
   orderNotes      String?
 }
 
 model AdminUser {
-  id              String          @id @default(cuid())
-  name            String
-  username        String          @unique
-  email           String?         @unique
-  passwordHash    String
-  role            String          @default("STAFF")
-  isActive        Boolean         @default(true)
-  assignedOrders  Order[]         @relation("AssignedOrders")
-  activities      OrderActivity[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  name           String
+  username       String          @unique
+  email          String?         @unique
+  passwordHash   String
+  role           String          @default("STAFF")
+  isActive       Boolean         @default(true)
+  assignedOrders Order[]         @relation("AssignedOrders")
+  archivedOrders Order[]         @relation("ArchivedOrders")
+  activities     OrderActivity[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model OrderActivity {
-  id            String      @id @default(cuid())
-  orderId       String
-  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  adminUserId   String?
-  adminUser     AdminUser?  @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
-  type          String
-  message       String
-  createdAt     DateTime    @default(now())
+  id          String      @id @default(cuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  adminUserId String?
+  adminUser   AdminUser?  @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+  type        String
+  message     String
+  createdAt   DateTime    @default(now())
 }
