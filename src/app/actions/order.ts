@@ -190,6 +190,7 @@ function revalidateOrderAdminViews(orderId: string): void {
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/admin/orders/${orderId}/document`);
   revalidatePath("/admin/reports");
 }
 

@@ -24,6 +24,7 @@ import {
   updateOrderFinancials,
   updateOrderStatus,
 } from "@/app/actions/order";
+import { OrderDocumentEmailForm } from "@/components/admin/OrderDocumentEmailForm";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import {
   canUpdateOrder,
@@ -31,6 +32,14 @@ import {
   isSuperAdmin,
 } from "@/lib/admin/permissions";
 import { formatCustomerLocation } from "@/lib/customers";
+import { getOrderDocumentDetails } from "@/lib/orders/document-content";
+import {
+  buildOrderDocumentDownloadHref,
+  buildOrderDocumentHref,
+  normalizeOrderDocumentQueryType,
+  ORDER_DOCUMENT_LINKS,
+  type OrderDocumentQueryType,
+} from "@/lib/orders/documents";
 import {
   getOrderFinancials,
   getOrderPaymentStatus,
@@ -417,6 +426,21 @@ export default async function OrderDetailsPage({
     : "";
   const paymentStatus = getOrderPaymentStatus(order);
   const documentType = normalizeDocumentType(order.documentType);
+  const defaultDocumentQueryType = normalizeOrderDocumentQueryType(
+    null,
+    order.documentType,
+  );
+  const defaultDocumentSubjectByType = ORDER_DOCUMENT_LINKS.reduce(
+    (subjectMap, documentLink) => {
+      const nextDocumentDetails = getOrderDocumentDetails(order, documentLink.type);
+
+      return {
+        ...subjectMap,
+        [documentLink.type]: nextDocumentDetails.defaultEmailSubject,
+      };
+    },
+    {} as Record<OrderDocumentQueryType, string>,
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -489,6 +513,65 @@ export default async function OrderDetailsPage({
             {formatCurrency(financials.totalGross, financials.currency)}
           </p>
         </div>
+      </div>
+
+      <div className="grid gap-6 border border-neutral-200 bg-white p-6 shadow-sm lg:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="space-y-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Dokumente
+            </p>
+            <p className="mt-2 text-sm text-neutral-600">
+              Rechnung, Angebot und Auftrag bleiben auch fuer archivierte Auftraege
+              abrufbar. "PDF herunterladen" nutzt in Phase 8B den Browser-Dialog
+              "Als PDF speichern", damit Layout und Druck moeglichst stabil bleiben.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {ORDER_DOCUMENT_LINKS.map((documentLink) => (
+              <div
+                key={documentLink.type}
+                className="flex flex-col gap-3 border border-neutral-200 bg-neutral-50 p-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-neutral-950">
+                    {documentLink.label}
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Professionelle Druckansicht fuer{" "}
+                    {documentLink.label.toLowerCase()}.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={buildOrderDocumentHref(order.id, documentLink.type)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+                  >
+                    <FileText className="h-4 w-4" /> {documentLink.label} anzeigen
+                  </Link>
+                  <Link
+                    href={buildOrderDocumentDownloadHref(order.id, documentLink.type)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+                  >
+                    <Download className="h-4 w-4" /> PDF herunterladen
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <OrderDocumentEmailForm
+          orderId={order.id}
+          defaultRecipient={order.customer?.email || order.customerEmail || ""}
+          defaultDocumentType={defaultDocumentQueryType}
+          defaultSubjectByType={defaultDocumentSubjectByType}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
