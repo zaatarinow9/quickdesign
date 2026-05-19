@@ -11,6 +11,26 @@ const HASH_ITERATIONS = 120_000;
 const HASH_KEY_LENGTH = 32;
 const HASH_PREFIX = "pbkdf2_sha256";
 
+export const DEFAULT_ADMIN_USERNAME = "admin";
+export const DEFAULT_ADMIN_PASSWORD = "admin123";
+export const MIN_ADMIN_PASSWORD_LENGTH = 10;
+
+export function getAdminPasswordPolicyError(password: string): string | null {
+  if (password.length < MIN_ADMIN_PASSWORD_LENGTH) {
+    return `Admin-Passwoerter muessen mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen lang sein.`;
+  }
+
+  if (password === DEFAULT_ADMIN_PASSWORD) {
+    return "Das bekannte Standardpasswort darf nicht weiterverwendet werden.";
+  }
+
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return "Admin-Passwoerter muessen Buchstaben und Zahlen enthalten.";
+  }
+
+  return null;
+}
+
 export async function hashAdminPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const derivedKey = await pbkdf2(
@@ -59,4 +79,10 @@ export async function verifyAdminPassword(
     storedBuffer.length === derivedKey.length &&
     timingSafeEqual(storedBuffer, derivedKey)
   );
+}
+
+export async function isDefaultAdminPasswordHash(
+  passwordHash: string,
+): Promise<boolean> {
+  return verifyAdminPassword(DEFAULT_ADMIN_PASSWORD, passwordHash);
 }

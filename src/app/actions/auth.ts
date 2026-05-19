@@ -11,7 +11,7 @@ function getFormString(formData: FormData, key: string): string {
 }
 
 export async function loginAdmin(formData: FormData): Promise<void> {
-  const username = getFormString(formData, "username");
+  const username = getFormString(formData, "username").toLowerCase();
   const password = getFormString(formData, "password");
 
   if (!username || !password) {
@@ -30,7 +30,13 @@ export async function loginAdmin(formData: FormData): Promise<void> {
   });
 
   if (user && (await verifyAdminPassword(password, user.passwordHash))) {
-    await setAdminSession(user.id);
+    try {
+      await setAdminSession(user.id);
+    } catch (error) {
+      console.error("Failed to establish admin session.", error);
+      redirect("/admin/login?error=config");
+    }
+
     redirect("/admin");
   }
 

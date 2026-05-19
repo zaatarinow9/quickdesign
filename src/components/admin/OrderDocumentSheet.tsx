@@ -171,9 +171,19 @@ export function OrderDocumentSheet({
               {customerAddressLines.map((line, index) => (
                 <p key={`${line}-${index}`}>{line}</p>
               ))}
-              <p>{order.customer?.email || order.customerEmail || "Keine E-Mail hinterlegt"}</p>
-              {order.customer?.phone && <p>{order.customer.phone}</p>}
-              {order.customer?.taxId && <p>Steuer-ID: {order.customer.taxId}</p>}
+              {viewer === "admin" && (
+                <p>
+                  {order.customer?.email ||
+                    order.customerEmail ||
+                    "Keine E-Mail hinterlegt"}
+                </p>
+              )}
+              {viewer === "admin" && order.customer?.phone && (
+                <p>{order.customer.phone}</p>
+              )}
+              {viewer === "admin" && order.customer?.taxId && (
+                <p>Steuer-ID: {order.customer.taxId}</p>
+              )}
             </div>
           </div>
         </div>
@@ -193,7 +203,7 @@ export function OrderDocumentSheet({
               {documentDetails.paymentStatusLabel}
             </p>
           </div>
-          {order.paymentMethod && (
+          {viewer === "admin" && order.paymentMethod && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                 Zahlungsmethode
@@ -298,7 +308,7 @@ export function OrderDocumentSheet({
             </div>
           )}
 
-          {order.paymentNotes && (
+          {viewer === "admin" && order.paymentNotes && (
             <div className="order-document-block">
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400">
                 Zahlungsnotiz
@@ -309,7 +319,8 @@ export function OrderDocumentSheet({
             </div>
           )}
 
-          {!order.customerNotes && !order.paymentNotes && (
+          {!order.customerNotes &&
+          !(viewer === "admin" && order.paymentNotes) && (
             <p className="text-sm leading-7 text-neutral-500">
               {viewer === "admin"
                 ? 'Dieses Dokument ist fuer Vorschau, Druck und "Als PDF speichern" optimiert.'

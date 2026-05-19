@@ -1,18 +1,10 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { getOrderDocumentShareSecret } from "@/lib/env";
 import { type OrderDocumentQueryType } from "@/lib/orders/documents";
 
-const DOCUMENT_SHARE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7;
-
-function getDocumentShareSecret(): string {
-  return (
-    process.env.ORDER_DOCUMENT_SHARE_SECRET ||
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "development-order-document-share-secret"
-  );
-}
+const DOCUMENT_SHARE_MAX_AGE_MS = 1000 * 60 * 60 * 72;
 
 function buildSignaturePayload(
   orderId: string,
@@ -23,7 +15,7 @@ function buildSignaturePayload(
 }
 
 function signPayload(payload: string): string {
-  return createHmac("sha256", getDocumentShareSecret())
+  return createHmac("sha256", getOrderDocumentShareSecret())
     .update(payload)
     .digest("hex");
 }
@@ -49,12 +41,13 @@ export function verifyOrderDocumentShareToken(input: {
   signature: string | null | undefined;
 }): boolean {
   const expiresAt = Number.parseInt(input.expires ?? "", 10);
+  const currentTimestamp = Date.now();
 
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+  if (!Number.isFinite(expiresAt) || expiresAt <= currentTimestamp) {
     return false;
   }
 
-  if (expiresAt - Date.now() > DOCUMENT_SHARE_MAX_AGE_MS * 2) {
+  if (expiresAt - currentTimestamp > DOCUMENT_SHARE_MAX_AGE_MS) {
     return false;
   }
 

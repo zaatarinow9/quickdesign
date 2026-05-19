@@ -4,6 +4,12 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import { sendSmtpMail } from "@/lib/email/smtp";
+import { normalizeEmailAddress } from "@/lib/email/address";
+import {
+  getConfiguredAppBaseUrl,
+  getPublicAppBaseUrl,
+  isProductionEnvironment,
+} from "@/lib/env";
 import {
   buildOrderDocumentEmailText,
   formatDocumentNumber,
@@ -23,26 +29,27 @@ function getFormString(formData: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function isValidEmailAddress(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
+async function resolveAppBaseUrl(): Promise<string> {
+  const configuredBaseUrl = getConfiguredAppBaseUrl();
 
-async function getAppBaseUrl(): Promise<string> {
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  if (isProductionEnvironment()) {
+    return getPublicAppBaseUrl();
+  }
+
   const headerList = await headers();
   const forwardedHost = headerList.get("x-forwarded-host");
   const host = forwardedHost || headerList.get("host");
-  const protocol =
-    headerList.get("x-forwarded-proto") ||
-    (process.env.NODE_ENV === "production" ? "https" : "http");
+  const protocol = headerList.get("x-forwarded-proto") || "http";
 
   if (host) {
     return `${protocol}://${host}`;
   }
 
-  const configuredBaseUrl =
-    process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-  return configuredBaseUrl.replace(/\/$/, "");
+  return getPublicAppBaseUrl();
 }
 
 function buildSuccessMessage(
@@ -69,7 +76,7 @@ export async function sendOrderDocumentEmail(
   const documentType = parseOrderDocumentQueryType(
     getFormString(formData, "documentType"),
   );
-  const recipient = getFormString(formData, "recipient");
+  const recipient = normalizeEmailAddress(getFormString(formData, "recipient"));
   const subject = getFormString(formData, "subject");
   const customMessage = getFormString(formData, "message");
 
@@ -80,7 +87,7 @@ export async function sendOrderDocumentEmail(
     };
   }
 
-  if (!recipient || !isValidEmailAddress(recipient)) {
+  if (!recipient) {
     return {
       status: "error",
       message: "Bitte geben Sie eine gueltige Empfaenger-E-Mail ein.",
@@ -121,30 +128,31 @@ export async function sendOrderDocumentEmail(
     };
   }
 
-  const baseUrl = await getAppBaseUrl();
-  const shareToken = createOrderDocumentShareToken({
-    orderId: order.id,
-    type: documentType,
-  });
-  const shareHref = buildSharedOrderDocumentHref(
-    order.id,
-    documentType,
-    shareToken.expires,
-    shareToken.signature,
-  );
-  const shareUrl = new URL(shareHref, baseUrl).toString();
-  const documentDetails = getOrderDocumentDetails(order, documentType);
-  const resolvedSubject =
-    subject || `${documentDetails.definition.label} ${documentDetails.documentNumber}`;
-  const emailText = buildOrderDocumentEmailText({
-    customerName: order.customerName,
-    documentLabel: documentDetails.definition.label,
-    documentNumber: formatDocumentNumber(order.invoiceNumber, order.orderNumber),
-    shareUrl,
-    customMessage,
-  });
-
   try {
+    const baseUrl = await resolveAppBaseUrl();
+    const shareToken = createOrderDocumentShareToken({
+      orderId: order.id,
+      type: documentType,
+    });
+    const shareHref = buildSharedOrderDocumentHref(
+      order.id,
+      documentType,
+      shareToken.expires,
+      shareToken.signature,
+    );
+    const shareUrl = new URL(shareHref, baseUrl).toString();
+    const documentDetails = getOrderDocumentDetails(order, documentType);
+    const resolvedSubject =
+      subject ||
+      `${documentDetails.definition.label} ${documentDetails.documentNumber}`;
+    const emailText = buildOrderDocumentEmailText({
+      customerName: order.customerName,
+      documentLabel: documentDetails.definition.label,
+      documentNumber: formatDocumentNumber(order.invoiceNumber, order.orderNumber),
+      shareUrl,
+      customMessage,
+    });
+
     await sendSmtpMail({
       to: recipient,
       subject: resolvedSubject,
@@ -173,7 +181,7 @@ export async function sendOrderDocumentEmail(
     return {
       status: "error",
       message:
-        "Die E-Mail konnte nicht gesendet werden. Bitte pruefen Sie die SMTP-Konfiguration und versuchen Sie es erneut.",
+        "Die E-Mail konnte nicht gesendet werden. Bitte pruefen Sie SMTP- und App-Konfiguration und versuchen Sie es erneut.",
     };
   }
 }

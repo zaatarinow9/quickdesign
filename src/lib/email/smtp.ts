@@ -3,17 +3,15 @@ import "server-only";
 import { Buffer } from "node:buffer";
 import { createConnection, type Socket } from "node:net";
 import { connect as connectTls, type TLSSocket } from "node:tls";
+import {
+  getSmtpEnvironmentConfig,
+  type SmtpEnvironmentConfig,
+} from "@/lib/env";
+import { normalizeEmailAddress } from "@/lib/email/address";
 
 type SmtpSocket = Socket | TLSSocket;
 
-type SmtpConfig = {
-  host: string;
-  port: number;
-  secure: boolean;
-  user: string;
-  pass: string;
-  from: string;
-};
+type SmtpConfig = SmtpEnvironmentConfig;
 
 type SmtpMessage = {
   to: string;
@@ -29,45 +27,10 @@ type SmtpResponse = {
 type SmtpReaderState = {
   buffer: string;
 };
-
-function readEnvValue(value: string | undefined): string {
-  return value?.trim() ?? "";
-}
-
-function getSmtpConfig(): SmtpConfig {
-  const host = readEnvValue(process.env.SMTP_HOST);
-  const port = Number.parseInt(readEnvValue(process.env.SMTP_PORT), 10);
-  const secureValue = readEnvValue(process.env.SMTP_SECURE).toLowerCase();
-  const user = readEnvValue(process.env.SMTP_USER);
-  const pass = readEnvValue(process.env.SMTP_PASS);
-  const from = readEnvValue(process.env.SMTP_FROM);
-
-  if (!host || !Number.isFinite(port) || !user || !pass || !from) {
-    throw new Error("SMTP is not configured completely.");
-  }
-
-  return {
-    host,
-    port,
-    secure:
-      secureValue === "true" ||
-      secureValue === "1" ||
-      secureValue === "yes" ||
-      port === 465,
-    user,
-    pass,
-    from,
-  };
-}
+const SOCKET_TIMEOUT_MS = 15_000;
 
 function sanitizeHeaderValue(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
-}
-
-function extractEnvelopeAddress(value: string): string {
-  const match = value.match(/<([^>]+)>/);
-
-  return sanitizeHeaderValue(match?.[1] ?? value);
 }
 
 function encodeHeaderValue(value: string): string {
@@ -246,7 +209,7 @@ async function sendCommand(
 }
 
 function createSocket(config: SmtpConfig): SmtpSocket {
-  return config.secure
+  const socket = config.secure
     ? connectTls({
         host: config.host,
         port: config.port,
@@ -256,6 +219,12 @@ function createSocket(config: SmtpConfig): SmtpSocket {
         host: config.host,
         port: config.port,
       });
+
+  socket.setTimeout(SOCKET_TIMEOUT_MS, () => {
+    socket.destroy(new Error("SMTP connection timed out."));
+  });
+
+  return socket;
 }
 
 async function authenticate(
@@ -297,10 +266,21 @@ async function authenticate(
 }
 
 export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
-  const config = getSmtpConfig();
+  const recipient = normalizeEmailAddress(message.to);
+  const subject = sanitizeHeaderValue(message.subject);
+  const text = message.text.trim();
+
+  if (!recipient) {
+    throw new Error("SMTP recipient address is invalid.");
+  }
+
+  if (!subject || !text) {
+    throw new Error("SMTP messages require both subject and text.");
+  }
+
+  const config = getSmtpEnvironmentConfig();
   const socket = createSocket(config);
   const state: SmtpReaderState = { buffer: "" };
-  const envelopeFrom = extractEnvelopeAddress(config.from) || config.user;
 
   try {
     await waitForSocketConnect(socket, config.secure ? "secureConnect" : "connect");
@@ -309,18 +289,25 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
     await sendCommand(
       socket,
       state,
-      `MAIL FROM:<${envelopeFrom}>`,
+      `MAIL FROM:<${config.envelopeFrom}>`,
       [250],
     );
     await sendCommand(
       socket,
       state,
-      `RCPT TO:<${sanitizeHeaderValue(message.to)}>`,
+      `RCPT TO:<${recipient}>`,
       [250, 251],
     );
     await sendCommand(socket, state, "DATA", [354]);
 
-    const rawMessage = buildRawMessage(message, config.from);
+    const rawMessage = buildRawMessage(
+      {
+        to: recipient,
+        subject,
+        text,
+      },
+      config.from,
+    );
     socket.write(`${rawMessage}\r\n.\r\n`);
 
     const dataResponse = await readResponse(socket, state);

@@ -1,8 +1,11 @@
 import { format } from "date-fns";
 import { Activity, ArrowRight, Package, Receipt, UserCheck } from "lucide-react";
 import Link from "next/link";
+import { changeCurrentAdminPassword } from "@/app/actions/admin-account";
 import { requireAdminUser } from "@/lib/admin/auth";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import { hasAdminPermission } from "@/lib/admin/permissions";
+import { getAdminSecurityWarnings } from "@/lib/admin/security";
 import { formatCurrencyAmount } from "@/lib/orders/finance";
 import {
   buildOrdersSummary,
@@ -40,103 +43,127 @@ function DashboardCard({
   );
 }
 
+function getPasswordErrorMessage(errorCode: string | undefined): string | null {
+  switch (errorCode) {
+    case "current":
+      return "Das aktuelle Passwort stimmt nicht.";
+    case "match":
+      return "Die neuen Passwoerter stimmen nicht ueberein.";
+    case "missing":
+      return "Bitte fuellen Sie alle Passwortfelder aus.";
+    case "reuse":
+      return "Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.";
+    case "weak":
+      return `Bitte verwenden Sie ein staerkeres Passwort mit mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen sowie Buchstaben und Zahlen.`;
+    default:
+      return null;
+  }
+}
+
 export default async function AdminDashboard({
   searchParams,
 }: {
-  searchParams?: Promise<{ forbidden?: string }>;
+  searchParams?: Promise<{
+    forbidden?: string;
+    passwordChanged?: string;
+    passwordError?: string;
+  }>;
 }) {
   const currentUser = await requireAdminUser();
   const params = searchParams ? await searchParams : {};
   const canManageServices = hasAdminPermission(currentUser, "canManageServices");
   const canViewAllReports = hasAdminPermission(currentUser, "canViewAllReports");
   const currentMonth = getMonthRange();
+  const passwordErrorMessage = getPasswordErrorMessage(params.passwordError);
 
-  const [orders, recentOrders, recentActivities, servicesCount] = await Promise.all([
-    prisma.order.findMany({
-      where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
-      select: {
-        id: true,
-        orderNumber: true,
-        customerName: true,
-        customerEmail: true,
-        customerId: true,
-        status: true,
-        internalStatus: true,
-        paymentStatus: true,
-        totalAmount: true,
-        subtotalNet: true,
-        discountType: true,
-        discountValue: true,
-        discountAmount: true,
-        taxRate: true,
-        taxAmount: true,
-        totalNet: true,
-        totalGross: true,
-        currency: true,
-        paidAmount: true,
-        assignedToId: true,
-        createdAt: true,
-        isArchived: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.order.findMany({
-      where: canViewAllReports
-        ? { isArchived: false }
-        : {
-            isArchived: false,
-            assignedToId: currentUser.id,
-          },
-      select: {
-        id: true,
-        orderNumber: true,
-        customerName: true,
-        status: true,
-        internalStatus: true,
-        assignedTo: {
-          select: {
-            name: true,
-          },
+  const [orders, recentOrders, recentActivities, servicesCount, securityWarnings] =
+    await Promise.all([
+      prisma.order.findMany({
+        where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          customerEmail: true,
+          customerId: true,
+          status: true,
+          internalStatus: true,
+          paymentStatus: true,
+          totalAmount: true,
+          subtotalNet: true,
+          discountType: true,
+          discountValue: true,
+          discountAmount: true,
+          taxRate: true,
+          taxAmount: true,
+          totalNet: true,
+          totalGross: true,
+          currency: true,
+          paidAmount: true,
+          assignedToId: true,
+          createdAt: true,
+          isArchived: true,
         },
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-    prisma.orderActivity.findMany({
-      where: canViewAllReports
-        ? undefined
-        : {
-            OR: [
-              { adminUserId: currentUser.id },
-              {
-                order: {
-                  is: {
-                    assignedToId: currentUser.id,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.order.findMany({
+        where: canViewAllReports
+          ? { isArchived: false }
+          : {
+              isArchived: false,
+              assignedToId: currentUser.id,
+            },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          status: true,
+          internalStatus: true,
+          assignedTo: {
+            select: {
+              name: true,
+            },
+          },
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
+      prisma.orderActivity.findMany({
+        where: canViewAllReports
+          ? undefined
+          : {
+              OR: [
+                { adminUserId: currentUser.id },
+                {
+                  order: {
+                    is: {
+                      assignedToId: currentUser.id,
+                    },
                   },
                 },
-              },
-            ],
+              ],
+            },
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+            },
           },
-      include: {
-        order: {
-          select: {
-            id: true,
-            orderNumber: true,
+          adminUser: {
+            select: {
+              name: true,
+              role: true,
+            },
           },
         },
-        adminUser: {
-          select: {
-            name: true,
-            role: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-    canManageServices ? prisma.service.count() : Promise.resolve(null),
-  ]);
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
+      canManageServices ? prisma.service.count() : Promise.resolve(null),
+      getAdminSecurityWarnings(),
+    ]);
 
   const summary = buildOrdersSummary(orders as ReportableOrder[]);
   const currentMonthOrders = (orders as ReportableOrder[]).filter((order) => {
@@ -166,6 +193,42 @@ export default async function AdminDashboard({
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
           Sie haben fuer diesen Bereich keine Berechtigung.
         </div>
+      )}
+      {params.passwordChanged && (
+        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
+          Ihr Passwort wurde aktualisiert.
+        </div>
+      )}
+      {passwordErrorMessage && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          {passwordErrorMessage}
+        </div>
+      )}
+      {securityWarnings.length > 0 && (
+        <section className="space-y-4 border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
+              Sicherheitscheck
+            </p>
+            <h2 className="mt-2 text-lg font-bold text-amber-950">
+              Vor dem Deployment bitte pruefen
+            </h2>
+          </div>
+          <ul className="space-y-3">
+            {securityWarnings.map((warning) => (
+              <li
+                key={warning.id}
+                className={`border px-4 py-3 ${
+                  warning.level === "error"
+                    ? "border-red-200 bg-red-50 text-red-800"
+                    : "border-amber-200 bg-white text-amber-900"
+                }`}
+              >
+                {warning.message}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="flex flex-col gap-4 border-b border-neutral-100 pb-8 md:flex-row md:items-end md:justify-between">
@@ -433,6 +496,64 @@ export default async function AdminDashboard({
           </div>
         </div>
       )}
+
+      <section className="border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="mb-6 border-b border-neutral-100 pb-4">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
+            Eigenes Passwort aendern
+          </h2>
+          <p className="mt-2 text-sm text-neutral-500">
+            Verwenden Sie fuer den Admin-Zugang ein eigenes starkes Passwort mit
+            mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.
+          </p>
+        </div>
+
+        <form action={changeCurrentAdminPassword} className="grid gap-6 md:grid-cols-3">
+          <div>
+            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+              Aktuelles Passwort
+            </label>
+            <input
+              name="currentPassword"
+              type="password"
+              required
+              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+            />
+          </div>
+          <div>
+            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+              Neues Passwort
+            </label>
+            <input
+              name="nextPassword"
+              type="password"
+              required
+              minLength={MIN_ADMIN_PASSWORD_LENGTH}
+              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+            />
+          </div>
+          <div>
+            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+              Neues Passwort bestaetigen
+            </label>
+            <input
+              name="confirmPassword"
+              type="password"
+              required
+              minLength={MIN_ADMIN_PASSWORD_LENGTH}
+              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+            />
+          </div>
+          <div className="md:col-span-3">
+            <button
+              type="submit"
+              className="bg-neutral-950 px-6 py-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
+            >
+              Passwort aktualisieren
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }

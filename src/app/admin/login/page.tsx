@@ -7,14 +7,21 @@ import { Suspense } from "react";
 function LoginForm() {
   const searchParams = useSearchParams();
   const hasError = searchParams.get("error");
+  const hasConfigError = hasError === "config";
+  const hasInvalidCredentials = hasError && hasError !== "config";
 
   return (
     <div className="max-w-md w-full bg-white p-10 border border-neutral-200 shadow-sm">
       <h1 className="text-2xl font-bold text-neutral-950 mb-8 text-center uppercase tracking-widest">Admin Login</h1>
       
-      {hasError && (
+      {hasInvalidCredentials && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest text-center">
           Ungueltige Anmeldedaten
+        </div>
+      )}
+      {hasConfigError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest text-center">
+          Admin-Sitzungen sind aktuell nicht korrekt konfiguriert. Bitte ADMIN_SESSION_SECRET pruefen.
         </div>
       )}
 

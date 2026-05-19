@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { UserPlus, Users } from "lucide-react";
 import { createAdminUser, updateAdminUser } from "@/app/actions/admin-users";
 import { requireAdminPermission } from "@/lib/admin/auth";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import { prisma } from "@/lib/prisma";
 
 const ROLE_OPTIONS = [
@@ -64,7 +65,27 @@ export default async function AdminUsersPage({
       )}
       {params.error === "invalid" && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Bitte pruefen Sie Name, Benutzername und Passwort.
+          Bitte pruefen Sie Name und Benutzername.
+        </div>
+      )}
+      {params.error === "weak" && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Bitte verwenden Sie ein staerkeres Passwort mit mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen sowie Buchstaben und Zahlen.
+        </div>
+      )}
+      {params.error === "email" && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Bitte geben Sie eine gueltige E-Mail-Adresse ein.
+        </div>
+      )}
+      {params.error === "duplicate" && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Benutzername oder E-Mail-Adresse ist bereits vergeben.
+        </div>
+      )}
+      {params.error === "lastSuper" && (
+        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
+          Mindestens ein aktiver Super-Admin muss erhalten bleiben.
         </div>
       )}
 
@@ -121,9 +142,12 @@ export default async function AdminUsersPage({
               name="password"
               type="password"
               required
-              minLength={6}
+              minLength={MIN_ADMIN_PASSWORD_LENGTH}
               className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
             />
+            <p className="mt-2 text-[11px] text-neutral-500">
+              Mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.
+            </p>
           </div>
           <div>
             <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
@@ -217,7 +241,7 @@ export default async function AdminUsersPage({
                       <input
                         name="password"
                         type="password"
-                        minLength={6}
+                        minLength={MIN_ADMIN_PASSWORD_LENGTH}
                         placeholder="Neues Passwort optional"
                         className="border border-neutral-200 p-3 text-xs outline-none focus:border-neutral-950"
                       />

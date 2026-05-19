@@ -6,6 +6,10 @@ import {
   hasAdminPermission,
   type AdminPermission,
 } from "@/lib/admin/permissions";
+import {
+  getAdminSessionSecret,
+  isProductionEnvironment,
+} from "@/lib/env";
 
 export const ADMIN_SESSION_COOKIE = "admin_session";
 
@@ -20,22 +24,32 @@ export type CurrentAdminUser = {
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
-function getSessionSecret(): string {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "development-admin-session-secret"
-  );
+function getAdminSessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: isProductionEnvironment(),
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  };
 }
 
-function signSessionUserId(userId: string): string {
-  return createHmac("sha256", getSessionSecret())
-    .update(userId)
+function buildSessionPayload(userId: string, expiresAt: number): string {
+  return `${userId}:${expiresAt}`;
+}
+
+function signSessionPayload(payload: string): string {
+  return createHmac("sha256", getAdminSessionSecret())
+    .update(payload)
     .digest("hex");
 }
 
 function createSessionToken(userId: string): string {
-  return `${userId}.${signSessionUserId(userId)}`;
+  const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
+
+  return `${userId}.${expiresAt}.${signSessionPayload(
+    buildSessionPayload(userId, expiresAt),
+  )}`;
 }
 
 function readSessionUserId(token: string | undefined): string | null {
@@ -43,12 +57,19 @@ function readSessionUserId(token: string | undefined): string | null {
     return null;
   }
 
-  const [userId, signature] = token.split(".");
-  if (!userId || !signature) {
+  const [userId, expiresAtRaw, signature] = token.split(".");
+  if (!userId || !expiresAtRaw || !signature) {
     return null;
   }
 
-  const expectedSignature = signSessionUserId(userId);
+  const expiresAt = Number.parseInt(expiresAtRaw, 10);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    return null;
+  }
+
+  const expectedSignature = signSessionPayload(
+    buildSessionPayload(userId, expiresAt),
+  );
   const signatureBuffer = Buffer.from(signature, "hex");
   const expectedBuffer = Buffer.from(expectedSignature, "hex");
 
@@ -65,18 +86,21 @@ function readSessionUserId(token: string | undefined): string | null {
 export async function setAdminSession(userId: string): Promise<void> {
   const cookieStore = await cookies();
 
-  cookieStore.set(ADMIN_SESSION_COOKIE, createSessionToken(userId), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-  });
+  cookieStore.set(
+    ADMIN_SESSION_COOKIE,
+    createSessionToken(userId),
+    getAdminSessionCookieOptions(),
+  );
 }
 
 export async function clearAdminSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(ADMIN_SESSION_COOKIE);
+
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", {
+    ...getAdminSessionCookieOptions(),
+    maxAge: 0,
+    expires: new Date(0),
+  });
 }
 
 export async function getCurrentAdminUser(): Promise<CurrentAdminUser | null> {
