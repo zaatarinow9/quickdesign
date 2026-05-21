@@ -1,9 +1,11 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { clearAdminSession, setAdminSession } from "@/lib/admin/auth";
 import { verifyAdminPassword } from "@/lib/admin/password";
+import { normalizeAdminLoginIdentifier } from "@/lib/admin/users";
 
 function getFormString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -11,36 +13,60 @@ function getFormString(formData: FormData, key: string): string {
 }
 
 export async function loginAdmin(formData: FormData): Promise<void> {
-  const username = getFormString(formData, "username").toLowerCase();
+  const identifier = normalizeAdminLoginIdentifier(
+    getFormString(formData, "username"),
+  );
   const password = getFormString(formData, "password");
 
-  if (!username || !password) {
-    redirect("/admin/login?error=1");
+  if (!identifier.raw || !password) {
+    redirect("/admin/login?error=invalid");
+  }
+
+  const loginWhereClauses: Prisma.AdminUserWhereInput[] = [
+    {
+      username: {
+        equals: identifier.username,
+        mode: "insensitive",
+      },
+    },
+  ];
+
+  if (identifier.email) {
+    loginWhereClauses.push({
+      email: {
+        equals: identifier.email,
+        mode: "insensitive",
+      },
+    });
   }
 
   const user = await prisma.adminUser.findFirst({
     where: {
-      isActive: true,
-      OR: [{ username }, { email: username }],
+      OR: loginWhereClauses,
     },
     select: {
       id: true,
       passwordHash: true,
+      isActive: true,
     },
   });
 
-  if (user && (await verifyAdminPassword(password, user.passwordHash))) {
-    try {
-      await setAdminSession(user.id);
-    } catch (error) {
-      console.error("Failed to establish admin session.", error);
-      redirect("/admin/login?error=config");
-    }
-
-    redirect("/admin");
+  if (!user || !(await verifyAdminPassword(password, user.passwordHash))) {
+    redirect("/admin/login?error=invalid");
   }
 
-  redirect("/admin/login?error=1");
+  if (!user.isActive) {
+    redirect("/admin/login?error=inactive");
+  }
+
+  try {
+    await setAdminSession(user.id);
+  } catch (error) {
+    console.error("Failed to establish admin session.", error);
+    redirect("/admin/login?error=config");
+  }
+
+  redirect("/admin");
 }
 
 export async function logoutAdmin(): Promise<void> {

@@ -19,44 +19,7 @@ export default async function AdminLayout({
   const canManageUsers = hasAdminPermission(currentUser, "canManageUsers");
   const canViewCustomers = hasAdminPermission(currentUser, "canViewCustomers");
   const canViewReports = hasAdminPermission(currentUser, "canViewReports");
-  const customerNavItems: AdminNavItem[] = canViewCustomers
-    ? [
-        {
-          href: "/admin/customers",
-          label: "Kunden",
-          iconName: "customers",
-        },
-      ]
-    : [];
-  const reportNavItems: AdminNavItem[] = canViewReports
-    ? [
-        {
-          href: "/admin/reports",
-          label: "Reports",
-          iconName: "reports",
-        },
-      ]
-    : [];
-  const serviceNavItems: AdminNavItem[] = canManageServices
-    ? [
-        {
-          href: "/admin/services",
-          label: "Leistungen",
-          iconName: "services",
-        },
-      ]
-    : [];
-  const userNavItems: AdminNavItem[] = canManageUsers
-    ? [
-        {
-          href: "/admin/users",
-          label: "Team",
-          iconName: "users",
-        },
-      ]
-    : [];
-
-  const navItems: AdminNavItem[] = [
+  const navItems = [
     {
       href: "/admin",
       label: "Dashboard",
@@ -67,11 +30,43 @@ export default async function AdminLayout({
       label: "Bestellungen",
       iconName: "orders",
     },
-    ...customerNavItems,
-    ...reportNavItems,
-    ...serviceNavItems,
-    ...userNavItems,
-  ];
+    ...(canViewCustomers
+      ? [
+          {
+            href: "/admin/customers",
+            label: "Kunden",
+            iconName: "customers" as const,
+          },
+        ]
+      : []),
+    ...(canViewReports
+      ? [
+          {
+            href: "/admin/reports",
+            label: "Reports",
+            iconName: "reports" as const,
+          },
+        ]
+      : []),
+    ...(canManageServices
+      ? [
+          {
+            href: "/admin/services",
+            label: "Leistungen",
+            iconName: "services" as const,
+          },
+        ]
+      : []),
+    ...(canManageUsers
+      ? [
+          {
+            href: "/admin/users",
+            label: "Team",
+            iconName: "users" as const,
+          },
+        ]
+      : []),
+  ] satisfies AdminNavItem[];
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-950">

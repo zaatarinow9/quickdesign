@@ -1,66 +1,108 @@
-"use client"
-
+import { redirect } from "next/navigation";
 import { loginAdmin } from "@/app/actions/auth";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { getCurrentAdminUser } from "@/lib/admin/auth";
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const hasError = searchParams.get("error");
-  const hasConfigError = hasError === "config";
-  const hasInvalidCredentials = hasError && hasError !== "config";
-
-  return (
-    <div className="max-w-md w-full bg-white p-10 border border-neutral-200 shadow-sm">
-      <h1 className="text-2xl font-bold text-neutral-950 mb-8 text-center uppercase tracking-widest">Admin Login</h1>
-      
-      {hasInvalidCredentials && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest text-center">
-          Ungueltige Anmeldedaten
-        </div>
-      )}
-      {hasConfigError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest text-center">
-          Admin-Sitzungen sind aktuell nicht korrekt konfiguriert. Bitte ADMIN_SESSION_SECRET pruefen.
-        </div>
-      )}
-
-      <form action={loginAdmin} className="space-y-6">
-        <div>
-          <label className="block text-xs font-bold text-neutral-950 mb-2 uppercase tracking-widest">Benutzername</label>
-          <input 
-            type="text" 
-            name="username" 
-            required 
-            className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors" 
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-neutral-950 mb-2 uppercase tracking-widest">Passwort</label>
-          <input 
-            type="password" 
-            name="password" 
-            required 
-            className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors" 
-          />
-        </div>
-        <button 
-          type="submit" 
-          className="w-full bg-neutral-950 text-white p-4 font-bold uppercase tracking-widest text-sm hover:bg-neutral-800 transition-colors mt-4"
-        >
-          Anmelden
-        </button>
-      </form>
-    </div>
-  );
+function getLoginErrorMessage(errorCode: string | undefined): string | null {
+  switch (errorCode) {
+    case "config":
+      return "Admin-Sitzungen sind aktuell nicht korrekt konfiguriert. Bitte ADMIN_SESSION_SECRET pruefen.";
+    case "inactive":
+      return "Dieser Benutzer ist deaktiviert.";
+    case "invalid":
+    default:
+      return errorCode ? "Benutzername oder Passwort ist falsch." : null;
+  }
 }
 
-export default function AdminLogin() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    error?: string;
+  }>;
+}) {
+  const currentUser = await getCurrentAdminUser();
+
+  if (currentUser) {
+    redirect("/admin");
+  }
+
+  const params = searchParams ? await searchParams : {};
+  const errorMessage = getLoginErrorMessage(params.error);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 p-6">
-      <Suspense fallback={<div className="text-sm font-bold uppercase tracking-widest text-neutral-500">Lade...</div>}>
-        <LoginForm />
-      </Suspense>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-6">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl items-center justify-center">
+        <div className="grid w-full overflow-hidden rounded-[36px] border border-white/80 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.12)] lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="hidden bg-[radial-gradient(circle_at_top_left,#1d4ed8_0%,#0f172a_55%,#020617_100%)] p-10 text-white lg:block">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-200">
+              QD Admin
+            </p>
+            <h1 className="mt-6 max-w-sm text-4xl font-bold tracking-tight">
+              Sicherer Zugriff auf Auftraege, Services und Team.
+            </h1>
+            <p className="mt-6 max-w-md text-sm leading-7 text-slate-200">
+              Verwenden Sie ausschliesslich Ihren internen Admin-Zugang. Inaktive
+              Benutzer werden automatisch blockiert.
+            </p>
+          </section>
+
+          <section className="p-8 sm:p-10">
+            <div className="mx-auto max-w-md">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                Admin Login
+              </p>
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
+                Willkommen zurueck
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-500">
+                Melden Sie sich mit Benutzername oder E-Mail-Adresse an.
+              </p>
+
+              {errorMessage && (
+                <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+                  {errorMessage}
+                </div>
+              )}
+
+              <form action={loginAdmin} className="mt-8 space-y-6">
+                <div>
+                  <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+                    Benutzername oder E-Mail
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    required
+                    autoComplete="username"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+                    Passwort
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    autoComplete="current-password"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-slate-950 px-6 py-4 text-xs font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-slate-800"
+                >
+                  Anmelden
+                </button>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

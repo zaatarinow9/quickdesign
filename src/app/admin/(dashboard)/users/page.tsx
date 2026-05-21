@@ -1,29 +1,38 @@
 import { format } from "date-fns";
-import { UserPlus, Users } from "lucide-react";
-import { createAdminUser, updateAdminUser } from "@/app/actions/admin-users";
-import { requireAdminPermission } from "@/lib/admin/auth";
-import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
+import { ShieldCheck, UserPlus, Users } from "lucide-react";
+import Link from "next/link";
+import { toggleAdminUserActive } from "@/app/actions/admin-users";
+import { requireAdminPermission, requireAdminUser } from "@/lib/admin/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  getAdminRoleBadgeClassName,
+  getAdminRoleLabel,
+  getAdminStatusBadgeClassName,
+  getAdminStatusLabel,
+  getAdminUsersErrorMessage,
+  getAdminUsersSuccessMessage,
+} from "@/lib/admin/users";
 
-const ROLE_OPTIONS = [
-  { value: "SUPER_ADMIN", label: "Super Admin" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "STAFF", label: "Staff" },
-] as const;
+const ROLE_SORT_ORDER: Record<string, number> = {
+  SUPER_ADMIN: 0,
+  ADMIN: 1,
+  STAFF: 2,
+};
 
 export default async function AdminUsersPage({
   searchParams,
 }: {
   searchParams?: Promise<{
-    created?: string;
-    updated?: string;
+    success?: string;
     error?: string;
   }>;
 }) {
   await requireAdminPermission("canManageUsers");
+  const currentUser = await requireAdminUser();
   const params = searchParams ? await searchParams : {};
+  const successMessage = getAdminUsersSuccessMessage(params.success);
+  const errorMessage = getAdminUsersErrorMessage(params.error);
   const users = await prisma.adminUser.findMany({
-    orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       name: true,
@@ -32,267 +41,246 @@ export default async function AdminUsersPage({
       role: true,
       isActive: true,
       createdAt: true,
+      updatedAt: true,
     },
+  });
+  const sortedUsers = [...users].sort((leftUser, rightUser) => {
+    const roleDifference =
+      (ROLE_SORT_ORDER[leftUser.role] ?? 99) - (ROLE_SORT_ORDER[rightUser.role] ?? 99);
+
+    if (roleDifference !== 0) {
+      return roleDifference;
+    }
+
+    return leftUser.username.localeCompare(rightUser.username);
   });
 
   return (
-    <div className="space-y-10">
-      <div className="flex items-center justify-between border-b border-neutral-100 pb-8">
-        <div>
-          <h1 className="flex items-center gap-4 text-4xl font-bold uppercase tracking-tighter">
-            <Users className="h-10 w-10" /> Team & Berechtigungen
-          </h1>
-          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Interne Benutzer, Rollen und aktive Zugriffe verwalten
-          </p>
-        </div>
-      </div>
-
-      {params.created && (
-        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
-          Benutzer wurde angelegt.
-        </div>
-      )}
-      {params.updated && (
-        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
-          Benutzer wurde aktualisiert.
-        </div>
-      )}
-      {params.error === "self" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Der eigene Super-Admin-Zugriff kann nicht deaktiviert oder herabgestuft werden.
-        </div>
-      )}
-      {params.error === "invalid" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Bitte pruefen Sie Name und Benutzername.
-        </div>
-      )}
-      {params.error === "weak" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Bitte verwenden Sie ein staerkeres Passwort mit mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen sowie Buchstaben und Zahlen.
-        </div>
-      )}
-      {params.error === "email" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Bitte geben Sie eine gueltige E-Mail-Adresse ein.
-        </div>
-      )}
-      {params.error === "duplicate" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Benutzername oder E-Mail-Adresse ist bereits vergeben.
-        </div>
-      )}
-      {params.error === "lastSuper" && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Mindestens ein aktiver Super-Admin muss erhalten bleiben.
-        </div>
-      )}
-
-      <form
-        action={createAdminUser}
-        className="space-y-8 border border-neutral-200 bg-white p-8 shadow-sm"
-      >
-        <div className="flex items-center gap-3 border-b border-neutral-100 pb-5">
-          <UserPlus className="h-5 w-5" />
-          <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
-            Neuen Benutzer anlegen
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div className="space-y-8">
+      <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
+        <div className="flex flex-col gap-6 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
-              Name
-            </label>
-            <input
-              name="name"
-              required
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-            />
-          </div>
-          <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
-              Benutzername
-            </label>
-            <input
-              name="username"
-              required
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-            />
-          </div>
-          <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
-              E-Mail optional
-            </label>
-            <input
-              name="email"
-              type="email"
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
-              Passwort
-            </label>
-            <input
-              name="password"
-              type="password"
-              required
-              minLength={MIN_ADMIN_PASSWORD_LENGTH}
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-            />
-            <p className="mt-2 text-[11px] text-neutral-500">
-              Mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-600">
+              Admin Benutzerverwaltung
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+              Team und Berechtigungen
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+              Nur Super Admins duerfen interne Benutzer erstellen, Rollen aendern,
+              Passwoerter zuruecksetzen und Zugriffe aktivieren oder deaktivieren.
             </p>
           </div>
-          <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
-              Rolle
-            </label>
-            <select
-              name="role"
-              defaultValue="STAFF"
-              className="w-full border border-neutral-300 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-            >
-              {ROLE_OPTIONS.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="flex min-h-[54px] items-center gap-4 self-end border border-neutral-200 bg-neutral-50 px-4">
-            <input
-              type="checkbox"
-              name="isActive"
-              defaultChecked
-              className="h-5 w-5 accent-neutral-950"
-            />
-            <span className="text-xs font-bold uppercase tracking-widest text-neutral-950">
-              Aktiv
-            </span>
-          </label>
+
+          <Link
+            href="/admin/users/new"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-slate-800"
+          >
+            <UserPlus className="h-4 w-4" />
+            Benutzer anlegen
+          </Link>
         </div>
 
-        <button
-          type="submit"
-          className="bg-neutral-950 px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-        >
-          Benutzer speichern
-        </button>
-      </form>
+        {(successMessage || errorMessage) && (
+          <div
+            className={`mt-6 rounded-3xl border px-5 py-4 text-sm font-medium ${
+              errorMessage
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {errorMessage ?? successMessage}
+          </div>
+        )}
 
-      <div className="overflow-hidden border border-neutral-200 bg-white shadow-sm">
-        <table className="w-full min-w-[980px] text-left">
-          <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-50">
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Benutzer
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Rolle
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Status
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Angelegt
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Aktualisieren
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {users.map((user) => {
-              const updateUserWithId = updateAdminUser.bind(null, user.id);
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              Gesamt
+            </p>
+            <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+              {users.length}
+            </p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              Aktiv
+            </p>
+            <p className="mt-3 text-3xl font-bold tracking-tight text-emerald-700">
+              {users.filter((user) => user.isActive).length}
+            </p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              Super Admins
+            </p>
+            <p className="mt-3 text-3xl font-bold tracking-tight text-rose-700">
+              {
+                users.filter(
+                  (user) => user.isActive && user.role === "SUPER_ADMIN",
+                ).length
+              }
+            </p>
+          </div>
+        </div>
+      </section>
 
-              return (
-                <tr key={user.id}>
-                  <td className="p-5">
-                    <form
-                      id={`user-${user.id}`}
-                      action={updateUserWithId}
-                      className="grid gap-3"
-                    >
-                      <input
-                        name="name"
-                        defaultValue={user.name}
-                        required
-                        className="border border-neutral-200 p-3 text-xs font-bold outline-none focus:border-neutral-950"
-                      />
-                      <input
-                        name="username"
-                        defaultValue={user.username}
-                        required
-                        className="border border-neutral-200 p-3 text-xs outline-none focus:border-neutral-950"
-                      />
-                      <input
-                        name="email"
-                        type="email"
-                        defaultValue={user.email ?? ""}
-                        placeholder="E-Mail optional"
-                        className="border border-neutral-200 p-3 text-xs outline-none focus:border-neutral-950"
-                      />
-                      <input
-                        name="password"
-                        type="password"
-                        minLength={MIN_ADMIN_PASSWORD_LENGTH}
-                        placeholder="Neues Passwort optional"
-                        className="border border-neutral-200 p-3 text-xs outline-none focus:border-neutral-950"
-                      />
-                    </form>
-                  </td>
-                  <td className="p-5 align-top">
-                    <select
-                      name="role"
-                      form={`user-${user.id}`}
-                      defaultValue={user.role}
-                      className="w-full border border-neutral-200 bg-white p-3 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
-                    >
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role.value} value={role.value}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-5 align-top">
-                    <label className="inline-flex items-center gap-3 border border-neutral-200 bg-neutral-50 px-4 py-3">
-                      <input
-                        type="checkbox"
-                        name="isActive"
-                        form={`user-${user.id}`}
-                        defaultChecked={user.isActive}
-                        className="h-4 w-4 accent-neutral-950"
-                      />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">
-                        Aktiv
-                      </span>
-                    </label>
-                  </td>
-                  <td className="p-5 align-top text-xs font-bold uppercase tracking-widest text-neutral-500">
-                    {format(new Date(user.createdAt), "dd.MM.yyyy")}
-                  </td>
-                  <td className="p-5 align-top">
-                    <button
-                      type="submit"
-                      form={`user-${user.id}`}
-                      className="bg-neutral-950 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-                    >
-                      Speichern
-                    </button>
-                  </td>
+      <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-sm">
+        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-5">
+          <Users className="h-5 w-5 text-slate-500" />
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
+              Benutzerliste
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Rollen, Status und letzte Pflege im Ueberblick.
+            </p>
+          </div>
+        </div>
+
+        {sortedUsers.length === 0 ? (
+          <div className="px-6 py-16 text-center">
+            <p className="text-sm font-medium text-slate-500">
+              Noch keine Admin-Benutzer vorhanden.
+            </p>
+            <Link
+              href="/admin/users/new"
+              className="mt-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-xs font-bold uppercase tracking-[0.22em] text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+            >
+              <UserPlus className="h-4 w-4" />
+              Ersten Benutzer anlegen
+            </Link>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[1040px] w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Benutzer
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Rolle
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Angelegt
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Aktualisiert
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Aktionen
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sortedUsers.map((user) => {
+                  const toggleActiveAction = toggleAdminUserActive.bind(
+                    null,
+                    user.id,
+                  );
+                  const displayNameMatchesUsername =
+                    user.name.trim().toLowerCase() ===
+                    user.username.trim().toLowerCase();
+
+                  return (
+                    <tr key={user.id} className="align-top">
+                      <td className="px-6 py-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-bold text-slate-950">
+                                {user.username}
+                              </p>
+                              {currentUser.id === user.id && (
+                                <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-sky-700">
+                                  Sie
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 space-y-1 text-sm text-slate-500">
+                              {!displayNameMatchesUsername && <p>{user.name}</p>}
+                              <p>{user.email ?? "Keine E-Mail hinterlegt"}</p>
+                            </div>
+                          </div>
+                          {user.role === "SUPER_ADMIN" && (
+                            <ShieldCheck className="h-5 w-5 text-rose-500" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${getAdminRoleBadgeClassName(
+                            user.role,
+                          )}`}
+                        >
+                          {getAdminRoleLabel(user.role)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${getAdminStatusBadgeClassName(
+                            user.isActive,
+                          )}`}
+                        >
+                          {getAdminStatusLabel(user.isActive)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-sm text-slate-500">
+                        {format(new Date(user.createdAt), "dd.MM.yyyy HH:mm")}
+                      </td>
+                      <td className="px-6 py-5 text-sm text-slate-500">
+                        {format(new Date(user.updatedAt), "dd.MM.yyyy HH:mm")}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-wrap gap-3">
+                          <Link
+                            href={`/admin/users/${user.id}/edit`}
+                            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                          >
+                            Bearbeiten
+                          </Link>
+                          <Link
+                            href={`/admin/users/${user.id}/edit#password-reset`}
+                            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                          >
+                            Passwort zuruecksetzen
+                          </Link>
+                          <form action={toggleActiveAction}>
+                            <input
+                              type="hidden"
+                              name="returnTo"
+                              value="/admin/users"
+                            />
+                            <input
+                              type="hidden"
+                              name="nextIsActive"
+                              value={user.isActive ? "false" : "true"}
+                            />
+                            <button
+                              type="submit"
+                              className={`inline-flex items-center rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] transition-colors ${
+                                user.isActive
+                                  ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                  : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                            >
+                              {user.isActive ? "Deaktivieren" : "Aktivieren"}
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

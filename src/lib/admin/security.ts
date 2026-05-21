@@ -17,8 +17,13 @@ export async function getAdminSecurityWarnings(): Promise<
   AdminSecurityWarning[]
 > {
   const warnings = [...getEnvironmentReadinessWarnings()];
-  const defaultAdminUser = await prisma.adminUser.findUnique({
-    where: { username: DEFAULT_ADMIN_USERNAME },
+  const defaultAdminUser = await prisma.adminUser.findFirst({
+    where: {
+      username: {
+        equals: DEFAULT_ADMIN_USERNAME,
+        mode: "insensitive",
+      },
+    },
     select: {
       isActive: true,
       passwordHash: true,

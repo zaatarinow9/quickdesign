@@ -4,25 +4,119 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdminPermission, requireAdminUser } from "@/lib/admin/auth";
-import { normalizeEmailAddress } from "@/lib/email/address";
+import { requireAdminUser } from "@/lib/admin/auth";
+import { hasAdminPermission, type AdminRole } from "@/lib/admin/permissions";
 import {
   getAdminPasswordPolicyError,
   hashAdminPassword,
 } from "@/lib/admin/password";
-import { normalizeAdminRole, type AdminRole } from "@/lib/admin/permissions";
+import {
+  buildAdminUserConflictWhere,
+  normalizeAdminDisplayName,
+  normalizeAdminUsername,
+  parseAdminRole,
+} from "@/lib/admin/users";
+import { normalizeEmailAddress } from "@/lib/email/address";
 
 function getFormString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getOptionalEmail(formData: FormData): string | null {
-  return normalizeEmailAddress(getFormString(formData, "email"));
+function getOptionalEmail(formData: FormData): {
+  raw: string;
+  normalized: string | null;
+} {
+  const raw = getFormString(formData, "email");
+
+  return {
+    raw,
+    normalized: normalizeEmailAddress(raw),
+  };
 }
 
-function getRole(formData: FormData): AdminRole {
-  return normalizeAdminRole(getFormString(formData, "role"));
+function getRedirectPath(formData: FormData, fallbackPath: string): string {
+  const returnTo = getFormString(formData, "returnTo");
+
+  if (!returnTo.startsWith("/admin/users")) {
+    return fallbackPath;
+  }
+
+  return returnTo;
+}
+
+function getRoleOrRedirect(formData: FormData, redirectPath: string): AdminRole {
+  const role = parseAdminRole(getFormString(formData, "role"));
+
+  if (!role) {
+    redirect(`${redirectPath}?error=role`);
+  }
+
+  return role;
+}
+
+function validatePasswordOrRedirect(
+  password: string,
+  confirmPassword: string,
+  redirectPath: string,
+): void {
+  if (!password) {
+    redirect(`${redirectPath}?error=passwordRequired`);
+  }
+
+  if (password !== confirmPassword) {
+    redirect(`${redirectPath}?error=passwordMismatch`);
+  }
+
+  const passwordPolicyError = getAdminPasswordPolicyError(password);
+
+  if (passwordPolicyError) {
+    redirect(
+      `${redirectPath}?error=${
+        passwordPolicyError.includes("mindestens 10 Zeichen")
+          ? "passwordTooShort"
+          : "passwordComplexity"
+      }`,
+    );
+  }
+}
+
+async function requireUserManagementAdmin(redirectPath: string) {
+  const currentUser = await requireAdminUser();
+
+  if (!hasAdminPermission(currentUser, "canManageUsers")) {
+    redirect(`${redirectPath}?error=forbidden`);
+  }
+
+  return currentUser;
+}
+
+async function ensureNoDuplicateAdminUserOrRedirect(
+  {
+    username,
+    email,
+    excludeUserId,
+  }: {
+    username: string;
+    email: string | null;
+    excludeUserId?: string;
+  },
+  redirectPath: string,
+): Promise<void> {
+  const conflictingUser = await prisma.adminUser.findFirst({
+    where: buildAdminUserConflictWhere({
+      username,
+      email,
+      excludeUserId,
+    }),
+    select: {
+      id: true,
+    },
+  });
+
+  if (conflictingUser) {
+    redirect(`${redirectPath}?error=duplicate`);
+  }
 }
 
 async function wouldRemoveLastSuperAdmin(
@@ -43,8 +137,7 @@ async function wouldRemoveLastSuperAdmin(
   }
 
   const currentlyActiveSuperAdmin =
-    currentRecord.isActive &&
-    normalizeAdminRole(currentRecord.role) === "SUPER_ADMIN";
+    currentRecord.isActive && currentRecord.role === "SUPER_ADMIN";
   const remainsActiveSuperAdmin = nextIsActive && nextRole === "SUPER_ADMIN";
 
   if (!currentlyActiveSuperAdmin || remainsActiveSuperAdmin) {
@@ -61,6 +154,39 @@ async function wouldRemoveLastSuperAdmin(
   return activeSuperAdminCount <= 1;
 }
 
+async function ensureSafeSuperAdminMutationOrRedirect(
+  {
+    actingUserId,
+    targetUserId,
+    nextRole,
+    nextIsActive,
+  }: {
+    actingUserId: string;
+    targetUserId: string;
+    nextRole: AdminRole;
+    nextIsActive: boolean;
+  },
+  redirectPath: string,
+): Promise<void> {
+  if (
+    actingUserId === targetUserId &&
+    (!nextIsActive || nextRole !== "SUPER_ADMIN")
+  ) {
+    redirect(`${redirectPath}?error=selfProtection`);
+  }
+
+  if (await wouldRemoveLastSuperAdmin(targetUserId, nextRole, nextIsActive)) {
+    redirect(`${redirectPath}?error=lastSuperAdmin`);
+  }
+}
+
+function revalidateUserManagementPaths(userId: string): void {
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/users/new");
+  revalidatePath(`/admin/users/${userId}/edit`);
+}
+
 function isUniqueConstraintError(
   error: unknown,
 ): error is Prisma.PrismaClientKnownRequestError {
@@ -71,88 +197,117 @@ function isUniqueConstraintError(
 }
 
 export async function createAdminUser(formData: FormData): Promise<void> {
-  await requireAdminPermission("canManageUsers");
+  const redirectPath = "/admin/users/new";
 
-  const name = getFormString(formData, "name");
-  const username = getFormString(formData, "username").toLowerCase();
+  await requireUserManagementAdmin(redirectPath);
+
+  const username = normalizeAdminUsername(getFormString(formData, "username"));
+  const name = normalizeAdminDisplayName(
+    getFormString(formData, "name"),
+    username,
+  );
+  const { raw: emailInput, normalized: email } = getOptionalEmail(formData);
+  const role = getRoleOrRedirect(formData, redirectPath);
   const password = getFormString(formData, "password");
-  const emailInput = getFormString(formData, "email");
-  const email = getOptionalEmail(formData);
-  const passwordPolicyError = getAdminPasswordPolicyError(password);
+  const confirmPassword = getFormString(formData, "confirmPassword");
+  const isActive = formData.get("isActive") === "on";
 
-  if (!name || !username) {
-    redirect("/admin/users?error=invalid");
+  if (!username) {
+    redirect(`${redirectPath}?error=usernameRequired`);
   }
 
   if (emailInput && !email) {
-    redirect("/admin/users?error=email");
+    redirect(`${redirectPath}?error=email`);
   }
 
-  if (passwordPolicyError) {
-    redirect("/admin/users?error=weak");
-  }
+  validatePasswordOrRedirect(password, confirmPassword, redirectPath);
+  await ensureNoDuplicateAdminUserOrRedirect(
+    {
+      username,
+      email,
+    },
+    redirectPath,
+  );
 
   try {
-    await prisma.adminUser.create({
+    const user = await prisma.adminUser.create({
       data: {
         name,
         username,
         email,
         passwordHash: await hashAdminPassword(password),
-        role: getRole(formData),
-        isActive: formData.get("isActive") === "on",
+        role,
+        isActive,
+      },
+      select: {
+        id: true,
       },
     });
+
+    revalidateUserManagementPaths(user.id);
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      redirect("/admin/users?error=duplicate");
+      redirect(`${redirectPath}?error=duplicate`);
     }
 
     throw error;
   }
 
-  revalidatePath("/admin/users");
-  redirect("/admin/users?created=1");
+  redirect("/admin/users?success=created");
 }
 
-export async function updateAdminUser(
+export async function updateAdminUserProfile(
   userId: string,
   formData: FormData,
 ): Promise<void> {
-  await requireAdminPermission("canManageUsers");
-  const currentUser = await requireAdminUser();
+  const redirectPath = `/admin/users/${userId}/edit`;
+  const currentUser = await requireUserManagementAdmin(redirectPath);
+  const username = normalizeAdminUsername(getFormString(formData, "username"));
+  const name = normalizeAdminDisplayName(
+    getFormString(formData, "name"),
+    username,
+  );
+  const { raw: emailInput, normalized: email } = getOptionalEmail(formData);
+  const role = getRoleOrRedirect(formData, redirectPath);
+  const isActive = formData.get("isActive") === "on";
 
-  const name = getFormString(formData, "name");
-  const username = getFormString(formData, "username").toLowerCase();
-  const password = getFormString(formData, "password");
-  const nextRole = getRole(formData);
-  const nextIsActive = formData.get("isActive") === "on";
-  const emailInput = getFormString(formData, "email");
-  const email = getOptionalEmail(formData);
-
-  if (!name || !username) {
-    redirect("/admin/users?error=invalid");
+  if (!username) {
+    redirect(`${redirectPath}?error=usernameRequired`);
   }
 
   if (emailInput && !email) {
-    redirect("/admin/users?error=email");
+    redirect(`${redirectPath}?error=email`);
   }
 
-  if (password) {
-    const passwordPolicyError = getAdminPasswordPolicyError(password);
+  const existingUser = await prisma.adminUser.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+    },
+  });
 
-    if (passwordPolicyError) {
-      redirect("/admin/users?error=weak");
-    }
+  if (!existingUser) {
+    redirect("/admin/users?error=notFound");
   }
 
-  if (currentUser.id === userId && (!nextIsActive || nextRole !== "SUPER_ADMIN")) {
-    redirect("/admin/users?error=self");
-  }
+  await ensureSafeSuperAdminMutationOrRedirect(
+    {
+      actingUserId: currentUser.id,
+      targetUserId: userId,
+      nextRole: role,
+      nextIsActive: isActive,
+    },
+    redirectPath,
+  );
 
-  if (await wouldRemoveLastSuperAdmin(userId, nextRole, nextIsActive)) {
-    redirect("/admin/users?error=lastSuper");
-  }
+  await ensureNoDuplicateAdminUserOrRedirect(
+    {
+      username,
+      email,
+      excludeUserId: userId,
+    },
+    redirectPath,
+  );
 
   try {
     await prisma.adminUser.update({
@@ -161,23 +316,98 @@ export async function updateAdminUser(
         name,
         username,
         email,
-        role: nextRole,
-        isActive: nextIsActive,
-        ...(password
-          ? {
-              passwordHash: await hashAdminPassword(password),
-            }
-          : {}),
+        role,
+        isActive,
       },
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      redirect("/admin/users?error=duplicate");
+      redirect(`${redirectPath}?error=duplicate`);
     }
 
     throw error;
   }
 
-  revalidatePath("/admin/users");
-  redirect("/admin/users?updated=1");
+  revalidateUserManagementPaths(userId);
+  redirect(`${redirectPath}?success=updated`);
+}
+
+export async function resetAdminUserPassword(
+  userId: string,
+  formData: FormData,
+): Promise<void> {
+  const redirectPath = `/admin/users/${userId}/edit`;
+
+  await requireUserManagementAdmin(redirectPath);
+
+  const password = getFormString(formData, "password");
+  const confirmPassword = getFormString(formData, "confirmPassword");
+
+  validatePasswordOrRedirect(password, confirmPassword, redirectPath);
+
+  const existingUser = await prisma.adminUser.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingUser) {
+    redirect("/admin/users?error=notFound");
+  }
+
+  await prisma.adminUser.update({
+    where: { id: userId },
+    data: {
+      passwordHash: await hashAdminPassword(password),
+    },
+  });
+
+  revalidateUserManagementPaths(userId);
+  redirect(`${redirectPath}?success=passwordReset`);
+}
+
+export async function toggleAdminUserActive(
+  userId: string,
+  formData: FormData,
+): Promise<void> {
+  const fallbackPath = "/admin/users";
+  const redirectPath = getRedirectPath(formData, fallbackPath);
+  const currentUser = await requireUserManagementAdmin(redirectPath);
+  const nextIsActive = getFormString(formData, "nextIsActive") === "true";
+
+  const existingUser = await prisma.adminUser.findUnique({
+    where: { id: userId },
+    select: {
+      role: true,
+    },
+  });
+
+  if (!existingUser) {
+    redirect("/admin/users?error=notFound");
+  }
+
+  const currentRole = parseAdminRole(existingUser.role) ?? "STAFF";
+
+  await ensureSafeSuperAdminMutationOrRedirect(
+    {
+      actingUserId: currentUser.id,
+      targetUserId: userId,
+      nextRole: currentRole,
+      nextIsActive,
+    },
+    redirectPath,
+  );
+
+  await prisma.adminUser.update({
+    where: { id: userId },
+    data: {
+      isActive: nextIsActive,
+    },
+  });
+
+  revalidateUserManagementPaths(userId);
+  redirect(
+    `${redirectPath}?success=${nextIsActive ? "activated" : "deactivated"}`,
+  );
 }

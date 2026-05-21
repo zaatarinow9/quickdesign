@@ -33,7 +33,13 @@ export async function changeCurrentAdminPassword(
 
   const passwordPolicyError = getAdminPasswordPolicyError(nextPassword);
   if (passwordPolicyError) {
-    redirect("/admin?passwordError=weak");
+    redirect(
+      `/admin?passwordError=${
+        passwordPolicyError.includes("mindestens 10 Zeichen")
+          ? "passwordTooShort"
+          : "passwordComplexity"
+      }`,
+    );
   }
 
   const user = await prisma.adminUser.findUnique({

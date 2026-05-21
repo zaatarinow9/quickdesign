@@ -76,13 +76,15 @@ function getPasswordErrorMessage(errorCode: string | undefined): string | null {
     case "current":
       return "Das aktuelle Passwort stimmt nicht.";
     case "match":
-      return "Die neuen Passwoerter stimmen nicht ueberein.";
+      return "Die Passwoerter stimmen nicht ueberein.";
     case "missing":
       return "Bitte fuellen Sie alle Passwortfelder aus.";
     case "reuse":
       return "Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.";
-    case "weak":
-      return `Bitte verwenden Sie ein staerkeres Passwort mit mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen sowie Buchstaben und Zahlen.`;
+    case "passwordTooShort":
+      return `Passwort muss mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen lang sein.`;
+    case "passwordComplexity":
+      return "Das Passwort muss mindestens einen Buchstaben und eine Zahl enthalten.";
     default:
       return null;
   }

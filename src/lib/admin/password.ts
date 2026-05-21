@@ -17,7 +17,7 @@ export const MIN_ADMIN_PASSWORD_LENGTH = 10;
 
 export function getAdminPasswordPolicyError(password: string): string | null {
   if (password.length < MIN_ADMIN_PASSWORD_LENGTH) {
-    return `Admin-Passwoerter muessen mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen lang sein.`;
+    return `Passwort muss mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen lang sein.`;
   }
 
   if (password === DEFAULT_ADMIN_PASSWORD) {
@@ -25,7 +25,7 @@ export function getAdminPasswordPolicyError(password: string): string | null {
   }
 
   if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-    return "Admin-Passwoerter muessen Buchstaben und Zahlen enthalten.";
+    return "Das Passwort muss mindestens einen Buchstaben und eine Zahl enthalten.";
   }
 
   return null;
@@ -51,8 +51,12 @@ export async function hashAdminPassword(password: string): Promise<string> {
 
 export async function verifyAdminPassword(
   password: string,
-  passwordHash: string,
+  passwordHash: string | null | undefined,
 ): Promise<boolean> {
+  if (typeof passwordHash !== "string" || passwordHash.trim() === "") {
+    return false;
+  }
+
   const [prefix, iterationsRaw, salt, storedHash] = passwordHash.split("$");
   const iterations = Number.parseInt(iterationsRaw ?? "", 10);
 
@@ -82,7 +86,7 @@ export async function verifyAdminPassword(
 }
 
 export async function isDefaultAdminPasswordHash(
-  passwordHash: string,
+  passwordHash: string | null | undefined,
 ): Promise<boolean> {
   return verifyAdminPassword(DEFAULT_ADMIN_PASSWORD, passwordHash);
 }
