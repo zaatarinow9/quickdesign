@@ -5,6 +5,10 @@ import { useCartStore, type CartItem } from "@/lib/store/cart";
 import type { LegacyConfigurationTextInput } from "@/lib/services/configuration/snapshot";
 import { isInlineBrowserUrl } from "@/lib/storage/order-files";
 import {
+  MAX_SERVER_ACTION_UPLOAD_MB,
+  getServerActionUploadLimitMessage,
+} from "@/lib/storage/upload-limits";
+import {
   ArrowLeft,
   CheckCircle2,
   CreditCard,
@@ -157,6 +161,15 @@ function normalizeDisplayPrice(value: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function hasOversizedPendingUpload(items: CartItem[]): boolean {
+  return items.some((item) =>
+    (item.pendingUploads ?? []).some(
+      (upload) =>
+        upload.file.size > MAX_SERVER_ACTION_UPLOAD_MB * 1024 * 1024,
+    ),
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart } = useCartStore();
@@ -191,8 +204,14 @@ export default function CheckoutPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setErrorMessage(null);
+
+    if (hasOversizedPendingUpload(items)) {
+      setErrorMessage(getServerActionUploadLimitMessage());
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const formData = new FormData(event.currentTarget);

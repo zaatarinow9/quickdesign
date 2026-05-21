@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash } from "lucide-react";
 
 type ServicePricingModeSelection =
@@ -41,7 +41,14 @@ type PricingConfigPayload = {
 interface Props {
   initialPricingMode?: string | null;
   initialConfigJson?: string | null;
+  onPreviewChange?: (preview: ServicePricingPreview) => void;
 }
+
+export type ServicePricingPreview = {
+  mode: ServicePricingModeSelection;
+  modeLabel: string;
+  summaryLines: string[];
+};
 
 const PRICING_MODE_OPTIONS: {
   value: ServicePricingModeSelection;
@@ -51,22 +58,22 @@ const PRICING_MODE_OPTIONS: {
   {
     value: "fixed",
     label: "Festpreis",
-    description: "Grundpreis plus optionale Aufpreise aus ausgewählten Feldwerten.",
+    description: "Grundpreis plus optionale Aufpreise aus ausgewaehlten Feldwerten.",
   },
   {
     value: "quantity_tiers",
     label: "Mengenstaffeln",
-    description: "Jede Staffel definiert eine feste Menge und den dazugehörigen Preis.",
+    description: "Jede Staffel definiert eine feste Menge und den dazugehoerigen Preis.",
   },
   {
     value: "area",
-    label: "Flächenpreis",
-    description: "Preis pro Quadratmeter mit Eingabe von Breite und Höhe in Zentimetern.",
+    label: "Flaechenpreis",
+    description: "Preis pro Quadratmeter mit Eingabe von Breite und Hoehe in Zentimetern.",
   },
   {
     value: "option_based",
     label: "Optionsbasiert",
-    description: "Grundpreis plus feste Preisaufschläge aus Optionswerten.",
+    description: "Grundpreis plus feste Preisaufschlaege aus Optionswerten.",
   },
   {
     value: "custom_quote",
@@ -147,7 +154,72 @@ function parseInitialConfigJson(
 
   try {
     const parsedValue: unknown = JSON.parse(initialConfigJson);
-    return isRecord(parsedValue) ? parsedValue : {};
+    if (!isRecord(parsedValue)) {
+      return {};
+    }
+
+    const payload: PricingConfigPayload = {};
+
+    if (Array.isArray(parsedValue.quantityTiers)) {
+      payload.quantityTiers = parsedValue.quantityTiers
+        .map((tier) => {
+          if (!isRecord(tier)) {
+            return null;
+          }
+
+          const quantity = parsePositiveInteger(tier.quantity);
+          const price = parseFiniteNumber(tier.price);
+
+          if (quantity === null || price === null) {
+            return null;
+          }
+
+          return {
+            label:
+              normalizeOptionalString(
+                typeof tier.label === "string" ? tier.label : "",
+              ) || `${quantity} Stueck`,
+            quantity,
+            price,
+          };
+        })
+        .filter(
+          (
+            tier,
+          ): tier is {
+            label: string;
+            quantity: number;
+            price: number;
+          } => tier !== null,
+        );
+    }
+
+    if (isRecord(parsedValue.area)) {
+      payload.area = {
+        pricePerSqm: Math.max(
+          0,
+          parseFiniteNumber(parsedValue.area.pricePerSqm) ?? 0,
+        ),
+        minimumAreaSqm: Math.max(
+          0,
+          parseFiniteNumber(parsedValue.area.minimumAreaSqm) ?? 0,
+        ),
+        widthLabel:
+          normalizeOptionalString(
+            typeof parsedValue.area.widthLabel === "string"
+              ? parsedValue.area.widthLabel
+              : "",
+          ) || "Breite (cm)",
+        heightLabel:
+          normalizeOptionalString(
+            typeof parsedValue.area.heightLabel === "string"
+              ? parsedValue.area.heightLabel
+              : "",
+          ) || "Hoehe (cm)",
+      };
+    }
+
+    return payload;
   } catch {
     return {};
   }
@@ -193,7 +265,7 @@ function buildInitialAreaState(config: PricingConfigPayload): AreaPricingState {
         typeof areaConfig?.heightLabel === "string"
           ? areaConfig.heightLabel
           : "",
-      ) || "Höhe (cm)",
+      ) || "Hoehe (cm)",
   };
 }
 
@@ -215,7 +287,7 @@ function buildPricingConfigJson(
         }
 
         return {
-          label: normalizeOptionalString(tier.label) || `${quantity} Stück`,
+          label: normalizeOptionalString(tier.label) || `${quantity} Stueck`,
           quantity,
           price,
         };
@@ -239,16 +311,78 @@ function buildPricingConfigJson(
         parseFiniteNumber(areaState.minimumAreaSqm) ?? 0,
       ),
       widthLabel: normalizeOptionalString(areaState.widthLabel) || "Breite (cm)",
-      heightLabel: normalizeOptionalString(areaState.heightLabel) || "Höhe (cm)",
+      heightLabel: normalizeOptionalString(areaState.heightLabel) || "Hoehe (cm)",
     };
   }
 
   return JSON.stringify(payload);
 }
 
+function buildPricingPreview(
+  pricingMode: ServicePricingModeSelection,
+  quantityTiers: QuantityTierRow[],
+  areaState: AreaPricingState,
+): ServicePricingPreview {
+  const selectedModeConfig =
+    PRICING_MODE_OPTIONS.find((option) => option.value === pricingMode) ??
+    PRICING_MODE_OPTIONS[0]!;
+  const summaryLines: string[] = [];
+
+  switch (pricingMode) {
+    case "quantity_tiers": {
+      const configuredTiers = quantityTiers.filter(
+        (tier) => tier.label.trim() !== "",
+      );
+
+      summaryLines.push(
+        configuredTiers.length === 0
+          ? "Noch keine Staffel definiert."
+          : `${configuredTiers.length} Mengenstaffeln konfiguriert.`,
+      );
+
+      if (configuredTiers[0]?.label) {
+        summaryLines.push(`Startet mit: ${configuredTiers[0].label}`);
+      }
+      break;
+    }
+    case "area":
+      summaryLines.push(
+        `Preis pro m2: ${
+          areaState.pricePerSqm.trim() !== "" ? areaState.pricePerSqm : "0.00"
+        } EUR`,
+      );
+      summaryLines.push(
+        `Felder: ${areaState.widthLabel || "Breite (cm)"} / ${
+          areaState.heightLabel || "Hoehe (cm)"
+        }`,
+      );
+      break;
+    case "custom_quote":
+      summaryLines.push("Der Service bleibt im Checkout als Anfrage markiert.");
+      summaryLines.push("Es wird kein automatischer Preis berechnet.");
+      break;
+    case "option_based":
+      summaryLines.push("Aufpreise werden aus Kundenoptionen addiert.");
+      summaryLines.push("Der Grundpreis bleibt als Basis erhalten.");
+      break;
+    case "fixed":
+    default:
+      summaryLines.push("Der Grundpreis wird direkt als Basis verwendet.");
+      summaryLines.push("Optionale Zusatzpreise bleiben moeglich.");
+      break;
+  }
+
+  return {
+    mode: pricingMode,
+    modeLabel: selectedModeConfig.label,
+    summaryLines,
+  };
+}
+
 export default function ServicePricingEditor({
   initialPricingMode,
   initialConfigJson,
+  onPreviewChange,
 }: Props) {
   const initialConfig = useMemo(
     () => parseInitialConfigJson(initialConfigJson),
@@ -271,6 +405,14 @@ export default function ServicePricingEditor({
     () => buildPricingConfigJson(pricingMode, quantityTiers, areaState),
     [areaState, pricingMode, quantityTiers],
   );
+  const pricingPreview = useMemo(
+    () => buildPricingPreview(pricingMode, quantityTiers, areaState),
+    [areaState, pricingMode, quantityTiers],
+  );
+
+  useEffect(() => {
+    onPreviewChange?.(pricingPreview);
+  }, [onPreviewChange, pricingPreview]);
 
   const addTierRow = () => {
     setQuantityTiers((current) => [
@@ -308,12 +450,38 @@ export default function ServicePricingEditor({
 
       <div className="pb-4 border-b border-neutral-100">
         <h2 className="text-sm font-bold text-neutral-950 uppercase tracking-widest">
-          Pricing Model
+          Wie wird der Preis berechnet?
         </h2>
         <p className="text-sm text-neutral-500 mt-2">
-          Wählt aus, wie der öffentliche Preis berechnet wird, ohne die bestehende
+          Waehlt aus, wie der oeffentliche Preis berechnet wird, ohne die bestehende
           Checkout- und Order-Architektur anzutasten.
         </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-3xl border border-sky-100 bg-sky-50 p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-700">
+            Zusammenfassung
+          </p>
+          <p className="mt-3 text-lg font-bold text-slate-950">
+            {pricingPreview.modeLabel}
+          </p>
+        </div>
+        <div className="rounded-3xl border border-neutral-200 bg-white p-5 md:col-span-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+            Kurzfassung
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {pricingPreview.summaryLines.map((line) => (
+              <span
+                key={line}
+                className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-bold text-neutral-700"
+              >
+                {line}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div>
@@ -351,7 +519,7 @@ export default function ServicePricingEditor({
       {pricingMode === "custom_quote" && (
         <div className="border border-dashed border-neutral-300 px-4 py-4 text-sm text-neutral-500 bg-white">
           Im Store wird kein berechneter Preis angezeigt. Phase 3B markiert die
-          Leistung nur als Anfrage-Produkt; ein vollständiger Angebots-Workflow
+          Leistung nur als Anfrage-Produkt; ein vollstaendiger Angebots-Workflow
           folgt nicht in diesem Schritt.
         </div>
       )}
@@ -373,7 +541,7 @@ export default function ServicePricingEditor({
               className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-neutral-950 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Staffel hinzufügen
+              Staffel hinzufuegen
             </button>
           </div>
 
@@ -389,7 +557,7 @@ export default function ServicePricingEditor({
                   onChange={(event) =>
                     updateTierRow(tier.id, "label", event.target.value)
                   }
-                  placeholder="z. B. 1000 Stück"
+                  placeholder="z. B. 1000 Stueck"
                   required={pricingMode === "quantity_tiers"}
                   className="border border-neutral-300 p-3 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
                 />
@@ -439,17 +607,17 @@ export default function ServicePricingEditor({
         <div className="space-y-6 bg-white border border-neutral-200 p-6">
           <div>
             <h3 className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
-              Flächenberechnung
+              Flaechenberechnung
             </h3>
             <p className="text-sm text-neutral-500 mt-2">
-              Formel im Store: Fläche m² = (Breite cm / 100) × (Höhe cm / 100).
+              Formel im Store: Flaeche m2 = (Breite cm / 100) x (Hoehe cm / 100).
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative">
               <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                Preis pro m²
+                Preis pro m2
               </label>
               <input
                 type="number"
@@ -472,7 +640,7 @@ export default function ServicePricingEditor({
 
             <div className="relative">
               <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                Mindestfläche (m²)
+                Mindestfläche (m2)
               </label>
               <input
                 type="number"
@@ -488,7 +656,7 @@ export default function ServicePricingEditor({
                 className="w-full border border-neutral-300 p-4 pr-14 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
               />
               <span className="absolute right-4 top-[49px] text-neutral-500 font-bold text-xs">
-                m²
+                m2
               </span>
             </div>
           </div>
@@ -514,7 +682,7 @@ export default function ServicePricingEditor({
 
             <div>
               <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                Label Höhe
+                Label Hoehe
               </label>
               <input
                 type="text"
@@ -535,3 +703,4 @@ export default function ServicePricingEditor({
     </section>
   );
 }
+

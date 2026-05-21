@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash, Upload } from "lucide-react";
+import {
+  MAX_SERVER_ACTION_UPLOAD_MB,
+  getEffectiveUploadLimitMb,
+  isUploadLimitCapped,
+} from "@/lib/storage/upload-limits";
 
 type UploadFieldRow = {
   id: string;
@@ -35,7 +40,14 @@ type UploadFieldConfig = NonNullable<UploadConfigPayload["uploadFields"]>[number
 
 interface Props {
   initialConfigJson?: string | null;
+  onPreviewChange?: (preview: ServiceUploadPreview) => void;
 }
+
+export type ServiceUploadPreview = {
+  enabled: boolean;
+  fieldCount: number;
+  summaryLines: string[];
+};
 
 function createFieldId(seed: number): string {
   return `upload-field-${seed}`;
@@ -270,8 +282,46 @@ function buildUploadConfigJson(
   return JSON.stringify(payload);
 }
 
+function buildUploadPreview(
+  useCustomUploadFields: boolean,
+  uploadFields: UploadFieldRow[],
+): ServiceUploadPreview {
+  if (!useCustomUploadFields) {
+    return {
+      enabled: false,
+      fieldCount: 0,
+      summaryLines: [
+        "Legacy-Fallback ueber fileLimit bleibt aktiv.",
+        `Checkout-Limit aktuell: ${MAX_SERVER_ACTION_UPLOAD_MB} MB pro Datei.`,
+      ],
+    };
+  }
+
+  const activeFields = uploadFields.filter((field) => field.label.trim() !== "");
+  const summaryLines =
+    activeFields.length === 0
+      ? ["Noch keine Upload-Felder definiert."]
+      : activeFields.map((field) => {
+          const effectiveLimitMb = getEffectiveUploadLimitMb(
+            parseFiniteNumber(field.maxFileSizeMb),
+          );
+          const maxFiles = parsePositiveInteger(field.maxFiles) ?? 1;
+
+          return `${field.label}: ${maxFiles} Datei${
+            maxFiles === 1 ? "" : "en"
+          }, max. ${effectiveLimitMb} MB`;
+        });
+
+  return {
+    enabled: activeFields.length > 0,
+    fieldCount: activeFields.length,
+    summaryLines,
+  };
+}
+
 export default function ServiceUploadFieldsEditor({
   initialConfigJson,
+  onPreviewChange,
 }: Props) {
   const initialState = useMemo(
     () => parseInitialState(initialConfigJson),
@@ -288,6 +338,14 @@ export default function ServiceUploadFieldsEditor({
     () => buildUploadConfigJson(useCustomUploadFields, uploadFields),
     [uploadFields, useCustomUploadFields],
   );
+  const uploadPreview = useMemo(
+    () => buildUploadPreview(useCustomUploadFields, uploadFields),
+    [uploadFields, useCustomUploadFields],
+  );
+
+  useEffect(() => {
+    onPreviewChange?.(uploadPreview);
+  }, [onPreviewChange, uploadPreview]);
 
   const addUploadField = () => {
     setUploadFields((current) => [
@@ -324,12 +382,38 @@ export default function ServiceUploadFieldsEditor({
 
       <div className="pb-4 border-b border-neutral-100">
         <h2 className="text-sm font-bold text-neutral-950 uppercase tracking-widest">
-          Upload Fields
+          Welche Dateien muss der Kunde hochladen?
         </h2>
         <p className="text-sm text-neutral-500 mt-2">
           Definiert service-spezifische Dateianforderungen. Wenn deaktiviert,
           bleibt der Legacy-Fallback aus fileLimit bestehen.
         </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+            Effektives Limit
+          </p>
+          <p className="mt-3 text-lg font-bold text-slate-950">
+            {MAX_SERVER_ACTION_UPLOAD_MB} MB pro Datei
+          </p>
+        </div>
+        <div className="rounded-3xl border border-neutral-200 bg-white p-5 md:col-span-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+            Vorschau
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {uploadPreview.summaryLines.map((line) => (
+              <span
+                key={line}
+                className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-bold text-neutral-700"
+              >
+                {line}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 min-h-[54px] px-4 border border-neutral-200 bg-neutral-50">
@@ -387,7 +471,7 @@ export default function ServiceUploadFieldsEditor({
                     </div>
                     <div>
                       <p className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
-                        Upload Field #{index + 1}
+                        Upload-Feld #{index + 1}
                       </p>
                       <p className="text-sm text-neutral-500">
                         Kunden-Dateien fuer diesen Service.
@@ -406,7 +490,7 @@ export default function ServiceUploadFieldsEditor({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                      Label
+                      Feldname
                     </label>
                     <input
                       type="text"
@@ -421,7 +505,7 @@ export default function ServiceUploadFieldsEditor({
 
                   <div>
                     <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                      Key
+                      Feld-Key
                     </label>
                     <input
                       type="text"
@@ -437,7 +521,7 @@ export default function ServiceUploadFieldsEditor({
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                    Helper text
+                    Kundenhinweis
                   </label>
                   <input
                     type="text"
@@ -490,7 +574,7 @@ export default function ServiceUploadFieldsEditor({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                      Max files
+                      Maximale Dateien
                     </label>
                     <input
                       type="number"
@@ -506,7 +590,7 @@ export default function ServiceUploadFieldsEditor({
 
                   <div>
                     <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                      Max size MB
+                      Maximale Dateigroesse
                     </label>
                     <input
                       type="number"
@@ -523,6 +607,19 @@ export default function ServiceUploadFieldsEditor({
                       placeholder="optional"
                       className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
                     />
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Effektiv im Checkout:{" "}
+                      {getEffectiveUploadLimitMb(
+                        parseFiniteNumber(field.maxFileSizeMb),
+                      )}{" "}
+                      MB pro Datei
+                    </p>
+                    {isUploadLimitCapped(parseFiniteNumber(field.maxFileSizeMb)) && (
+                      <p className="mt-2 text-xs font-bold text-amber-700">
+                        Aktuelles Upload-Limit im Checkout:{" "}
+                        {MAX_SERVER_ACTION_UPLOAD_MB} MB
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-3">
@@ -543,7 +640,7 @@ export default function ServiceUploadFieldsEditor({
                         className="w-4 h-4 accent-neutral-950"
                       />
                       <span className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
-                        Pflicht
+                        Pflichtfeld
                       </span>
                     </label>
                     <label className="flex items-center gap-3 min-h-[52px] px-4 border border-neutral-200 bg-white">
@@ -560,7 +657,7 @@ export default function ServiceUploadFieldsEditor({
                         className="w-4 h-4 accent-neutral-950"
                       />
                       <span className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
-                        Kunden-Dateilabel
+                        Kundenlabel
                       </span>
                     </label>
                   </div>

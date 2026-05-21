@@ -1,21 +1,28 @@
-import Link from "next/link";
 import {
   BarChart3,
   LayoutDashboard,
   LogOut,
   Package,
   ShoppingBag,
-  Users,
   UserRound,
+  Users,
 } from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
 import { logoutAdmin } from "@/app/actions/auth";
+import AdminSidebarNav from "@/components/admin/AdminSidebarNav";
 import { requireAdminUser } from "@/lib/admin/auth";
 import { hasAdminPermission } from "@/lib/admin/permissions";
+
+type AdminNavItem = {
+  href: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+};
 
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const currentUser = await requireAdminUser();
   const canManageServices = hasAdminPermission(
@@ -26,95 +33,133 @@ export default async function AdminLayout({
   const canViewCustomers = hasAdminPermission(currentUser, "canViewCustomers");
   const canViewReports = hasAdminPermission(currentUser, "canViewReports");
 
+  const navItems: AdminNavItem[] = [
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      href: "/admin/orders",
+      label: "Bestellungen",
+      icon: ShoppingBag,
+    },
+    ...(canViewCustomers
+      ? [
+          {
+            href: "/admin/customers",
+            label: "Kunden",
+            icon: UserRound,
+          },
+        ]
+      : []),
+    ...(canViewReports
+      ? [
+          {
+            href: "/admin/reports",
+            label: "Reports",
+            icon: BarChart3,
+          },
+        ]
+      : []),
+    ...(canManageServices
+      ? [
+          {
+            href: "/admin/services",
+            label: "Leistungen",
+            icon: Package,
+          },
+        ]
+      : []),
+    ...(canManageUsers
+      ? [
+          {
+            href: "/admin/users",
+            label: "Team",
+            icon: Users,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="flex min-h-screen bg-neutral-50 text-neutral-950">
-      <aside className="fixed z-10 flex h-full w-64 flex-col border-r border-neutral-200 bg-white">
-        <div className="flex h-20 items-center border-b border-neutral-200 bg-neutral-950 px-6">
-          <span className="text-lg font-bold uppercase tracking-widest text-white">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-950">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 flex-col border-r border-white/70 bg-white/80 px-5 py-6 shadow-xl backdrop-blur lg:flex">
+        <div className="rounded-[28px] bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-6 text-white shadow-lg">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-300">
             QD Admin
-          </span>
+          </p>
+          <p className="mt-3 text-2xl font-bold tracking-tight">
+            Interne Verwaltung
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            Auftraege, Services und Team in einer ruhigeren Arbeitsoberflaeche.
+          </p>
         </div>
-        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
+
+        <div className="mt-6 flex-1 overflow-y-auto">
+          <AdminSidebarNav items={navItems} />
+        </div>
+
+        <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+            Angemeldet als
+          </p>
+          <p className="mt-3 text-sm font-bold text-slate-950">
+            {currentUser.name}
+          </p>
+          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+            {currentUser.role}
+          </p>
+        </div>
+
+        <form action={logoutAdmin} className="mt-4">
+          <button
+            type="submit"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.22em] text-rose-700 transition-colors hover:bg-rose-100"
           >
-            <LayoutDashboard className="h-4 w-4" /> Dashboard
-          </Link>
+            <LogOut className="h-4 w-4" />
+            Abmelden
+          </button>
+        </form>
+      </aside>
 
-          <Link
-            href="/admin/orders"
-            className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
-          >
-            <ShoppingBag className="h-4 w-4" /> Bestellungen
-          </Link>
-
-          {canViewCustomers && (
-            <Link
-              href="/admin/customers"
-              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
-            >
-              <UserRound className="h-4 w-4" /> Kunden
-            </Link>
-          )}
-
-          {canViewReports && (
-            <Link
-              href="/admin/reports"
-              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
-            >
-              <BarChart3 className="h-4 w-4" /> Reports
-            </Link>
-          )}
-
-          {canManageServices && (
-            <Link
-              href="/admin/services"
-              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
-            >
-              <Package className="h-4 w-4" /> Leistungen
-            </Link>
-          )}
-
-          {canManageUsers && (
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-950"
-            >
-              <Users className="h-4 w-4" /> Team
-            </Link>
-          )}
-        </nav>
-        <div className="space-y-4 border-t border-neutral-200 p-4">
-          <div className="rounded-sm bg-neutral-50 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-              Angemeldet als
+      <div className="border-b border-white/70 bg-white/90 px-4 py-4 shadow-sm backdrop-blur lg:hidden">
+        <div className="mx-auto max-w-7xl space-y-4">
+          <div className="rounded-3xl bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-5 text-white">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-300">
+              QD Admin
             </p>
-            <p className="mt-2 text-sm font-bold text-neutral-950">
-              {currentUser.name}
-            </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-              {currentUser.role}
+            <p className="mt-2 text-xl font-bold tracking-tight">
+              Interne Verwaltung
             </p>
           </div>
-          <form action={logoutAdmin}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-red-500 transition-colors hover:bg-red-50"
-            >
-              <LogOut className="h-4 w-4" /> Abmelden
-            </button>
-          </form>
+          <AdminSidebarNav items={navItems} orientation="horizontal" />
         </div>
-      </aside>
-      <main className="ml-64 flex flex-1 flex-col">
-        <div className="sticky top-0 z-0 flex h-20 items-center border-b border-neutral-200 bg-white px-10">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-            Interne Verwaltung
-          </h2>
+      </div>
+
+      <main className="lg:ml-72">
+        <div className="sticky top-0 z-10 border-b border-white/70 bg-white/80 px-4 py-4 shadow-sm backdrop-blur">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Interne Verwaltung
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Fokus auf bessere Uebersicht, klare Statusfarben und schnellere Pflege.
+              </p>
+            </div>
+            <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 sm:inline-flex">
+              {currentUser.name} / {currentUser.role}
+            </div>
+          </div>
         </div>
-        <div className="flex-1 overflow-auto p-10">{children}</div>
+
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 lg:px-8 lg:py-8">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
+

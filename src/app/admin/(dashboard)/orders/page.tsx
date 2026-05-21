@@ -2,20 +2,19 @@ import { Prisma } from "@prisma/client";
 import { format } from "date-fns";
 import {
   Archive,
-  CheckCircle2,
-  CircleDot,
-  Clock,
   Eye,
   Package,
   Plus,
   Search,
-  Truck,
   UserCheck,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { claimOrder } from "@/app/actions/order";
 import { requireAdminPermission } from "@/lib/admin/auth";
+import {
+  getInternalOrderStatusMeta,
+  getOrderStatusMeta,
+} from "@/lib/admin/order-status";
 import { hasAdminPermission } from "@/lib/admin/permissions";
 import {
   formatCurrencyAmount,
@@ -24,37 +23,6 @@ import {
   normalizeDocumentType,
 } from "@/lib/orders/finance";
 import { prisma } from "@/lib/prisma";
-
-const STATUS_MAP: Record<
-  string,
-  { label: string; icon: LucideIcon; color: string }
-> = {
-  PAID: {
-    label: "Neu",
-    icon: CircleDot,
-    color: "text-blue-600 bg-blue-50 border-blue-100",
-  },
-  PROCESSING: {
-    label: "In Produktion",
-    icon: Clock,
-    color: "text-orange-600 bg-orange-50 border-orange-100",
-  },
-  SHIPPED: {
-    label: "Versendet",
-    icon: Truck,
-    color: "text-purple-600 bg-purple-50 border-purple-100",
-  },
-  DELIVERED: {
-    label: "Zugestellt",
-    icon: CheckCircle2,
-    color: "text-green-600 bg-green-50 border-green-100",
-  },
-  CANCELED: {
-    label: "Storniert",
-    icon: CircleDot,
-    color: "text-red-600 bg-red-50 border-red-100",
-  },
-};
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
   UNPAID: "Unbezahlt",
@@ -527,8 +495,10 @@ export default async function AdminOrdersPage({
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {orders.map((order) => {
-              const statusInfo = STATUS_MAP[order.status] || STATUS_MAP.PAID;
-              const StatusIcon = statusInfo.icon;
+              const statusInfo = getOrderStatusMeta(order.status);
+              const internalStatusInfo = getInternalOrderStatusMeta(
+                order.internalStatus,
+              );
               const financials = getOrderFinancials(order);
               const paymentStatus = getOrderPaymentStatus(order);
               const documentType = normalizeDocumentType(order.documentType);
@@ -562,12 +532,17 @@ export default async function AdminOrdersPage({
                   <td className="p-6">
                     <div className="space-y-2">
                       <span
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest ${statusInfo.color}`}
+                        className={`inline-flex rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest ${statusInfo.badgeClassName}`}
                       >
-                        <StatusIcon className="h-3 w-3" /> {statusInfo.label}
+                        {statusInfo.label}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest ${internalStatusInfo.badgeClassName}`}
+                      >
+                        {internalStatusInfo.label}
                       </span>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                        Intern: {order.internalStatus} | {order.priority}
+                        Prioritaet: {order.priority}
                       </p>
                       {order.isArchived && (
                         <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-700">

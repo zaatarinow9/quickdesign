@@ -317,22 +317,37 @@ function parseOrder(value: string, fallback: number): number {
 function getStoredTypeLabel(type: string): string {
   switch (type.toLowerCase()) {
     case "color":
-      return "color";
+      return "Farbwahl";
     case "size":
-      return "size";
+      return "Groesse";
     case "textarea":
-      return "textarea";
+      return "Langer Text";
     case "radio":
-      return "radio";
+      return "Radio";
     case "text":
-      return "text";
+      return "Kurztext";
     case "number":
-      return "number";
+      return "Zahl";
     case "file":
-      return "file";
+      return "Datei";
     case "select":
     default:
-      return "select";
+      return "Dropdown";
+  }
+}
+
+function getPricingModeLabel(value: string | null | undefined): string {
+  switch (value) {
+    case "included":
+      return "Ohne Preiswirkung";
+    case "additive":
+      return "Aufpreis addieren";
+    case "override_base":
+      return "Basispreis ersetzen";
+    case "automatic":
+      return "Automatisch";
+    default:
+      return "Legacy-Fallback";
   }
 }
 
@@ -546,22 +561,22 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] xl:items-start">
       <section className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-neutral-950 uppercase tracking-tighter mb-2">
-              Felder und Widgets
+            <h2 className="mb-2 text-2xl font-bold tracking-tight text-neutral-950">
+              Kundenoptionen
             </h2>
             <p className="text-sm text-neutral-500">
-              Verwalten Sie die gespeicherte Service-Konfiguration jetzt mit
-              echten DB-Feldern statt nur mit Legacy-Inferenz.
+              Was sieht der Kunde, was ist Pflicht und welche Auswahl hat
+              Preiswirkung?
             </p>
           </div>
         </div>
 
         {options.length === 0 ? (
-          <div className="p-10 border border-dashed border-neutral-300 text-center text-sm font-bold uppercase tracking-widest text-neutral-500 bg-white">
+          <div className="rounded-[28px] border border-dashed border-neutral-300 bg-white p-10 text-center text-sm font-bold uppercase tracking-[0.22em] text-neutral-500 shadow-sm">
             Noch keine Felder hinzugefugt.
           </div>
         ) : (
@@ -569,7 +584,7 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
             {options.map((option) => (
               <div
                 key={option.id}
-                className="bg-white border border-neutral-200 p-6 flex flex-col gap-5 shadow-sm"
+                className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
                   <div className="space-y-3">
@@ -577,19 +592,19 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
                       <h3 className="text-lg font-bold text-neutral-950">
                         {option.name}
                       </h3>
-                      <span className="px-2 py-1 bg-neutral-100 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600">
                         {getStoredTypeLabel(option.type)}
                       </span>
-                      <span className="px-2 py-1 bg-neutral-100 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600">
                         Reihenfolge {option.order}
                       </span>
                       {option.pricingMode && (
-                        <span className="px-2 py-1 bg-neutral-100 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                          {option.pricingMode}
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                          {getPricingModeLabel(option.pricingMode)}
                         </span>
                       )}
                       {option.isRequired && (
-                        <span className="px-2 py-1 bg-neutral-950 text-[10px] font-bold uppercase tracking-widest text-white">
+                        <span className="rounded-full bg-slate-950 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white">
                           Pflichtfeld
                         </span>
                       )}
@@ -613,7 +628,7 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
                           .map((value, index) => (
                             <span
                               key={value.id}
-                              className="px-3 py-1.5 border border-neutral-200 text-xs font-bold text-neutral-600 bg-neutral-50"
+                              className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-bold text-neutral-600"
                             >
                               #{value.order > 0 ? value.order : index + 1} {value.name}
                               {value.price !== 0 ? ` (+${value.price.toFixed(2)} EUR)` : ""}
@@ -631,7 +646,7 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
                     <button
                       type="button"
                       onClick={() => startEditing(option)}
-                      className="flex items-center gap-2 px-4 py-3 border border-neutral-200 text-xs font-bold uppercase tracking-widest text-neutral-700 hover:border-neutral-950 hover:text-neutral-950 transition-colors"
+                      className="flex items-center gap-2 rounded-full border border-neutral-200 px-4 py-3 text-xs font-bold uppercase tracking-[0.22em] text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
                     >
                       <Pencil className="w-4 h-4" />
                       Bearbeiten
@@ -640,7 +655,7 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
                       type="button"
                       onClick={() => handleDelete(option.id)}
                       disabled={deletingOptionId === option.id}
-                      className="flex items-center gap-2 px-4 py-3 border border-red-100 text-xs font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-full border border-red-100 px-4 py-3 text-xs font-bold uppercase tracking-[0.22em] text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50"
                     >
                       <Trash className="w-4 h-4" />
                       {deletingOptionId === option.id ? "Wird geloscht..." : "Loschen"}
@@ -653,15 +668,15 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
         )}
       </section>
 
-      <section className="bg-neutral-50 border border-neutral-200 p-8">
+      <section className="h-fit rounded-[32px] border border-neutral-200 bg-white p-8 shadow-sm xl:sticky xl:top-24">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
           <div>
-            <h3 className="text-sm font-bold text-neutral-950 uppercase tracking-widest mb-2">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-[0.22em] text-neutral-950">
               {editorState.optionId ? "Feld bearbeiten" : "Neues Feld hinzufugen"}
             </h3>
             <p className="text-sm text-neutral-500 max-w-2xl">
-              Speichert jetzt echte Feld-Konfiguration fur Reihenfolge,
-              Hilfetext, Pricing-Mode, Key und einfache UI-Config.
+              Was sieht der Kunde, wie wird gerechnet und welche Hinweise sind
+              intern wichtig?
             </p>
           </div>
 

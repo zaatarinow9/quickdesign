@@ -20,6 +20,10 @@ import {
   type OrderStoredFileMetadata,
 } from "@/lib/storage/order-files";
 import {
+  getEffectiveUploadLimitMb,
+  getServerActionUploadLimitMessage,
+} from "@/lib/storage/upload-limits";
+import {
   deleteFilesFromSupabaseStorage,
   uploadFileToSupabaseStorage,
 } from "@/lib/storage/supabase-storage";
@@ -137,13 +141,7 @@ type UploadedOrderFileRecord = OrderStoredFileMetadata & {
 };
 
 class CheckoutUploadError extends Error {
-  constructor(
-    message:
-      | "Datei ist zu gro\u00df."
-      | "Dateityp ist nicht erlaubt."
-      | "Datei konnte nicht hochgeladen werden."
-      | "Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.",
-  ) {
+  constructor(message: string) {
     super(message);
     this.name = "CheckoutUploadError";
   }
@@ -752,7 +750,7 @@ function buildUploadFieldDefinitionMap(
       label: field.label,
       accept: field.accept ?? "*/*",
       maxFiles: 1,
-      maxFileSizeMb: null,
+      maxFileSizeMb: getEffectiveUploadLimitMb(null),
       allowCustomerFileLabel: false,
     });
   });
@@ -764,7 +762,7 @@ function buildUploadFieldDefinitionMap(
       label: field.label,
       accept: field.accept,
       maxFiles: field.maxFiles,
-      maxFileSizeMb: field.maxFileSizeMb,
+      maxFileSizeMb: getEffectiveUploadLimitMb(field.maxFileSizeMb),
       allowCustomerFileLabel: field.allowCustomerFileLabel,
     });
   });
@@ -873,6 +871,10 @@ async function uploadCheckoutFiles(input: {
     const validationResult = validateSelectedFile(uploadedFile, {
       accept: fieldDefinition.accept,
       maxFileSizeMb: fieldDefinition.maxFileSizeMb,
+      maxFileSizeMessage:
+        fieldDefinition.maxFileSizeMb === getEffectiveUploadLimitMb(null)
+          ? getServerActionUploadLimitMessage()
+          : undefined,
     });
 
     if (!validationResult.ok) {

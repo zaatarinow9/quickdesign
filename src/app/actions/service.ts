@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { requireAdminPermission } from "@/lib/admin/auth"
 
@@ -82,11 +83,6 @@ function normalizeDesignerType(value: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function normalizeOptionalString(value: string | null | undefined): string | null {
-  const normalizedValue = value?.trim()
-  return normalizedValue ? normalizedValue : null
 }
 
 function getObjectString(
@@ -402,6 +398,65 @@ function buildServiceInput(formData: FormData) {
   }
 }
 
+function slugifyServiceSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+async function resolveUniqueServiceSlug(
+  baseSlug: string,
+  excludeServiceId?: string,
+): Promise<string> {
+  const normalizedBaseSlug = slugifyServiceSlug(baseSlug) || "service";
+  const existingServices = await prisma.service.findMany({
+    where: excludeServiceId
+      ? {
+          id: {
+            not: excludeServiceId,
+          },
+        }
+      : undefined,
+    select: {
+      slug: true,
+    },
+  })
+
+  const usedSlugs = new Set(
+    existingServices.map((service) => service.slug.toLowerCase()),
+  )
+
+  if (!usedSlugs.has(normalizedBaseSlug)) {
+    return normalizedBaseSlug
+  }
+
+  let suffix = 2
+  let candidateSlug = `${normalizedBaseSlug}-${suffix}`
+
+  while (usedSlugs.has(candidateSlug)) {
+    suffix += 1
+    candidateSlug = `${normalizedBaseSlug}-${suffix}`
+  }
+
+  return candidateSlug
+}
+
+function revalidateServiceViews(serviceId?: string, slug?: string | null): void {
+  revalidatePath("/admin")
+  revalidatePath("/admin/services")
+  revalidatePath("/services")
+
+  if (serviceId) {
+    revalidatePath(`/admin/services/${serviceId}`)
+    revalidatePath(`/admin/services/${serviceId}/edit`)
+  }
+
+  if (slug) {
+    revalidatePath(`/services/${slug}`)
+  }
+}
+
 export async function createService(formData: FormData): Promise<void> {
   await requireAdminPermission("canManageServices")
   const serviceInput = buildServiceInput(formData)
@@ -410,6 +465,7 @@ export async function createService(formData: FormData): Promise<void> {
     data: serviceInput,
   })
 
+  revalidateServiceViews(undefined, serviceInput.slug)
   redirect('/admin/services')
 }
 
@@ -417,10 +473,119 @@ export async function updateService(id: string, formData: FormData): Promise<voi
   await requireAdminPermission("canManageServices")
   const serviceInput = buildServiceInput(formData)
 
+  const previousService = await prisma.service.findUnique({
+    where: { id },
+    select: { slug: true },
+  })
+
   await prisma.service.update({
     where: { id },
     data: serviceInput,
   })
 
+  revalidateServiceViews(id, serviceInput.slug)
+
+  if (previousService?.slug && previousService.slug !== serviceInput.slug) {
+    revalidateServiceViews(undefined, previousService.slug)
+  }
+
   redirect('/admin/services')
+}
+
+export async function toggleServiceVisibility(formData: FormData): Promise<void> {
+  await requireAdminPermission("canManageServices")
+  const serviceId = getTrimmedString(formData, "serviceId")
+  const nextIsActive = getTrimmedString(formData, "nextIsActive") === "true"
+
+  if (!serviceId) {
+    return
+  }
+
+  const updatedService = await prisma.service.update({
+    where: { id: serviceId },
+    data: {
+      isActive: nextIsActive,
+    },
+    select: {
+      id: true,
+      slug: true,
+    },
+  })
+
+  revalidateServiceViews(updatedService.id, updatedService.slug)
+}
+
+export async function duplicateService(formData: FormData): Promise<void> {
+  await requireAdminPermission("canManageServices")
+  const serviceId = getTrimmedString(formData, "serviceId")
+
+  if (!serviceId) {
+    return
+  }
+
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    include: {
+      options: {
+        include: {
+          values: {
+            orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+          },
+        },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      },
+    },
+  })
+
+  if (!service) {
+    return
+  }
+
+  const duplicateSlug = await resolveUniqueServiceSlug(`${service.slug}-copy`)
+  const duplicateName = `${service.name} Kopie`
+
+  const duplicatedService = await prisma.service.create({
+    data: {
+      name: duplicateName,
+      slug: duplicateSlug,
+      description: service.description,
+      image: service.image,
+      basePrice: service.basePrice,
+      isActive: false,
+      order: service.order,
+      hasDesigner: service.hasDesigner,
+      hasColorPicker: service.hasColorPicker,
+      fileLimit: service.fileLimit,
+      designerType: service.designerType,
+      pricingMode: service.pricingMode,
+      configJson: service.configJson,
+      options: {
+        create: service.options.map((option) => ({
+          key: option.key,
+          name: option.name,
+          type: option.type,
+          isRequired: option.isRequired,
+          order: option.order,
+          helperText: option.helperText,
+          pricingMode: option.pricingMode,
+          configJson: option.configJson,
+          values: {
+            create: option.values.map((value) => ({
+              name: value.name,
+              price: value.price,
+              order: value.order,
+              metadataJson: value.metadataJson,
+            })),
+          },
+        })),
+      },
+    },
+    select: {
+      id: true,
+      slug: true,
+    },
+  })
+
+  revalidateServiceViews(duplicatedService.id, duplicatedService.slug)
+  revalidateServiceViews(service.id, service.slug)
 }

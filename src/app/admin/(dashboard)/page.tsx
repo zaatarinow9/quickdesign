@@ -1,10 +1,25 @@
 import { format } from "date-fns";
-import { Activity, ArrowRight, Package, Receipt, UserCheck } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Clock3,
+  Euro,
+  Layers3,
+  Package,
+  Receipt,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
+import type { ComponentType } from "react";
 import { changeCurrentAdminPassword } from "@/app/actions/admin-account";
 import { requireAdminUser } from "@/lib/admin/auth";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import { hasAdminPermission } from "@/lib/admin/permissions";
+import {
+  getInternalOrderStatusMeta,
+  getOrderStatusMeta,
+} from "@/lib/admin/order-status";
 import { getAdminSecurityWarnings } from "@/lib/admin/security";
 import { formatCurrencyAmount } from "@/lib/orders/finance";
 import {
@@ -18,24 +33,37 @@ import { prisma } from "@/lib/prisma";
 function DashboardCard({
   label,
   value,
+  icon,
   hint,
+  accentClassName,
 }: {
   label: string;
   value: string | number;
+  icon: ComponentType<{ className?: string }>;
   hint?: string;
+  accentClassName: string;
 }) {
+  const Icon = icon;
+
   return (
-    <div className="flex flex-col justify-between border border-neutral-200 bg-white p-6 shadow-sm">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-          {label}
-        </p>
-        <p className="mt-4 text-4xl font-bold tracking-tighter text-neutral-950">
-          {value}
-        </p>
+    <div className="flex flex-col justify-between rounded-[28px] border border-white/70 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+            {label}
+          </p>
+          <p className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
+            {value}
+          </p>
+        </div>
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accentClassName}`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
       {hint && (
-        <p className="mt-5 text-xs font-bold uppercase tracking-widest text-neutral-400">
+        <p className="mt-5 text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
           {hint}
         </p>
       )}
@@ -76,8 +104,14 @@ export default async function AdminDashboard({
   const currentMonth = getMonthRange();
   const passwordErrorMessage = getPasswordErrorMessage(params.passwordError);
 
-  const [orders, recentOrders, recentActivities, servicesCount, securityWarnings] =
-    await Promise.all([
+  const [
+    orders,
+    recentOrders,
+    recentActivities,
+    servicesCount,
+    customersCount,
+    securityWarnings,
+  ] = await Promise.all([
       prisma.order.findMany({
         where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
         select: {
@@ -162,6 +196,7 @@ export default async function AdminDashboard({
         take: 8,
       }),
       canManageServices ? prisma.service.count() : Promise.resolve(null),
+      canViewAllReports ? prisma.customer.count() : Promise.resolve(null),
       getAdminSecurityWarnings(),
     ]);
 
@@ -173,6 +208,17 @@ export default async function AdminDashboard({
     );
   });
   const currentMonthSummary = buildOrdersSummary(currentMonthOrders);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+  const ordersTodayCount = orders.filter(
+    (order) => order.createdAt >= todayStart && order.createdAt < todayEnd,
+  ).length;
+  const waitingCustomerCount = orders.filter(
+    (order) =>
+      order.internalStatus === "WAITING_CUSTOMER" && !order.isArchived,
+  ).length;
   const assignedToMeCount = canViewAllReports
     ? orders.filter(
         (order) => order.assignedToId === currentUser.id && !order.isArchived,
@@ -231,12 +277,12 @@ export default async function AdminDashboard({
         </section>
       )}
 
-      <div className="flex flex-col gap-4 border-b border-neutral-100 pb-8 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 border-b border-white/70 pb-8 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold uppercase tracking-tighter text-neutral-950">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-slate-500">
             Willkommen, {currentUser.name}. Ihre Rolle: {currentUser.role}.
           </p>
         </div>
@@ -244,14 +290,14 @@ export default async function AdminDashboard({
         <div className="flex flex-wrap gap-3">
           <Link
             href="/admin/orders"
-            className="inline-flex items-center gap-2 border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-950"
           >
             <Package className="h-3 w-3" /> Auftraege
           </Link>
           {hasAdminPermission(currentUser, "canViewReports") && (
             <Link
               href={`/admin/reports?month=${currentMonth.monthValue}`}
-              className="inline-flex items-center gap-2 bg-neutral-950 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
+              className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-slate-800"
             >
               <Receipt className="h-3 w-3" /> Monatsreport
             </Link>
@@ -261,8 +307,49 @@ export default async function AdminDashboard({
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         <DashboardCard
+          label="Heute eingegangen"
+          value={ordersTodayCount}
+          icon={Clock3}
+          accentClassName="bg-sky-100 text-sky-700"
+          hint="Bestellungen seit Mitternacht"
+        />
+        <DashboardCard
+          label="Offene Auftraege"
+          value={summary.openOrders}
+          icon={Package}
+          accentClassName="bg-amber-100 text-amber-700"
+          hint="nicht erledigt / nicht storniert"
+        />
+        <DashboardCard
+          label="Wartet auf Kunde"
+          value={waitingCustomerCount}
+          icon={Activity}
+          accentClassName="bg-violet-100 text-violet-700"
+          hint="Kundenfreigabe oder Rueckmeldung ausstehend"
+        />
+        <DashboardCard
+          label={canViewAllReports ? "Monat Brutto" : "Meine Sicht"}
+          value={
+            canViewAllReports
+              ? formatCurrencyAmount(currentMonthSummary.totalGross)
+              : summary.totalOrders
+          }
+          icon={Euro}
+          accentClassName="bg-emerald-100 text-emerald-700"
+          hint={
+            canViewAllReports
+              ? currentMonth.monthLabel
+              : "sichtbare Auftraege fuer Ihre Rolle"
+          }
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <DashboardCard
           label={canViewAllReports ? "Gesamtauftraege" : "Meine Auftraege"}
           value={summary.totalOrders}
+          icon={Package}
+          accentClassName="bg-slate-100 text-slate-700"
           hint={
             canViewAllReports
               ? "inklusive archivierter Auftraege"
@@ -270,42 +357,37 @@ export default async function AdminDashboard({
           }
         />
         <DashboardCard
-          label="Offene Auftraege"
-          value={summary.openOrders}
-          hint="nicht erledigt / nicht storniert"
-        />
-        <DashboardCard
-          label="Erledigte Auftraege"
-          value={summary.completedOrders}
-          hint="zugestellt oder intern abgeschlossen"
-        />
-        <DashboardCard
-          label="Unbezahlte Auftraege"
-          value={summary.unpaidOrders}
-          hint="offener Zahlungsbetrag groesser als 0"
-        />
-        <DashboardCard
-          label="Aktueller Monat"
-          value={currentMonthSummary.totalOrders}
-          hint={currentMonth.monthLabel}
-        />
-        <DashboardCard
           label="Mir zugewiesen"
           value={assignedToMeCount}
+          icon={UserCheck}
+          accentClassName="bg-indigo-100 text-indigo-700"
           hint="aktive Auftraege in meiner Queue"
         />
         {canViewAllReports && (
           <DashboardCard
             label="Nicht zugewiesen"
             value={unassignedOrdersCount}
+            icon={Activity}
+            accentClassName="bg-orange-100 text-orange-700"
             hint="aktive Auftraege ohne Bearbeiter"
           />
         )}
         {servicesCount !== null && (
           <DashboardCard
-            label="Aktive Leistungen"
+            label="Leistungen"
             value={servicesCount}
+            icon={Layers3}
+            accentClassName="bg-cyan-100 text-cyan-700"
             hint="derzeit im System verfuegbar"
+          />
+        )}
+        {customersCount !== null && (
+          <DashboardCard
+            label="Kunden"
+            value={customersCount}
+            icon={Users}
+            accentClassName="bg-rose-100 text-rose-700"
+            hint="aktive Kundenprofile"
           />
         )}
       </div>
@@ -315,31 +397,39 @@ export default async function AdminDashboard({
           <DashboardCard
             label="Netto Gesamt"
             value={formatCurrencyAmount(summary.totalNet)}
+            icon={Euro}
+            accentClassName="bg-sky-100 text-sky-700"
           />
           <DashboardCard
             label="Brutto Gesamt"
             value={formatCurrencyAmount(summary.totalGross)}
+            icon={Euro}
+            accentClassName="bg-emerald-100 text-emerald-700"
           />
           <DashboardCard
             label="MwSt Gesamt"
             value={formatCurrencyAmount(summary.totalTax)}
+            icon={Receipt}
+            accentClassName="bg-violet-100 text-violet-700"
           />
           <DashboardCard
-            label="Monat Brutto"
-            value={formatCurrencyAmount(currentMonthSummary.totalGross)}
-            hint={currentMonth.monthLabel}
+            label="Unbezahlt"
+            value={summary.unpaidOrders}
+            icon={Clock3}
+            accentClassName="bg-amber-100 text-amber-700"
+            hint="offener Zahlungsbetrag groesser als 0"
           />
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <section className="border border-neutral-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between gap-4 border-b border-neutral-100 pb-4">
+        <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
+              <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
                 Letzte Auftraege
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-sm text-slate-500">
                 Schnellzugriff auf die zuletzt eingegangenen oder sichtbaren Auftraege.
                 {!canViewAllReports &&
                   " Fuer Staff werden nur eigene zugewiesene Auftraege gezeigt."}
@@ -347,7 +437,7 @@ export default async function AdminDashboard({
             </div>
             <Link
               href="/admin/orders"
-              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
             >
               Alle anzeigen <ArrowRight className="h-3 w-3" />
             </Link>
@@ -358,40 +448,53 @@ export default async function AdminDashboard({
               <Link
                 key={order.id}
                 href={`/admin/orders/${order.id}`}
-                className="grid gap-4 border border-neutral-200 bg-neutral-50 p-4 transition-colors hover:border-neutral-950 hover:bg-white md:grid-cols-[130px_minmax(0,1fr)_170px_150px]"
+                className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white md:grid-cols-[130px_minmax(0,1fr)_220px_170px]"
               >
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                     Bestellnr.
                   </p>
-                  <p className="mt-2 text-sm font-bold text-neutral-950">
+                  <p className="mt-2 text-sm font-bold text-slate-950">
                     #{order.orderNumber}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                     Kunde
                   </p>
-                  <p className="mt-2 text-sm font-bold text-neutral-950">
+                  <p className="mt-2 text-sm font-bold text-slate-950">
                     {order.customerName}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                     Status
                   </p>
-                  <p className="mt-2 text-sm font-bold text-neutral-950">
-                    {order.internalStatus} / {order.status}
-                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${
+                        getOrderStatusMeta(order.status).badgeClassName
+                      }`}
+                    >
+                      {getOrderStatusMeta(order.status).label}
+                    </span>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${
+                        getInternalOrderStatusMeta(order.internalStatus).badgeClassName
+                      }`}
+                    >
+                      {getInternalOrderStatusMeta(order.internalStatus).label}
+                    </span>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                     Zuweisung
                   </p>
-                  <p className="mt-2 text-sm font-bold text-neutral-950">
+                  <p className="mt-2 text-sm font-bold text-slate-950">
                     {order.assignedTo?.name || "Nicht zugewiesen"}
                   </p>
-                  <p className="mt-1 text-[11px] font-bold text-neutral-500">
+                  <p className="mt-1 text-[11px] font-bold text-slate-500">
                     {format(new Date(order.createdAt), "dd.MM.yyyy HH:mm")}
                   </p>
                 </div>
@@ -399,22 +502,22 @@ export default async function AdminDashboard({
             ))}
 
             {recentOrders.length === 0 && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">
                 Keine aktuellen Auftraege vorhanden.
               </p>
             )}
           </div>
         </section>
 
-        <section className="border border-neutral-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between gap-4 border-b border-neutral-100 pb-4">
+        <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
               <Activity className="h-5 w-5" />
               <div>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
+                <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
                   Letzte Aktivitaeten
                 </h2>
-                <p className="mt-1 text-sm text-neutral-500">
+                <p className="mt-1 text-sm text-slate-500">
                   Interne Notizen, Statuswechsel und Workflow-Ereignisse.
                 </p>
               </div>
@@ -422,7 +525,7 @@ export default async function AdminDashboard({
             {hasAdminPermission(currentUser, "canViewReports") && (
               <Link
                 href={`/admin/reports?month=${currentMonth.monthValue}`}
-                className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+                className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
               >
                 Reports <ArrowRight className="h-3 w-3" />
               </Link>
@@ -433,14 +536,14 @@ export default async function AdminDashboard({
             {recentActivities.map((activity) => (
               <div
                 key={activity.id}
-                className="border border-neutral-200 bg-neutral-50 p-4"
+                className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-colors hover:bg-white"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                       {activity.type}
                     </p>
-                    <p className="mt-2 text-sm font-bold text-neutral-950">
+                    <p className="mt-2 text-sm font-bold text-slate-950">
                       {activity.adminUser
                         ? `${activity.adminUser.name} (${activity.adminUser.role})`
                         : "System"}
@@ -449,23 +552,23 @@ export default async function AdminDashboard({
                   <div className="text-right">
                     <Link
                       href={`/admin/orders/${activity.order.id}`}
-                      className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+                      className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
                     >
                       #{activity.order.orderNumber}
                     </Link>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                       {format(new Date(activity.createdAt), "dd.MM.yyyy HH:mm")}
                     </p>
                   </div>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-neutral-700">
+                <p className="mt-4 text-sm leading-7 text-slate-700">
                   {activity.message}
                 </p>
               </div>
             ))}
 
             {recentActivities.length === 0 && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">
                 Noch keine Aktivitaeten vorhanden.
               </p>
             )}

@@ -35,6 +35,12 @@ import {
   validateSelectedFile,
   type CartPendingUpload,
 } from "@/lib/storage/order-files";
+import {
+  MAX_SERVER_ACTION_UPLOAD_MB,
+  getEffectiveUploadLimitMb,
+  getServerActionUploadLimitMessage,
+  isUploadLimitCapped,
+} from "@/lib/storage/upload-limits";
 import type {
   NormalizedServiceConfig,
   NormalizedServiceField,
@@ -148,6 +154,19 @@ function formatDisplayNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function getCheckoutUploadLimitHint(): string {
+  return `Aktuelles Upload-Limit im Checkout: ${MAX_SERVER_ACTION_UPLOAD_MB} MB pro Datei.`;
+}
+
+function getMaxFileSizeValidationMessage(
+  configuredMaxFileSizeMb: number | null | undefined,
+): string | undefined {
+  return getEffectiveUploadLimitMb(configuredMaxFileSizeMb) ===
+    MAX_SERVER_ACTION_UPLOAD_MB
+    ? getServerActionUploadLimitMessage()
+    : undefined;
+}
+
 function getColorName(hex: string): string | null {
   return (
     COMMON_COLORS.find((color) => color.hex.toLowerCase() === hex.toLowerCase())
@@ -157,6 +176,7 @@ function getColorName(hex: string): string | null {
 
 function getUploadFieldStatusText(field: NormalizedUploadField): string {
   const parts: string[] = [];
+  const effectiveUploadLimitMb = getEffectiveUploadLimitMb(field.maxFileSizeMb);
 
   if (field.allowedFileTypesText) {
     parts.push(`Formate: ${field.allowedFileTypesText}`);
@@ -168,9 +188,7 @@ function getUploadFieldStatusText(field: NormalizedUploadField): string {
       : `Maximal ${field.maxFiles} Dateien`,
   );
 
-  if (field.maxFileSizeMb) {
-    parts.push(`Max. ${field.maxFileSizeMb} MB pro Datei`);
-  }
+  parts.push(`Max. ${effectiveUploadLimitMb} MB pro Datei`);
 
   return parts.join(" | ");
 }
@@ -323,7 +341,8 @@ export default function ServiceConfigurator({
 
     const validationResult = validateSelectedFile(file, {
       accept: field.accept ?? "*/*",
-      maxFileSizeMb: null,
+      maxFileSizeMb: getEffectiveUploadLimitMb(null),
+      maxFileSizeMessage: getServerActionUploadLimitMessage(),
     });
 
     if (!validationResult.ok) {
@@ -355,7 +374,8 @@ export default function ServiceConfigurator({
 
     const validationResult = validateSelectedFile(file, {
       accept: field.accept,
-      maxFileSizeMb: field.maxFileSizeMb,
+      maxFileSizeMb: getEffectiveUploadLimitMb(field.maxFileSizeMb),
+      maxFileSizeMessage: getMaxFileSizeValidationMessage(field.maxFileSizeMb),
     });
 
     if (!validationResult.ok) {
@@ -535,6 +555,9 @@ export default function ServiceConfigurator({
           {field.helperText && (
             <p className="text-xs leading-6 text-neutral-500">{field.helperText}</p>
           )}
+          <p className="text-xs leading-6 text-neutral-500">
+            {getCheckoutUploadLimitHint()}
+          </p>
         </div>
       );
     }
@@ -567,6 +590,11 @@ export default function ServiceConfigurator({
           <p className="text-xs leading-6 text-neutral-400">
             {getUploadFieldStatusText(field)}
           </p>
+          {isUploadLimitCapped(field.maxFileSizeMb) && (
+            <p className="text-xs font-bold text-amber-700">
+              Aktuelles Upload-Limit im Checkout: {MAX_SERVER_ACTION_UPLOAD_MB} MB
+            </p>
+          )}
         </div>
 
         <div className="space-y-3">

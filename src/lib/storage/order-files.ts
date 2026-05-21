@@ -44,16 +44,14 @@ export type OrderSnapshotFileRecord = {
 type FileValidationOptions = {
   accept: string;
   maxFileSizeMb: number | null;
+  maxFileSizeMessage?: string;
 };
 
 type FileValidationResult =
   | { ok: true }
   | {
       ok: false;
-      message:
-        | "Datei ist zu gro\u00df."
-        | "Dateityp ist nicht erlaubt."
-        | "Bitte w\u00e4hlen Sie eine g\u00fcltige Datei.";
+      message: string;
     };
 
 type FileLikeForValidation = {
@@ -156,7 +154,7 @@ export function validateSelectedFile(
   ) {
     return {
       ok: false,
-      message: "Datei ist zu gro\u00df.",
+      message: options.maxFileSizeMessage ?? "Datei ist zu gro\u00df.",
     };
   }
 
