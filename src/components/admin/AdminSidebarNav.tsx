@@ -1,18 +1,30 @@
 "use client";
 
+import {
+  BarChart3,
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  UserRound,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
-
-type AdminNavItem = {
-  href: string;
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-};
+import type { AdminNavIconName, AdminNavItem } from "@/lib/admin/navigation";
 
 type AdminSidebarNavProps = {
   items: AdminNavItem[];
   orientation?: "vertical" | "horizontal";
+};
+
+const iconMap: Record<AdminNavIconName, ComponentType<{ className?: string }>> = {
+  dashboard: LayoutDashboard,
+  orders: ShoppingBag,
+  customers: UserRound,
+  reports: BarChart3,
+  services: Package,
+  users: Users,
 };
 
 function isActivePath(pathname: string, href: string): boolean {
@@ -39,7 +51,7 @@ export default function AdminSidebarNav({
       }
     >
       {items.map((item) => {
-        const Icon = item.icon;
+        const Icon = iconMap[item.iconName];
         const active = isActivePath(pathname, item.href);
 
         return (

@@ -1,23 +1,10 @@
-import {
-  BarChart3,
-  LayoutDashboard,
-  LogOut,
-  Package,
-  ShoppingBag,
-  UserRound,
-  Users,
-} from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
+import { LogOut } from "lucide-react";
+import type { ReactNode } from "react";
 import { logoutAdmin } from "@/app/actions/auth";
 import AdminSidebarNav from "@/components/admin/AdminSidebarNav";
 import { requireAdminUser } from "@/lib/admin/auth";
+import type { AdminNavItem } from "@/lib/admin/navigation";
 import { hasAdminPermission } from "@/lib/admin/permissions";
-
-type AdminNavItem = {
-  href: string;
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-};
 
 export default async function AdminLayout({
   children,
@@ -32,54 +19,58 @@ export default async function AdminLayout({
   const canManageUsers = hasAdminPermission(currentUser, "canManageUsers");
   const canViewCustomers = hasAdminPermission(currentUser, "canViewCustomers");
   const canViewReports = hasAdminPermission(currentUser, "canViewReports");
+  const customerNavItems: AdminNavItem[] = canViewCustomers
+    ? [
+        {
+          href: "/admin/customers",
+          label: "Kunden",
+          iconName: "customers",
+        },
+      ]
+    : [];
+  const reportNavItems: AdminNavItem[] = canViewReports
+    ? [
+        {
+          href: "/admin/reports",
+          label: "Reports",
+          iconName: "reports",
+        },
+      ]
+    : [];
+  const serviceNavItems: AdminNavItem[] = canManageServices
+    ? [
+        {
+          href: "/admin/services",
+          label: "Leistungen",
+          iconName: "services",
+        },
+      ]
+    : [];
+  const userNavItems: AdminNavItem[] = canManageUsers
+    ? [
+        {
+          href: "/admin/users",
+          label: "Team",
+          iconName: "users",
+        },
+      ]
+    : [];
 
   const navItems: AdminNavItem[] = [
     {
       href: "/admin",
       label: "Dashboard",
-      icon: LayoutDashboard,
+      iconName: "dashboard",
     },
     {
       href: "/admin/orders",
       label: "Bestellungen",
-      icon: ShoppingBag,
+      iconName: "orders",
     },
-    ...(canViewCustomers
-      ? [
-          {
-            href: "/admin/customers",
-            label: "Kunden",
-            icon: UserRound,
-          },
-        ]
-      : []),
-    ...(canViewReports
-      ? [
-          {
-            href: "/admin/reports",
-            label: "Reports",
-            icon: BarChart3,
-          },
-        ]
-      : []),
-    ...(canManageServices
-      ? [
-          {
-            href: "/admin/services",
-            label: "Leistungen",
-            icon: Package,
-          },
-        ]
-      : []),
-    ...(canManageUsers
-      ? [
-          {
-            href: "/admin/users",
-            label: "Team",
-            icon: Users,
-          },
-        ]
-      : []),
+    ...customerNavItems,
+    ...reportNavItems,
+    ...serviceNavItems,
+    ...userNavItems,
   ];
 
   return (
