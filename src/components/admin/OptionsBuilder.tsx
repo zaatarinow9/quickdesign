@@ -26,6 +26,8 @@ type PricingModeSelection =
   | "override_base";
 
 type OptionValueInput = {
+  id: string | null;
+  metadataJson: string | null;
   name: string;
   price: string;
   order: string;
@@ -189,7 +191,13 @@ function parseOptionConfig(configJson: string | null): ParsedOptionConfig {
 }
 
 function createEmptyValueRow(order = 1): OptionValueInput {
-  return { name: "", price: "0", order: String(order) };
+  return {
+    id: null,
+    metadataJson: null,
+    name: "",
+    price: "0",
+    order: String(order),
+  };
 }
 
 function getFieldTypeConfig(kind: AdminFieldKind) {
@@ -291,6 +299,8 @@ function createEditorStateFromOption(option: ExistingOption): OptionEditorState 
     values:
       sortedValues.length > 0
         ? sortedValues.map((value, index) => ({
+            id: value.id,
+            metadataJson: value.metadataJson,
             name: value.name,
             price: String(value.price),
             order: String(value.order > 0 ? value.order : index + 1),
@@ -495,6 +505,8 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
       },
       values: fieldTypeConfig.usesValues
         ? editorState.values.map((value, index) => ({
+            id: value.id,
+            metadataJson: value.metadataJson,
             name: value.name,
             price: parsePrice(value.price),
             order: parseOrder(value.order, index + 1),
@@ -571,6 +583,10 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
             <p className="text-sm text-neutral-500">
               Was sieht der Kunde, was ist Pflicht und welche Auswahl hat
               Preiswirkung?
+            </p>
+            <p className="mt-2 text-xs text-neutral-500">
+              Konfigurationsfelder erscheinen im Schritt Konfiguration.
+              Datei-Felder werden im Schritt Dateien gezeigt.
             </p>
           </div>
         </div>
@@ -749,6 +765,9 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
             <p className="text-xs text-neutral-500 mt-3">
               {fieldTypeConfig.description} Gespeichert als{" "}
               <span className="font-bold">{fieldTypeConfig.storedAs}</span>.
+              {editorState.kind === "file"
+                ? " Sichtbar im Schritt Dateien."
+                : " Sichtbar im Schritt Konfiguration."}
             </p>
           </div>
 
@@ -904,7 +923,7 @@ export default function OptionsBuilder({ serviceId, options }: Props) {
             <div className="space-y-4">
               {editorState.values.map((value, index) => (
                 <div
-                  key={`${index}-${editorState.optionId ?? "new"}`}
+                  key={value.id ?? `${index}-${editorState.optionId ?? "new"}`}
                   className="grid grid-cols-1 md:grid-cols-[100px_minmax(0,1fr)_140px_52px] gap-4 items-center"
                 >
                   <input

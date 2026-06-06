@@ -25,6 +25,8 @@ type SupportedOptionInputType = keyof typeof OPTION_TYPE_MAP
 type SupportedPricingMode = (typeof ALLOWED_PRICING_MODES)[number]
 
 type OptionValueInput = {
+  id?: string | null
+  metadataJson?: string | null
   name: string
   price: number
   order: number
@@ -57,7 +59,13 @@ type NormalizedOptionData = {
   helperText: string | null
   pricingMode: SupportedPricingMode | null
   configJson: string | null
-  values: { name: string; price: number; order: number; metadataJson: string | null }[]
+  values: {
+    id: string | null
+    name: string
+    price: number
+    order: number
+    metadataJson: string | null
+  }[]
 }
 
 type OptionActionResult =
@@ -157,11 +165,34 @@ async function resolveUniqueOptionKey(
   return candidateKey
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function parseConfigJsonRecord(
+  configJson: string | null | undefined,
+): Record<string, unknown> {
+  const normalizedConfigJson = normalizeOptionalString(configJson)
+
+  if (!normalizedConfigJson) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown = JSON.parse(normalizedConfigJson)
+    return isRecord(parsedValue) ? parsedValue : {}
+  } catch {
+    return {}
+  }
+}
+
 function buildConfigJson(
   adminKind: SupportedOptionInputType,
   config: OptionConfigInput | undefined,
+  existingConfigJson?: string | null,
 ): string {
-  const configPayload: Record<string, string> = {
+  const configPayload: Record<string, unknown> = {
+    ...parseConfigJsonRecord(existingConfigJson),
     adminKind,
   }
   const placeholder = normalizeOptionalString(config?.placeholder)
@@ -169,16 +200,23 @@ function buildConfigJson(
 
   if (placeholder) {
     configPayload.placeholder = placeholder
+  } else {
+    delete configPayload.placeholder
   }
 
   if (accept) {
     configPayload.accept = accept
+  } else {
+    delete configPayload.accept
   }
 
   return JSON.stringify(configPayload)
 }
 
-function normalizeOptionData(data: OptionData): NormalizedOptionResult {
+function normalizeOptionData(
+  data: OptionData,
+  existingConfigJson?: string | null,
+): NormalizedOptionResult {
   const name = normalizeOptionName(data.name)
   if (!name) {
     return { success: false, error: "Bitte geben Sie einen Feldnamen ein." }
@@ -201,10 +239,11 @@ function normalizeOptionData(data: OptionData): NormalizedOptionResult {
   const values = usesValues
     ? data.values
         .map((value, index) => ({
+          id: normalizeOptionalString(value.id) ?? null,
           name: value.name.trim(),
           price: normalizeOptionPrice(value.price),
           order: normalizeOptionOrder(value.order, index + 1),
-          metadataJson: null,
+          metadataJson: normalizeOptionalString(value.metadataJson) ?? null,
         }))
         .filter((value) => value.name !== "")
     : []
@@ -227,7 +266,11 @@ function normalizeOptionData(data: OptionData): NormalizedOptionResult {
       order: normalizeOptionOrder(data.order),
       helperText: normalizeOptionalString(data.helperText),
       pricingMode,
-      configJson: buildConfigJson(normalizedType, data.config),
+      configJson: buildConfigJson(
+        normalizedType,
+        data.config,
+        existingConfigJson,
+      ),
       values,
     },
   }
@@ -295,15 +338,18 @@ export async function updateServiceOption(
   data: OptionData,
 ): Promise<OptionActionResult> {
   await requireAdminPermission("canManageServices")
-  const normalized = normalizeOptionData(data)
-  if (!normalized.success) {
-    return normalized
-  }
-
   try {
     const existingOption = await prisma.serviceOption.findUnique({
       where: { id: optionId },
-      select: { serviceId: true },
+      select: {
+        serviceId: true,
+        configJson: true,
+        values: {
+          select: {
+            id: true,
+          },
+        },
+      },
     })
 
     if (!existingOption || existingOption.serviceId !== serviceId) {
@@ -313,15 +359,35 @@ export async function updateServiceOption(
       }
     }
 
+    const normalized = normalizeOptionData(data, existingOption.configJson)
+    if (!normalized.success) {
+      return normalized
+    }
+
     const optionKey = await resolveUniqueOptionKey(
       serviceId,
       normalized.requestedKey ?? normalized.data.name,
       optionId,
     )
+    const existingValueIds = new Set(existingOption.values.map((value) => value.id))
+    const retainedValueIds = normalized.data.values
+      .map((value) => value.id)
+      .filter(
+        (valueId): valueId is string =>
+          typeof valueId === "string" && existingValueIds.has(valueId),
+      )
 
     await prisma.$transaction(async (tx) => {
       await tx.optionValue.deleteMany({
-        where: { optionId },
+        where:
+          retainedValueIds.length > 0
+            ? {
+                optionId,
+                id: {
+                  notIn: retainedValueIds,
+                },
+              }
+            : { optionId },
       })
 
       await tx.serviceOption.update({
@@ -338,15 +404,28 @@ export async function updateServiceOption(
         },
       })
 
-      if (normalized.data.values.length > 0) {
-        await tx.optionValue.createMany({
-          data: normalized.data.values.map((value) => ({
+      for (const value of normalized.data.values) {
+        if (value.id && existingValueIds.has(value.id)) {
+          await tx.optionValue.update({
+            where: { id: value.id },
+            data: {
+              name: value.name,
+              price: value.price,
+              order: value.order,
+              metadataJson: value.metadataJson,
+            },
+          })
+          continue
+        }
+
+        await tx.optionValue.create({
+          data: {
             optionId,
             name: value.name,
             price: value.price,
             order: value.order,
             metadataJson: value.metadataJson,
-          })),
+          },
         })
       }
     })

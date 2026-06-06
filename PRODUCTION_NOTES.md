@@ -24,7 +24,8 @@
 ## Local Development Note
 
 - This branch now targets PostgreSQL through Prisma.
-- For local development, either point `DATABASE_URL` to a Supabase dev/staging database or keep the old SQLite workflow only on a separate branch.
+- For local development, point `DATABASE_URL` to the intended Supabase PostgreSQL database before testing admin login or user management.
+- `prisma/dev.db` is a legacy local artifact and must not be treated as the production or admin-auth source of truth.
 
 ## Security Expectations
 
@@ -37,11 +38,15 @@
 
 ## Admin Bootstrap
 
-- For local development, `prisma/seed-admin.cjs` still falls back to `admin / admin123`.
-- For production, set `ADMIN_SEED_USERNAME` and `ADMIN_SEED_PASSWORD` before running `node prisma/seed-admin.cjs`.
+- `AdminUser` in Supabase PostgreSQL via Prisma is the only production source of truth for admin authentication and admin user management.
+- Local SQLite users are not used by production admin auth.
+- To inspect the current target and list admin users safely, run `npm run admin:doctor`.
+- To create or reset a production super admin, set `DATABASE_URL` to the Supabase PostgreSQL connection string, then set `ADMIN_SEED_USERNAME` and `ADMIN_SEED_PASSWORD`, and run `npm run admin:seed`.
 - `ADMIN_SEED_NAME` and `ADMIN_SEED_EMAIL` are optional overrides for the seeded admin account.
+- `ADMIN_SEED_ALLOW_LOCAL=true` is required if you intentionally seed a local SQLite database.
 - Production admin seed credentials must not reuse the default `admin123` password.
 - After the first login, change the admin password again from the dashboard to rotate away from any temporary bootstrap secret.
+- Do not try to copy plain passwords from old local databases. Only reuse stored hashes if you have verified they use the same hashing format and you know exactly which database you are targeting.
 
 ## Suggested Deployment Checklist
 
@@ -68,10 +73,11 @@
 - `SMTP_USER`
 - `SMTP_PASS`
 - `SMTP_FROM`
-- `ADMIN_SEED_USERNAME` before `seed:admin`
-- `ADMIN_SEED_PASSWORD` before `seed:admin`
+- `ADMIN_SEED_USERNAME` before `admin:seed`
+- `ADMIN_SEED_PASSWORD` before `admin:seed`
 - `ADMIN_SEED_NAME` optional
 - `ADMIN_SEED_EMAIL` optional
+- `ADMIN_SEED_ALLOW_LOCAL` only when intentionally targeting local SQLite
 
 ## Suggested Commands
 
@@ -84,7 +90,11 @@ npx prisma db push
 ```
 
 ```bash
-node prisma/seed-admin.cjs
+npm run admin:doctor
+```
+
+```bash
+npm run admin:seed
 ```
 
 ```bash

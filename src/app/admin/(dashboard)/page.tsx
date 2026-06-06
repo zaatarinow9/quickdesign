@@ -11,8 +11,15 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import type { ComponentType } from "react";
 import { changeCurrentAdminPassword } from "@/app/actions/admin-account";
+import {
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatCard,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminUser } from "@/lib/admin/auth";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import { hasAdminPermission } from "@/lib/admin/permissions";
@@ -29,47 +36,6 @@ import {
   type ReportableOrder,
 } from "@/lib/orders/reporting";
 import { prisma } from "@/lib/prisma";
-
-function DashboardCard({
-  label,
-  value,
-  icon,
-  hint,
-  accentClassName,
-}: {
-  label: string;
-  value: string | number;
-  icon: ComponentType<{ className?: string }>;
-  hint?: string;
-  accentClassName: string;
-}) {
-  const Icon = icon;
-
-  return (
-    <div className="flex flex-col justify-between rounded-[28px] border border-white/70 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
-            {label}
-          </p>
-          <p className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
-            {value}
-          </p>
-        </div>
-        <div
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accentClassName}`}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-      {hint && (
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
 
 function getPasswordErrorMessage(errorCode: string | undefined): string | null {
   switch (errorCode) {
@@ -114,93 +80,93 @@ export default async function AdminDashboard({
     customersCount,
     securityWarnings,
   ] = await Promise.all([
-      prisma.order.findMany({
-        where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
-        select: {
-          id: true,
-          orderNumber: true,
-          customerName: true,
-          customerEmail: true,
-          customerId: true,
-          status: true,
-          internalStatus: true,
-          paymentStatus: true,
-          totalAmount: true,
-          subtotalNet: true,
-          discountType: true,
-          discountValue: true,
-          discountAmount: true,
-          taxRate: true,
-          taxAmount: true,
-          totalNet: true,
-          totalGross: true,
-          currency: true,
-          paidAmount: true,
-          assignedToId: true,
-          createdAt: true,
-          isArchived: true,
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.order.findMany({
-        where: canViewAllReports
-          ? { isArchived: false }
-          : {
-              isArchived: false,
-              assignedToId: currentUser.id,
-            },
-        select: {
-          id: true,
-          orderNumber: true,
-          customerName: true,
-          status: true,
-          internalStatus: true,
-          assignedTo: {
-            select: {
-              name: true,
-            },
+    prisma.order.findMany({
+      where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerEmail: true,
+        customerId: true,
+        status: true,
+        internalStatus: true,
+        paymentStatus: true,
+        totalAmount: true,
+        subtotalNet: true,
+        discountType: true,
+        discountValue: true,
+        discountAmount: true,
+        taxRate: true,
+        taxAmount: true,
+        totalNet: true,
+        totalGross: true,
+        currency: true,
+        paidAmount: true,
+        assignedToId: true,
+        createdAt: true,
+        isArchived: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.order.findMany({
+      where: canViewAllReports
+        ? { isArchived: false }
+        : {
+            isArchived: false,
+            assignedToId: currentUser.id,
           },
-          createdAt: true,
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        status: true,
+        internalStatus: true,
+        assignedTo: {
+          select: {
+            name: true,
+          },
         },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-      prisma.orderActivity.findMany({
-        where: canViewAllReports
-          ? undefined
-          : {
-              OR: [
-                { adminUserId: currentUser.id },
-                {
-                  order: {
-                    is: {
-                      assignedToId: currentUser.id,
-                    },
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    prisma.orderActivity.findMany({
+      where: canViewAllReports
+        ? undefined
+        : {
+            OR: [
+              { adminUserId: currentUser.id },
+              {
+                order: {
+                  is: {
+                    assignedToId: currentUser.id,
                   },
                 },
-              ],
-            },
-        include: {
-          order: {
-            select: {
-              id: true,
-              orderNumber: true,
-            },
+              },
+            ],
           },
-          adminUser: {
-            select: {
-              name: true,
-              role: true,
-            },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
           },
         },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-      canManageServices ? prisma.service.count() : Promise.resolve(null),
-      canViewAllReports ? prisma.customer.count() : Promise.resolve(null),
-      getAdminSecurityWarnings(),
-    ]);
+        adminUser: {
+          select: {
+            name: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    canManageServices ? prisma.service.count() : Promise.resolve(null),
+    canViewAllReports ? prisma.customer.count() : Promise.resolve(null),
+    getAdminSecurityWarnings(),
+  ]);
 
   const summary = buildOrdersSummary(orders as ReportableOrder[]);
   const currentMonthOrders = (orders as ReportableOrder[]).filter((order) => {
@@ -218,8 +184,7 @@ export default async function AdminDashboard({
     (order) => order.createdAt >= todayStart && order.createdAt < todayEnd,
   ).length;
   const waitingCustomerCount = orders.filter(
-    (order) =>
-      order.internalStatus === "WAITING_CUSTOMER" && !order.isArchived,
+    (order) => order.internalStatus === "WAITING_CUSTOMER" && !order.isArchived,
   ).length;
   const assignedToMeCount = canViewAllReports
     ? orders.filter(
@@ -230,403 +195,389 @@ export default async function AdminDashboard({
     ? orders.filter((order) => order.assignedToId === null && !order.isArchived).length
     : 0;
   const myVisibleOrders = canViewAllReports
-    ? (orders as ReportableOrder[]).filter(
-        (order) => order.assignedToId === currentUser.id,
-      )
+    ? (orders as ReportableOrder[]).filter((order) => order.assignedToId === currentUser.id)
     : (orders as ReportableOrder[]);
 
   return (
-    <div className="w-full space-y-10">
-      {params.forbidden && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Sie haben fuer diesen Bereich keine Berechtigung.
-        </div>
-      )}
-      {params.passwordChanged && (
-        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
-          Ihr Passwort wurde aktualisiert.
-        </div>
-      )}
-      {passwordErrorMessage && (
-        <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          {passwordErrorMessage}
-        </div>
-      )}
-      {securityWarnings.length > 0 && (
-        <section className="space-y-4 border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
-              Sicherheitscheck
-            </p>
-            <h2 className="mt-2 text-lg font-bold text-amber-950">
-              Vor dem Deployment bitte pruefen
-            </h2>
-          </div>
-          <ul className="space-y-3">
-            {securityWarnings.map((warning) => (
-              <li
-                key={warning.id}
-                className={`border px-4 py-3 ${
-                  warning.level === "error"
-                    ? "border-red-200 bg-red-50 text-red-800"
-                    : "border-amber-200 bg-white text-amber-900"
-                }`}
-              >
-                {warning.message}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="flex flex-col gap-4 border-b border-white/70 pb-8 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-            Dashboard
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Willkommen, {currentUser.name}. Ihre Rolle: {currentUser.role}.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/orders"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-950"
-          >
-            <Package className="h-3 w-3" /> Auftraege
-          </Link>
-          {hasAdminPermission(currentUser, "canViewReports") && (
-            <Link
-              href={`/admin/reports?month=${currentMonth.monthValue}`}
-              className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-slate-800"
-            >
-              <Receipt className="h-3 w-3" /> Monatsreport
-            </Link>
+    <div className="space-y-8">
+      {(params.forbidden || params.passwordChanged || passwordErrorMessage) && (
+        <div className="space-y-3">
+          {params.forbidden && (
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+              Sie haben fuer diesen Bereich keine Berechtigung.
+            </div>
+          )}
+          {params.passwordChanged && (
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200">
+              Ihr Passwort wurde aktualisiert.
+            </div>
+          )}
+          {passwordErrorMessage && (
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
+              {passwordErrorMessage}
+            </div>
           )}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard
-          label="Heute eingegangen"
-          value={ordersTodayCount}
-          icon={Clock3}
-          accentClassName="bg-sky-100 text-sky-700"
-          hint="Bestellungen seit Mitternacht"
-        />
-        <DashboardCard
-          label="Offene Auftraege"
-          value={summary.openOrders}
-          icon={Package}
-          accentClassName="bg-amber-100 text-amber-700"
-          hint="nicht erledigt / nicht storniert"
-        />
-        <DashboardCard
-          label="Wartet auf Kunde"
-          value={waitingCustomerCount}
-          icon={Activity}
-          accentClassName="bg-violet-100 text-violet-700"
-          hint="Kundenfreigabe oder Rueckmeldung ausstehend"
-        />
-        <DashboardCard
-          label={canViewAllReports ? "Monat Brutto" : "Meine Sicht"}
-          value={
-            canViewAllReports
-              ? formatCurrencyAmount(currentMonthSummary.totalGross)
-              : summary.totalOrders
-          }
-          icon={Euro}
-          accentClassName="bg-emerald-100 text-emerald-700"
-          hint={
-            canViewAllReports
-              ? currentMonth.monthLabel
-              : "sichtbare Auftraege fuer Ihre Rolle"
-          }
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard
-          label={canViewAllReports ? "Gesamtauftraege" : "Meine Auftraege"}
-          value={summary.totalOrders}
-          icon={Package}
-          accentClassName="bg-slate-100 text-slate-700"
-          hint={
-            canViewAllReports
-              ? "inklusive archivierter Auftraege"
-              : "zugewiesene Auftraege fuer Ihre Rolle"
-          }
-        />
-        <DashboardCard
-          label="Mir zugewiesen"
-          value={assignedToMeCount}
-          icon={UserCheck}
-          accentClassName="bg-indigo-100 text-indigo-700"
-          hint="aktive Auftraege in meiner Queue"
-        />
-        {canViewAllReports && (
-          <DashboardCard
-            label="Nicht zugewiesen"
-            value={unassignedOrdersCount}
-            icon={Activity}
-            accentClassName="bg-orange-100 text-orange-700"
-            hint="aktive Auftraege ohne Bearbeiter"
-          />
-        )}
-        {servicesCount !== null && (
-          <DashboardCard
-            label="Leistungen"
-            value={servicesCount}
-            icon={Layers3}
-            accentClassName="bg-cyan-100 text-cyan-700"
-            hint="derzeit im System verfuegbar"
-          />
-        )}
-        {customersCount !== null && (
-          <DashboardCard
-            label="Kunden"
-            value={customersCount}
-            icon={Users}
-            accentClassName="bg-rose-100 text-rose-700"
-            hint="aktive Kundenprofile"
-          />
-        )}
-      </div>
-
-      {canViewAllReports && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <DashboardCard
-            label="Netto Gesamt"
-            value={formatCurrencyAmount(summary.totalNet)}
-            icon={Euro}
-            accentClassName="bg-sky-100 text-sky-700"
-          />
-          <DashboardCard
-            label="Brutto Gesamt"
-            value={formatCurrencyAmount(summary.totalGross)}
-            icon={Euro}
-            accentClassName="bg-emerald-100 text-emerald-700"
-          />
-          <DashboardCard
-            label="MwSt Gesamt"
-            value={formatCurrencyAmount(summary.totalTax)}
-            icon={Receipt}
-            accentClassName="bg-violet-100 text-violet-700"
-          />
-          <DashboardCard
-            label="Unbezahlt"
-            value={summary.unpaidOrders}
-            icon={Clock3}
-            accentClassName="bg-amber-100 text-amber-700"
-            hint="offener Zahlungsbetrag groesser als 0"
-          />
-        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
-                Letzte Auftraege
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Schnellzugriff auf die zuletzt eingegangenen oder sichtbaren Auftraege.
-                {!canViewAllReports &&
-                  " Fuer Staff werden nur eigene zugewiesene Auftraege gezeigt."}
-              </p>
-            </div>
-            <Link
-              href="/admin/orders"
-              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
-            >
-              Alle anzeigen <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
+      {securityWarnings.length > 0 && (
+        <AdminCard className="border-amber-200 bg-amber-50/80 p-6 dark:border-amber-900/70 dark:bg-amber-950/30">
           <div className="space-y-4">
-            {recentOrders.map((order) => (
-              <Link
-                key={order.id}
-                href={`/admin/orders/${order.id}`}
-                className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white md:grid-cols-[130px_minmax(0,1fr)_220px_170px]"
-              >
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    Bestellnr.
-                  </p>
-                  <p className="mt-2 text-sm font-bold text-slate-950">
-                    #{order.orderNumber}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    Kunde
-                  </p>
-                  <p className="mt-2 text-sm font-bold text-slate-950">
-                    {order.customerName}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    Status
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${
-                        getOrderStatusMeta(order.status).badgeClassName
-                      }`}
-                    >
-                      {getOrderStatusMeta(order.status).label}
-                    </span>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] ${
-                        getInternalOrderStatusMeta(order.internalStatus).badgeClassName
-                      }`}
-                    >
-                      {getInternalOrderStatusMeta(order.internalStatus).label}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    Zuweisung
-                  </p>
-                  <p className="mt-2 text-sm font-bold text-slate-950">
-                    {order.assignedTo?.name || "Nicht zugewiesen"}
-                  </p>
-                  <p className="mt-1 text-[11px] font-bold text-slate-500">
-                    {format(new Date(order.createdAt), "dd.MM.yyyy HH:mm")}
-                  </p>
-                </div>
-              </Link>
-            ))}
-
-            {recentOrders.length === 0 && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">
-                Keine aktuellen Auftraege vorhanden.
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+                Sicherheitscheck
               </p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-amber-950 dark:text-amber-100">
+                Vor dem Deployment bitte pruefen
+              </h2>
+            </div>
+            <ul className="space-y-3">
+              {securityWarnings.map((warning) => (
+                <li
+                  key={warning.id}
+                  className={`rounded-2xl border px-4 py-3 text-sm leading-7 ${
+                    warning.level === "error"
+                      ? "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200"
+                      : "border-amber-200 bg-white/80 text-amber-900 dark:border-amber-900 dark:bg-slate-950/40 dark:text-amber-100"
+                  }`}
+                >
+                  {warning.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </AdminCard>
+      )}
+
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Dashboard"
+          title="Admin Ueberblick"
+          description={`Willkommen, ${currentUser.name}. Ihre Rolle: ${currentUser.role}.`}
+          actions={
+            <>
+              <Link href="/admin/orders" className={getAdminButtonClassName("secondary")}>
+                <Package className="h-4 w-4" />
+                Auftraege
+              </Link>
+              {hasAdminPermission(currentUser, "canViewReports") && (
+                <Link
+                  href={`/admin/reports?month=${currentMonth.monthValue}`}
+                  className={getAdminButtonClassName("primary")}
+                >
+                  <Receipt className="h-4 w-4" />
+                  Monatsreport
+                </Link>
+              )}
+            </>
+          }
+        />
+
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminStatCard
+            label="Heute eingegangen"
+            value={ordersTodayCount}
+            icon={Clock3}
+            tone="blue"
+            hint="Bestellungen seit Mitternacht"
+          />
+          <AdminStatCard
+            label="Offene Auftraege"
+            value={summary.openOrders}
+            icon={Package}
+            tone="amber"
+            hint="Nicht erledigt oder storniert"
+          />
+          <AdminStatCard
+            label="Wartet auf Kunde"
+            value={waitingCustomerCount}
+            icon={Activity}
+            tone="purple"
+            hint="Kundenfreigabe oder Rueckmeldung ausstehend"
+          />
+          <AdminStatCard
+            label={canViewAllReports ? "Monat Brutto" : "Meine Sicht"}
+            value={
+              canViewAllReports
+                ? formatCurrencyAmount(currentMonthSummary.totalGross)
+                : summary.totalOrders
+            }
+            icon={Euro}
+            tone="emerald"
+            hint={
+              canViewAllReports
+                ? currentMonth.monthLabel
+                : "Sichtbare Auftraege fuer Ihre Rolle"
+            }
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminStatCard
+            label={canViewAllReports ? "Gesamtauftraege" : "Meine Auftraege"}
+            value={summary.totalOrders}
+            icon={Package}
+            tone="slate"
+            hint={
+              canViewAllReports
+                ? "Inklusive archivierter Auftraege"
+                : "Zugewiesene Auftraege fuer Ihre Rolle"
+            }
+          />
+          <AdminStatCard
+            label="Mir zugewiesen"
+            value={assignedToMeCount}
+            icon={UserCheck}
+            tone="blue"
+            hint="Aktive Auftraege in meiner Queue"
+          />
+          {canViewAllReports && (
+            <AdminStatCard
+              label="Nicht zugewiesen"
+              value={unassignedOrdersCount}
+              icon={Activity}
+              tone="amber"
+              hint="Aktive Auftraege ohne Bearbeiter"
+            />
+          )}
+          {servicesCount !== null && (
+            <AdminStatCard
+              label="Leistungen"
+              value={servicesCount}
+              icon={Layers3}
+              tone="blue"
+              hint="Derzeit im System verfuegbar"
+            />
+          )}
+          {customersCount !== null && (
+            <AdminStatCard
+              label="Kunden"
+              value={customersCount}
+              icon={Users}
+              tone="rose"
+              hint="Aktive Kundenprofile"
+            />
+          )}
+        </div>
+
+        {canViewAllReports && (
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <AdminStatCard
+              label="Netto Gesamt"
+              value={formatCurrencyAmount(summary.totalNet)}
+              icon={Euro}
+              tone="blue"
+            />
+            <AdminStatCard
+              label="Brutto Gesamt"
+              value={formatCurrencyAmount(summary.totalGross)}
+              icon={Euro}
+              tone="emerald"
+            />
+            <AdminStatCard
+              label="MwSt Gesamt"
+              value={formatCurrencyAmount(summary.totalTax)}
+              icon={Receipt}
+              tone="purple"
+            />
+            <AdminStatCard
+              label="Unbezahlt"
+              value={summary.unpaidOrders}
+              icon={Clock3}
+              tone="amber"
+              hint="Offener Zahlungsbetrag groesser als 0"
+            />
+          </div>
+        )}
+      </AdminCard>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <AdminSectionCard
+          title="Letzte Auftraege"
+          description={`Schnellzugriff auf die zuletzt eingegangenen oder sichtbaren Auftraege.${
+            !canViewAllReports
+              ? " Fuer Staff werden nur eigene zugewiesene Auftraege gezeigt."
+              : ""
+          }`}
+          icon={Package}
+          actions={
+            <Link href="/admin/orders" className={getAdminButtonClassName("ghost")}>
+              Alle anzeigen
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          <div className="space-y-4">
+            {recentOrders.length === 0 ? (
+              <AdminEmptyState
+                icon={Package}
+                title="Keine aktuellen Auftraege vorhanden."
+                description="Sobald neue Auftraege eingehen, erscheinen sie hier als Schnellzugriff."
+              />
+            ) : (
+              recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700 dark:hover:bg-slate-900 md:grid-cols-[130px_minmax(0,1fr)_220px_170px]"
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Bestellnr.
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      #{order.orderNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Kunde
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {order.customerName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Status
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-semibold ${getOrderStatusMeta(
+                          order.status,
+                        ).badgeClassName}`}
+                      >
+                        {getOrderStatusMeta(order.status).label}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-semibold ${getInternalOrderStatusMeta(
+                          order.internalStatus,
+                        ).badgeClassName}`}
+                      >
+                        {getInternalOrderStatusMeta(order.internalStatus).label}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Zuweisung
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {order.assignedTo?.name || "Nicht zugewiesen"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {format(new Date(order.createdAt), "dd.MM.yyyy HH:mm")}
+                    </p>
+                  </div>
+                </Link>
+              ))
             )}
           </div>
-        </section>
+        </AdminSectionCard>
 
-        <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-3">
-              <Activity className="h-5 w-5" />
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
-                  Letzte Aktivitaeten
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Interne Notizen, Statuswechsel und Workflow-Ereignisse.
-                </p>
-              </div>
-            </div>
-            {hasAdminPermission(currentUser, "canViewReports") && (
+        <AdminSectionCard
+          title="Letzte Aktivitaeten"
+          description="Interne Notizen, Statuswechsel und Workflow-Ereignisse."
+          icon={Activity}
+          actions={
+            hasAdminPermission(currentUser, "canViewReports") ? (
               <Link
                 href={`/admin/reports?month=${currentMonth.monthValue}`}
-                className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
+                className={getAdminButtonClassName("ghost")}
               >
-                Reports <ArrowRight className="h-3 w-3" />
+                Reports
+                <ArrowRight className="h-4 w-4" />
               </Link>
-            )}
-          </div>
-
+            ) : null
+          }
+        >
           <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-colors hover:bg-white"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                      {activity.type}
-                    </p>
-                    <p className="mt-2 text-sm font-bold text-slate-950">
-                      {activity.adminUser
-                        ? `${activity.adminUser.name} (${activity.adminUser.role})`
-                        : "System"}
-                    </p>
+            {recentActivities.length === 0 ? (
+              <AdminEmptyState
+                icon={Activity}
+                title="Noch keine Aktivitaeten vorhanden."
+                description="Statuswechsel und interne Aktionen erscheinen hier automatisch."
+              />
+            ) : (
+              recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-colors hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:bg-slate-900"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                        {activity.type}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                        {activity.adminUser
+                          ? `${activity.adminUser.name} (${activity.adminUser.role})`
+                          : "System"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Link
+                        href={`/admin/orders/${activity.order.id}`}
+                        className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                      >
+                        #{activity.order.orderNumber}
+                      </Link>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {format(new Date(activity.createdAt), "dd.MM.yyyy HH:mm")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <Link
-                      href={`/admin/orders/${activity.order.id}`}
-                      className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-slate-950"
-                    >
-                      #{activity.order.orderNumber}
-                    </Link>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                      {format(new Date(activity.createdAt), "dd.MM.yyyy HH:mm")}
-                    </p>
-                  </div>
+                  <p className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
+                    {activity.message}
+                  </p>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-slate-700">
-                  {activity.message}
-                </p>
-              </div>
-            ))}
-
-            {recentActivities.length === 0 && (
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">
-                Noch keine Aktivitaeten vorhanden.
-              </p>
+              ))
             )}
           </div>
-        </section>
+        </AdminSectionCard>
       </div>
 
       {!canViewAllReports && (
-        <div className="border border-neutral-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <UserCheck className="h-5 w-5" />
+        <AdminCard className="p-6">
+          <div className="flex items-start gap-3">
+            <UserCheck className="mt-1 h-5 w-5 text-slate-500 dark:text-slate-300" />
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">
                 Eigene Monatslast
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
-                Finanzsummen bleiben fuer Ihre Rolle eingeschraenkt. Offener Betrag in
-                Ihren sichtbaren Auftraegen:{" "}
+              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Finanzsummen bleiben fuer Ihre Rolle eingeschraenkt. Offener Betrag
+                in Ihren sichtbaren Auftraegen:{" "}
                 {formatCurrencyAmount(
                   myVisibleOrders.reduce((sum, order) => {
-                    return order.isArchived
-                      ? sum
-                      : sum + getOrderOutstandingAmount(order);
+                    return order.isArchived ? sum : sum + getOrderOutstandingAmount(order);
                   }, 0),
                 )}
               </p>
             </div>
           </div>
-        </div>
+        </AdminCard>
       )}
 
-      <section className="border border-neutral-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 border-b border-neutral-100 pb-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
-            Eigenes Passwort aendern
-          </h2>
-          <p className="mt-2 text-sm text-neutral-500">
-            Verwenden Sie fuer den Admin-Zugang ein eigenes starkes Passwort mit
-            mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.
-          </p>
-        </div>
-
+      <AdminSectionCard
+        title="Eigenes Passwort aendern"
+        description={`Verwenden Sie fuer den Admin-Zugang ein eigenes starkes Passwort mit mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.`}
+        icon={UserCheck}
+      >
         <form action={changeCurrentAdminPassword} className="grid gap-6 md:grid-cols-3">
           <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+            <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
               Aktuelles Passwort
             </label>
             <input
               name="currentPassword"
               type="password"
               required
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             />
           </div>
           <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+            <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
               Neues Passwort
             </label>
             <input
@@ -634,11 +585,11 @@ export default async function AdminDashboard({
               type="password"
               required
               minLength={MIN_ADMIN_PASSWORD_LENGTH}
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             />
           </div>
           <div>
-            <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-neutral-950">
+            <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
               Neues Passwort bestaetigen
             </label>
             <input
@@ -646,19 +597,16 @@ export default async function AdminDashboard({
               type="password"
               required
               minLength={MIN_ADMIN_PASSWORD_LENGTH}
-              className="w-full border border-neutral-300 p-4 text-sm outline-none transition-colors focus:border-neutral-950"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             />
           </div>
           <div className="md:col-span-3">
-            <button
-              type="submit"
-              className="bg-neutral-950 px-6 py-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-            >
+            <button type="submit" className={getAdminButtonClassName("primary")}>
               Passwort aktualisieren
             </button>
           </div>
         </form>
-      </section>
+      </AdminSectionCard>
     </div>
   );
 }

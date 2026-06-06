@@ -1,10 +1,16 @@
 import { format } from "date-fns";
 import { Building2, Plus, Search, Users } from "lucide-react";
 import Link from "next/link";
+import {
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import { canManageCustomers } from "@/lib/admin/permissions";
-import { prisma } from "@/lib/prisma";
 import { getOrderFinancials } from "@/lib/orders/finance";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminCustomersPage({
   searchParams,
@@ -51,147 +57,146 @@ export default async function AdminCustomersPage({
   });
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col gap-6 border-b border-neutral-100 pb-8 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="flex items-center gap-4 text-4xl font-bold uppercase tracking-tighter">
-            <Users className="h-10 w-10" /> Kunden
-          </h1>
-          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Kundenprofile durchsuchen, einsehen und fuer manuelle Auftraege nutzen
-          </p>
-        </div>
+    <div className="space-y-8">
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Kunden"
+          title="Kundenprofile"
+          description="Kundenprofile durchsuchen, einsehen und fuer manuelle Auftraege nutzen."
+          actions={
+            <>
+              <Link href="/admin/orders/new" className={getAdminButtonClassName("secondary")}>
+                <Plus className="h-4 w-4" />
+                Neuer Auftrag
+              </Link>
+              {showManageActions && (
+                <Link href="/admin/customers/new" className={getAdminButtonClassName("primary")}>
+                  <Plus className="h-4 w-4" />
+                  Neuer Kunde
+                </Link>
+              )}
+            </>
+          }
+        />
+      </AdminCard>
 
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/orders/new"
-            className="inline-flex items-center gap-2 border border-neutral-200 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-600 transition-colors hover:border-neutral-950 hover:text-neutral-950"
-          >
-            <Plus className="h-3 w-3" /> Neuer Auftrag
-          </Link>
-          {showManageActions && (
-            <Link
-              href="/admin/customers/new"
-              className="inline-flex items-center gap-2 bg-neutral-950 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-            >
-              <Plus className="h-3 w-3" /> Neuer Kunde
-            </Link>
-          )}
-        </div>
-      </div>
+      <AdminCard className="p-4">
+        <form className="flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              name="search"
+              defaultValue={search}
+              placeholder="Nach Name, Firma, E-Mail oder Telefon suchen"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            />
+          </div>
+          <button type="submit" className={getAdminButtonClassName("primary")}>
+            Filtern
+          </button>
+        </form>
+      </AdminCard>
 
-      <form className="flex flex-col gap-3 border border-neutral-200 bg-white p-4 shadow-sm md:flex-row">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input
-            name="search"
-            defaultValue={search}
-            placeholder="Nach Name, Firma, E-Mail oder Telefon suchen"
-            className="w-full border border-neutral-200 bg-neutral-50 py-4 pl-11 pr-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-neutral-950 px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-        >
-          Filtern
-        </button>
-      </form>
-
-      <div className="overflow-hidden border border-neutral-200 bg-white shadow-sm">
-        <table className="w-full min-w-[980px] text-left">
-          <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-50">
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Kunde
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Kontakt
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Bestellungen
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Umsatz
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Status
-              </th>
-              <th className="p-5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Aktualisiert
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {customers.map((customer) => {
-              const totalSales = customer.orders.reduce((sum, order) => {
-                return sum + getOrderFinancials(order).totalGross;
-              }, 0);
-
-              return (
-                <tr key={customer.id} className="transition-colors hover:bg-neutral-50/60">
-                  <td className="p-5">
-                    <Link
-                      href={`/admin/customers/${customer.id}`}
-                      className="flex items-center gap-4"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 font-bold text-neutral-500">
-                        {customer.name[0] ?? "K"}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-neutral-950">
-                          {customer.name}
-                        </p>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-                          {customer.companyName || "Privatkunde"}
-                        </p>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="p-5 text-xs text-neutral-600">
-                    <p className="font-bold text-neutral-950">
-                      {customer.email || "Keine E-Mail"}
-                    </p>
-                    <p className="mt-2 font-bold text-neutral-500">
-                      {customer.phone || "Kein Telefon"}
-                    </p>
-                  </td>
-                  <td className="p-5 text-sm font-bold text-neutral-950">
-                    {customer._count.orders}
-                  </td>
-                  <td className="p-5 text-sm font-bold text-neutral-950">
-                    {totalSales.toFixed(2)} EUR
-                  </td>
-                  <td className="p-5">
-                    <span
-                      className={`inline-flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest ${
-                        customer.isActive
-                          ? "border border-green-200 bg-green-50 text-green-700"
-                          : "border border-neutral-200 bg-neutral-100 text-neutral-500"
-                      }`}
-                    >
-                      <Building2 className="h-3 w-3" />
-                      {customer.isActive ? "Aktiv" : "Archiviert"}
-                    </span>
-                  </td>
-                  <td className="p-5 text-[11px] font-bold text-neutral-500">
-                    {format(new Date(customer.updatedAt), "dd.MM.yyyy HH:mm")}
-                  </td>
+      <AdminCard className="overflow-hidden">
+        {customers.length === 0 ? (
+          <div className="p-6">
+            <AdminEmptyState
+              icon={Users}
+              title="Keine Kunden gefunden."
+              description="Passen Sie die Suche an oder legen Sie einen neuen Kunden an."
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[980px] w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/80">
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Kunde
+                  </th>
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Kontakt
+                  </th>
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Bestellungen
+                  </th>
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Umsatz
+                  </th>
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Status
+                  </th>
+                  <th className="p-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Aktualisiert
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {customers.map((customer) => {
+                  const totalSales = customer.orders.reduce((sum, order) => {
+                    return sum + getOrderFinancials(order).totalGross;
+                  }, 0);
 
-        {customers.length === 0 && (
-          <div className="flex flex-col items-center gap-4 p-20 text-center">
-            <Users className="h-12 w-12 text-neutral-200" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-300">
-              Keine Kunden gefunden
-            </p>
+                  return (
+                    <tr
+                      key={customer.id}
+                      className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-950/40"
+                    >
+                      <td className="p-5">
+                        <Link
+                          href={`/admin/customers/${customer.id}`}
+                          className="flex items-center gap-4"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            {customer.name[0] ?? "K"}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                              {customer.name}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {customer.companyName || "Privatkunde"}
+                            </p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="p-5 text-sm text-slate-600 dark:text-slate-300">
+                        <p className="font-semibold text-slate-950 dark:text-slate-50">
+                          {customer.email || "Keine E-Mail"}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          {customer.phone || "Kein Telefon"}
+                        </p>
+                      </td>
+                      <td className="p-5 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                        {customer._count.orders}
+                      </td>
+                      <td className="p-5 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                        {totalSales.toFixed(2)} EUR
+                      </td>
+                      <td className="p-5">
+                        <span
+                          className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold ${
+                            customer.isActive
+                              ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
+                              : "border border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                          }`}
+                        >
+                          <Building2 className="h-3.5 w-3.5" />
+                          {customer.isActive ? "Aktiv" : "Archiviert"}
+                        </span>
+                      </td>
+                      <td className="p-5 text-sm text-slate-500 dark:text-slate-300">
+                        {format(new Date(customer.updatedAt), "dd.MM.yyyy HH:mm")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </AdminCard>
     </div>
   );
 }

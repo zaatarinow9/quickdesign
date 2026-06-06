@@ -12,9 +12,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import type { AdminNavIconName, AdminNavItem } from "@/lib/admin/navigation";
+import { cn } from "@/lib/utils";
 
 type AdminSidebarNavProps = {
-  items: AdminNavItem[];
+  items: readonly AdminNavItem[];
   orientation?: "vertical" | "horizontal";
 };
 
@@ -22,8 +23,8 @@ const iconMap: Record<AdminNavIconName, ComponentType<{ className?: string }>> =
   dashboard: LayoutDashboard,
   orders: ShoppingBag,
   customers: UserRound,
-  reports: BarChart3,
   services: Package,
+  reports: BarChart3,
   users: Users,
 };
 
@@ -44,11 +45,11 @@ export default function AdminSidebarNav({
 
   return (
     <nav
-      className={
+      className={cn(
         isHorizontal
           ? "flex gap-2 overflow-x-auto pb-1"
-          : "flex flex-col gap-2"
-      }
+          : "flex flex-col gap-2",
+      )}
     >
       {items.map((item) => {
         const Icon = iconMap[item.iconName];
@@ -58,14 +59,14 @@ export default function AdminSidebarNav({
           <Link
             key={item.href}
             href={item.href}
-            className={`inline-flex items-center gap-3 rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.22em] transition-all ${
+            className={`inline-flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
               active
-                ? "bg-slate-950 text-white shadow-lg"
-                : "text-slate-500 hover:bg-white/70 hover:text-slate-950"
+                ? "bg-slate-950 text-white shadow-lg ring-1 ring-slate-900/10 dark:bg-slate-100 dark:text-slate-950"
+                : "text-slate-600 hover:bg-white hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
             }`}
           >
             <Icon className="h-4 w-4" />
-            <span className={isHorizontal ? "whitespace-nowrap" : ""}>
+            <span className={cn(isHorizontal && "whitespace-nowrap")}>
               {item.label}
             </span>
           </Link>

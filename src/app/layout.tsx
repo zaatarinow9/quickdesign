@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+import ThemeBridge from "@/components/theme/ThemeBridge";
+import ThemeScript from "@/components/theme/ThemeScript";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Print Studio",
-  description: "Hochwertige Druckdienstleistungen und Komplettlösungen",
+  description: "Hochwertige Druckdienstleistungen und Komplettloesungen",
 };
 
 export default function RootLayout({
@@ -18,14 +20,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" suppressHydrationWarning>
-      <body 
-        suppressHydrationWarning 
-        className={`${inter.className} bg-white text-neutral-950 min-h-screen flex flex-col`}
+      <head>
+        <ThemeScript />
+      </head>
+      <body
+        suppressHydrationWarning
+        className={`${inter.className} min-h-screen bg-slate-50 text-slate-950`}
       >
+        <ThemeBridge />
         <Header />
-        <main className="flex-1 w-full">
-          {children}
-        </main>
+        <main className="flex min-h-screen flex-1 flex-col">{children}</main>
         <Footer />
       </body>
     </html>

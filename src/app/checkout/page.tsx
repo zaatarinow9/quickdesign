@@ -191,12 +191,12 @@ export default function CheckoutPage() {
   if (!mounted) return null;
   if (items.length === 0 && !success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
-        <p className="text-sm font-bold uppercase tracking-widest text-neutral-400">
+      <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-slate-50 px-6 text-center">
+        <p className="text-sm text-slate-500">
           Ihr Warenkorb ist leer
         </p>
-        <Link href="/" className="text-xs font-bold uppercase underline">
-          Zurueck zum Shop
+        <Link href="/" className="text-sm font-medium text-slate-700 underline underline-offset-4">
+          Zurück zum Shop
         </Link>
       </div>
     );
@@ -245,157 +245,172 @@ export default function CheckoutPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6">
-        <div className="w-20 h-20 bg-neutral-950 text-white rounded-full flex items-center justify-center mb-8 shadow-2xl">
-          <CheckCircle2 className="w-10 h-10" />
-        </div>
-        <h1 className="text-4xl font-bold uppercase tracking-tighter mb-4 text-center">
-          Bestellung erfolgreich!
-        </h1>
-        <p className="text-neutral-500 mb-4 text-center max-w-md text-sm">
-          Vielen Dank fuer Ihren Auftrag. Wir haben die Details erhalten.
-        </p>
-        {orderNumber && (
-          <div className="bg-neutral-50 border border-neutral-200 px-6 py-4 mb-10 text-center">
-            <span className="block text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1">
-              Bestellnummer
-            </span>
-            <span className="text-lg font-bold text-neutral-950">
-              #{orderNumber}
-            </span>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-16">
+        <div className="w-full max-w-xl rounded-[32px] border border-slate-200 bg-white p-10 text-center shadow-xl">
+          <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg">
+            <CheckCircle2 className="h-10 w-10" />
           </div>
-        )}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="bg-neutral-950 text-white px-12 py-5 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all"
-          >
-            Weiter einkaufen
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/track")}
-            className="border border-neutral-200 bg-white text-neutral-950 px-12 py-5 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-50 transition-all"
-          >
-            Bestellung verfolgen
-          </button>
+          <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
+            Bestellung erfolgreich!
+          </h1>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
+            Vielen Dank für Ihren Auftrag. Wir haben die Details erhalten.
+          </p>
+          {orderNumber && (
+            <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 px-6 py-5">
+              <span className="mb-1 block text-xs font-medium text-slate-500">
+                Bestellnummer
+              </span>
+              <span className="text-lg font-semibold text-slate-950">
+                #{orderNumber}
+              </span>
+            </div>
+          )}
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            >
+              Weiter einkaufen
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/track")}
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-8 py-4 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+            >
+              Bestellung verfolgen
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-20 px-6">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
+    <div className="min-h-screen bg-slate-50 px-6 py-20">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 lg:grid-cols-2 xl:gap-16">
         <div className="space-y-10">
           <Link
             href="/cart"
-            className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950"
           >
-            <ArrowLeft className="w-3 h-3" /> Zurueck zum Warenkorb
+            <ArrowLeft className="h-4 w-4" /> Zurück zum Warenkorb
           </Link>
-          <h1 className="text-4xl font-bold uppercase tracking-tighter">
-            Zahlung & Versand
-          </h1>
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-sky-700">
+              Bestellung vorbereiten
+            </p>
+            <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
+              Bestellung abschließen
+            </h1>
+            <p className="max-w-xl text-sm leading-7 text-slate-600">
+              Ihre Auswahl aus dem Konfigurator wird mit allen hochgeladenen
+              Dateien und Konfigurationsdaten übernommen.
+            </p>
+          </div>
 
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 p-5 text-red-700 text-xs font-bold leading-relaxed">
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-7 text-rose-700">
               {errorMessage}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="bg-white p-10 border border-neutral-200 shadow-sm space-y-8">
+            <div className="space-y-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm md:p-10">
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block">
-                  Vollstaendiger Name
+                <label className="block text-sm font-medium text-slate-700">
+                  Vollständiger Name
                 </label>
                 <input
                   name="name"
                   required
-                  className="w-full border border-neutral-200 p-4 text-sm font-bold bg-neutral-50 outline-none focus:border-neutral-950"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
                 />
               </div>
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block">
-                  E-Mail Adresse
+                <label className="block text-sm font-medium text-slate-700">
+                  E-Mail-Adresse
                 </label>
                 <input
                   name="email"
                   type="email"
                   required
-                  className="w-full border border-neutral-200 p-4 text-sm font-bold bg-neutral-50 outline-none focus:border-neutral-950"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
                 />
               </div>
               <div className="pt-4">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block mb-4">
-                  Zahlungsmethode (Test)
+                <label className="mb-4 block text-sm font-medium text-slate-700">
+                  Zahlungsmethode
                 </label>
-                <div className="flex items-center gap-4 p-5 border-2 border-neutral-950 bg-neutral-50">
-                  <CreditCard className="w-5 h-5" />
-                  <span className="text-[10px] font-bold uppercase">
+                <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <CreditCard className="h-5 w-5 text-slate-700" />
+                  <span className="text-sm font-semibold text-slate-950">
                     Simulierte Zahlung
                   </span>
-                  <span className="ml-auto text-[9px] bg-neutral-950 text-white px-2 py-1 font-bold">
-                    ACTIVE
+                  <span className="ml-auto rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
+                    Aktiv
                   </span>
                 </div>
+                <p className="mt-4 text-sm leading-7 text-slate-500">
+                  Uploads über 4 MB werden aus Sicherheitsgründen vor dem
+                  Absenden blockiert.
+                </p>
               </div>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-neutral-950 text-white py-6 font-bold uppercase tracking-widest text-[11px] hover:bg-neutral-800 transition-all flex items-center justify-center gap-3 shadow-2xl disabled:cursor-not-allowed disabled:bg-neutral-400"
+              className="flex w-full items-center justify-center gap-3 rounded-full bg-slate-950 py-5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Bestellung wird gespeichert
                 </>
               ) : (
-                "Jetzt Zahlung simulieren"
+                "Bestellung abschließen"
               )}
             </button>
           </form>
         </div>
 
-        <div className="bg-white border border-neutral-200 p-10 shadow-sm h-fit sticky top-24">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 border-b pb-6 mb-8">
+        <div className="sticky top-24 h-fit rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm md:p-10">
+          <h2 className="mb-8 border-b border-slate-200 pb-6 text-lg font-semibold text-slate-950">
             Zusammenfassung
           </h2>
-          <div className="space-y-6 mb-10 max-h-[300px] overflow-y-auto pr-4">
+          <div className="mb-10 max-h-[300px] space-y-6 overflow-y-auto pr-2">
             {items.map((item) => (
               <div
                 key={item.cartItemId}
-                className="flex gap-6 border-b border-neutral-50 pb-6"
+                className="flex gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-4"
               >
-                <div className="w-16 h-16 bg-neutral-100 shrink-0 p-2">
+                <div className="h-16 w-16 shrink-0 rounded-2xl bg-white p-2">
                   <img
                     src={item.image}
-                    className="w-full h-full object-contain"
+                    className="h-full w-full object-contain"
                     alt=""
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[11px] font-bold uppercase text-neutral-950">
-                    {item.name}
-                  </p>
-                  <p className="text-[10px] text-neutral-400 mt-1 uppercase font-bold tracking-widest">
-                    Qty: {item.quantity}
+                <p className="text-sm font-semibold text-slate-950">
+                  {item.name}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Menge: {item.quantity}
                   </p>
                 </div>
-                <p className="text-sm font-bold text-neutral-950">
+                <p className="text-sm font-semibold text-slate-950">
                   {normalizeDisplayPrice(item.totalPrice).toFixed(2)} EUR
                 </p>
               </div>
             ))}
           </div>
-          <div className="flex justify-between items-center pt-6 border-t border-neutral-100">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-400">
+          <div className="flex items-center justify-between border-t border-slate-200 pt-6">
+            <span className="text-sm font-medium text-slate-500">
               Gesamt
             </span>
-            <span className="text-4xl font-bold tracking-tighter text-neutral-950">
+            <span className="text-4xl font-semibold tracking-tight text-slate-950">
               {cartTotal.toFixed(2)} EUR
             </span>
           </div>

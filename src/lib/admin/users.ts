@@ -109,19 +109,19 @@ export function getAdminRoleLabel(role: string): string {
 export function getAdminRoleBadgeClassName(role: string): string {
   switch (normalizeAdminRole(role)) {
     case "SUPER_ADMIN":
-      return "bg-rose-100 text-rose-700";
+      return "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/80 dark:bg-rose-950/50 dark:text-rose-200";
     case "ADMIN":
-      return "bg-sky-100 text-sky-700";
+      return "border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/80 dark:bg-sky-950/50 dark:text-sky-200";
     case "STAFF":
     default:
-      return "bg-slate-100 text-slate-700";
+      return "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200";
   }
 }
 
 export function getAdminStatusBadgeClassName(isActive: boolean): string {
   return isActive
-    ? "bg-emerald-100 text-emerald-700"
-    : "bg-amber-100 text-amber-800";
+    ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-950/50 dark:text-emerald-200"
+    : "border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/80 dark:bg-amber-950/50 dark:text-amber-200";
 }
 
 export function getAdminStatusLabel(isActive: boolean): string {

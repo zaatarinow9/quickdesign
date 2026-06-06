@@ -10,6 +10,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { claimOrder } from "@/app/actions/order";
+import {
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import {
   getInternalOrderStatusMeta,
@@ -41,7 +47,7 @@ const FILTERS = [
   { value: "all", label: "Alle" },
   { value: "mine", label: "Meine" },
   { value: "unassigned", label: "Nicht zugewiesen" },
-];
+] as const;
 
 type OrderFilter = (typeof FILTERS)[number]["value"];
 type ArchivedFilter = "active" | "all" | "only";
@@ -284,337 +290,338 @@ export default async function AdminOrdersPage({
   ]);
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col gap-6 border-b border-neutral-100 pb-8 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="flex items-center gap-4 text-4xl font-bold uppercase tracking-tighter">
-            <Package className="h-10 w-10" /> Auftragsverwaltung
-          </h1>
-          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
-            Filterbare Auftragsliste mit Archiv, Belegtyp, Zeitraeumen und
-            Kundenbezug
-          </p>
+    <div className="space-y-8">
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Auftragsverwaltung"
+          title="Bestellungen und Produktion"
+          description="Filterbare Auftragsliste mit Archiv, Belegtyp, Zeitraeumen und Kundenbezug."
+          actions={
+            hasAdminPermission(currentUser, "canCreateManualOrders") ? (
+              <Link href="/admin/orders/new" className={getAdminButtonClassName("primary")}>
+                <Plus className="h-4 w-4" />
+                Neuer Auftrag
+              </Link>
+            ) : null
+          }
+        />
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          {FILTERS.map((filter) => (
+            <Link
+              key={filter.value}
+              href={buildOrdersHref(params, { filter: filter.value })}
+              className={
+                activeFilter === filter.value
+                  ? getAdminButtonClassName("primary")
+                  : getAdminButtonClassName("secondary")
+              }
+            >
+              {filter.label}
+            </Link>
+          ))}
         </div>
+      </AdminCard>
 
-        {hasAdminPermission(currentUser, "canCreateManualOrders") && (
-          <Link
-            href="/admin/orders/new"
-            className="inline-flex items-center gap-2 bg-neutral-950 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-          >
-            <Plus className="h-3 w-3" /> Neuer Auftrag
-          </Link>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        {FILTERS.map((filter) => (
-          <Link
-            key={filter.value}
-            href={buildOrdersHref(params, { filter: filter.value })}
-            className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              activeFilter === filter.value
-                ? "bg-neutral-950 text-white"
-                : "border border-neutral-200 bg-white text-neutral-500 hover:text-neutral-950"
-            }`}
-          >
-            {filter.label}
-          </Link>
-        ))}
-      </div>
-
-      <form className="space-y-4 border border-neutral-200 bg-white p-4 shadow-sm">
-        <input type="hidden" name="filter" value={activeFilter} />
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+      <AdminCard className="p-4">
+        <form className="space-y-4">
+          <input type="hidden" name="filter" value={activeFilter} />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                name="orderNumber"
+                defaultValue={orderNumberQuery}
+                placeholder="Bestellnummer"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+              />
+            </div>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                name="customer"
+                defaultValue={customerQuery}
+                placeholder="Kunde, E-Mail oder Firma"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-11 pr-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+              />
+            </div>
+            <select
+              name="status"
+              defaultValue={statusFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle Status</option>
+              <option value="PAID">Neu</option>
+              <option value="PROCESSING">In Produktion</option>
+              <option value="SHIPPED">Versendet</option>
+              <option value="DELIVERED">Zugestellt</option>
+              <option value="CANCELED">Storniert</option>
+            </select>
+            <select
+              name="paymentStatus"
+              defaultValue={paymentStatusFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle Zahlungen</option>
+              <option value="UNPAID">Unbezahlt</option>
+              <option value="PARTIALLY_PAID">Teilweise bezahlt</option>
+              <option value="PAID">Bezahlt</option>
+              <option value="REFUNDED">Erstattet</option>
+            </select>
+            <select
+              name="assignedToId"
+              defaultValue={assignedToIdFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle Zuweisungen</option>
+              {activeStaff.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="documentType"
+              defaultValue={documentTypeFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle Belegtypen</option>
+              <option value="ORDER">Auftrag</option>
+              <option value="OFFER">Angebot</option>
+              <option value="INVOICE">Rechnung</option>
+            </select>
+            <select
+              name="priority"
+              defaultValue={priorityFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle Prioritaeten</option>
+              <option value="LOW">Niedrig</option>
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">Hoch</option>
+              <option value="URGENT">Dringend</option>
+            </select>
+            <select
+              name="internalStatus"
+              defaultValue={internalStatusFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="all">Alle internen Status</option>
+              <option value="NEW">Neu</option>
+              <option value="IN_REVIEW">In Pruefung</option>
+              <option value="IN_PRODUCTION">In Produktion</option>
+              <option value="WAITING_CUSTOMER">Wartet auf Kunde</option>
+              <option value="READY">Bereit</option>
+              <option value="DONE">Erledigt</option>
+            </select>
             <input
-              name="orderNumber"
-              defaultValue={orderNumberQuery}
-              placeholder="Bestellnummer"
-              className="w-full border border-neutral-200 bg-neutral-50 py-4 pl-11 pr-4 text-sm outline-none transition-colors focus:border-neutral-950"
+              name="from"
+              type="date"
+              defaultValue={fromDateValue}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             />
-          </div>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <input
-              name="customer"
-              defaultValue={customerQuery}
-              placeholder="Kunde, E-Mail oder Firma"
-              className="w-full border border-neutral-200 bg-neutral-50 py-4 pl-11 pr-4 text-sm outline-none transition-colors focus:border-neutral-950"
+              name="to"
+              type="date"
+              defaultValue={toDateValue}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             />
+            <select
+              name="archived"
+              defaultValue={archivedFilter}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+            >
+              <option value="active">Aktive Auftraege</option>
+              <option value="all">Aktiv + Archiv</option>
+              <option value="only">Nur Archiv</option>
+            </select>
           </div>
-          <select
-            name="status"
-            defaultValue={statusFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle Status</option>
-            <option value="PAID">Neu</option>
-            <option value="PROCESSING">In Produktion</option>
-            <option value="SHIPPED">Versendet</option>
-            <option value="DELIVERED">Zugestellt</option>
-            <option value="CANCELED">Storniert</option>
-          </select>
-          <select
-            name="paymentStatus"
-            defaultValue={paymentStatusFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle Zahlungen</option>
-            <option value="UNPAID">Unbezahlt</option>
-            <option value="PARTIALLY_PAID">Teilweise bezahlt</option>
-            <option value="PAID">Bezahlt</option>
-            <option value="REFUNDED">Erstattet</option>
-          </select>
-          <select
-            name="assignedToId"
-            defaultValue={assignedToIdFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle Zuweisungen</option>
-            {activeStaff.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
-          <select
-            name="documentType"
-            defaultValue={documentTypeFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle Belegtypen</option>
-            <option value="ORDER">Auftrag</option>
-            <option value="OFFER">Angebot</option>
-            <option value="INVOICE">Rechnung</option>
-          </select>
-          <select
-            name="priority"
-            defaultValue={priorityFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle Prioritaeten</option>
-            <option value="LOW">Niedrig</option>
-            <option value="NORMAL">Normal</option>
-            <option value="HIGH">Hoch</option>
-            <option value="URGENT">Dringend</option>
-          </select>
-          <select
-            name="internalStatus"
-            defaultValue={internalStatusFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="all">Alle internen Status</option>
-            <option value="NEW">Neu</option>
-            <option value="IN_REVIEW">In Pruefung</option>
-            <option value="IN_PRODUCTION">In Produktion</option>
-            <option value="WAITING_CUSTOMER">Wartet auf Kunde</option>
-            <option value="READY">Bereit</option>
-            <option value="DONE">Erledigt</option>
-          </select>
-          <input
-            name="from"
-            type="date"
-            defaultValue={fromDateValue}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          />
-          <input
-            name="to"
-            type="date"
-            defaultValue={toDateValue}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          />
-          <select
-            name="archived"
-            defaultValue={archivedFilter}
-            className="border border-neutral-200 bg-white p-4 text-sm outline-none transition-colors focus:border-neutral-950"
-          >
-            <option value="active">Aktive Auftraege</option>
-            <option value="all">Aktiv + Archiv</option>
-            <option value="only">Nur Archiv</option>
-          </select>
-        </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            className="bg-neutral-950 px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-          >
-            Filtern
-          </button>
-          <Link
-            href="/admin/orders"
-            className="border border-neutral-200 bg-white px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:border-neutral-950 hover:text-neutral-950"
-          >
-            Zuruecksetzen
-          </Link>
-        </div>
-      </form>
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" className={getAdminButtonClassName("primary")}>
+              Filtern
+            </button>
+            <Link href="/admin/orders" className={getAdminButtonClassName("secondary")}>
+              Zuruecksetzen
+            </Link>
+          </div>
+        </form>
+      </AdminCard>
 
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           {orders.length} Auftraege gefunden
         </p>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-          Archivfilter: {archivedFilter === "active" ? "aktiv" : archivedFilter === "all" ? "alle" : "nur archiv"}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          Archivfilter:{" "}
+          {archivedFilter === "active"
+            ? "aktiv"
+            : archivedFilter === "all"
+              ? "alle"
+              : "nur archiv"}
         </p>
       </div>
 
-      <div className="overflow-hidden border border-neutral-200 bg-white shadow-sm">
-        <table className="w-full min-w-[1480px] text-left">
-          <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-50">
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Order-ID
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Kunde
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Datum
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Status
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Zahlung
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Dokument
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Zuweisung
-              </th>
-              <th className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Betrag
-              </th>
-              <th className="p-6 text-right text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Aktion
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {orders.map((order) => {
-              const statusInfo = getOrderStatusMeta(order.status);
-              const internalStatusInfo = getInternalOrderStatusMeta(
-                order.internalStatus,
-              );
-              const financials = getOrderFinancials(order);
-              const paymentStatus = getOrderPaymentStatus(order);
-              const documentType = normalizeDocumentType(order.documentType);
-
-              return (
-                <tr
-                  key={order.id}
-                  className="transition-colors hover:bg-neutral-50/50"
-                >
-                  <td className="p-6 font-mono text-[11px] font-bold">
-                    #{order.orderNumber}
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 font-bold text-neutral-400">
-                        {order.customerName[0] ?? "K"}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-tighter text-neutral-950">
-                          {order.customerName}
-                        </p>
-                        <p className="text-[10px] font-bold text-neutral-400">
-                          {order.customer?.companyName || order.customerEmail || "Kein Kontakt"}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-6 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    {format(new Date(order.createdAt), "dd. MMM yyyy, HH:mm")}
-                  </td>
-                  <td className="p-6">
-                    <div className="space-y-2">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest ${statusInfo.badgeClassName}`}
-                      >
-                        {statusInfo.label}
-                      </span>
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest ${internalStatusInfo.badgeClassName}`}
-                      >
-                        {internalStatusInfo.label}
-                      </span>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                        Prioritaet: {order.priority}
-                      </p>
-                      {order.isArchived && (
-                        <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                          <Archive className="h-3 w-3" /> Archiviert
-                          {order.archivedAt
-                            ? ` am ${format(new Date(order.archivedAt), "dd.MM.yyyy")}`
-                            : ""}
-                        </p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <span className="inline-flex border border-neutral-200 bg-neutral-50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                      {PAYMENT_STATUS_LABELS[paymentStatus]}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-950">
-                        {DOCUMENT_TYPE_LABELS[documentType]}
-                      </p>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                        {order._count.items} Positionen
-                      </p>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    {order.assignedTo ? (
-                      <span className="inline-flex items-center gap-2 border border-neutral-200 bg-neutral-50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                        <UserCheck className="h-3 w-3" /> {order.assignedTo.name}
-                      </span>
-                    ) : !order.isArchived && canClaimOrders ? (
-                      <form action={claimOrder}>
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-2 bg-neutral-950 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-                        >
-                          <UserCheck className="h-3 w-3" /> Uebernehmen
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                        Nicht zugewiesen
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-6 text-sm font-bold text-neutral-950">
-                    {formatCurrencyAmount(financials.totalGross, financials.currency)}
-                  </td>
-                  <td className="p-6 text-right">
-                    <Link
-                      href={`/admin/orders/${order.id}`}
-                      className="inline-flex items-center gap-2 bg-neutral-950 px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg transition-all hover:bg-neutral-800"
-                    >
-                      <Eye className="h-3 w-3" /> Details
-                    </Link>
-                  </td>
+      <AdminCard className="overflow-hidden">
+        {orders.length === 0 ? (
+          <div className="p-6">
+            <AdminEmptyState
+              icon={Package}
+              title="Keine Bestellungen gefunden."
+              description="Passen Sie die Filter an oder pruefen Sie einen anderen Zeitraum."
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[1480px] w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/80">
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Order-ID
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Kunde
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Datum
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Status
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Zahlung
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Dokument
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Zuweisung
+                  </th>
+                  <th className="p-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Betrag
+                  </th>
+                  <th className="p-6 text-right text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Aktion
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {orders.length === 0 && (
-          <div className="flex flex-col items-center gap-4 p-32 text-center">
-            <Package className="h-16 w-16 text-neutral-100" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-300">
-              Keine Bestellungen gefunden
-            </p>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {orders.map((order) => {
+                  const statusInfo = getOrderStatusMeta(order.status);
+                  const internalStatusInfo = getInternalOrderStatusMeta(
+                    order.internalStatus,
+                  );
+                  const financials = getOrderFinancials(order);
+                  const paymentStatus = getOrderPaymentStatus(order);
+                  const documentType = normalizeDocumentType(order.documentType);
+
+                  return (
+                    <tr
+                      key={order.id}
+                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-950/40"
+                    >
+                      <td className="p-6 font-mono text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                        #{order.orderNumber}
+                      </td>
+                      <td className="p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            {order.customerName[0] ?? "K"}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">
+                              {order.customerName}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {order.customer?.companyName || order.customerEmail || "Kein Kontakt"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-6 text-sm text-slate-500 dark:text-slate-300">
+                        {format(new Date(order.createdAt), "dd.MM.yyyy HH:mm")}
+                      </td>
+                      <td className="p-6">
+                        <div className="space-y-2">
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-semibold ${statusInfo.badgeClassName}`}
+                          >
+                            {statusInfo.label}
+                          </span>
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-semibold ${internalStatusInfo.badgeClassName}`}
+                          >
+                            {internalStatusInfo.label}
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Prioritaet: {order.priority}
+                          </p>
+                          {order.isArchived && (
+                            <p className="inline-flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-200">
+                              <Archive className="h-3 w-3" />
+                              Archiviert
+                              {order.archivedAt
+                                ? ` am ${format(new Date(order.archivedAt), "dd.MM.yyyy")}`
+                                : ""}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-6">
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                          {PAYMENT_STATUS_LABELS[paymentStatus]}
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                            {DOCUMENT_TYPE_LABELS[documentType]}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {order._count.items} Positionen
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-6">
+                        {order.assignedTo ? (
+                          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                            <UserCheck className="h-3.5 w-3.5" />
+                            {order.assignedTo.name}
+                          </span>
+                        ) : !order.isArchived && canClaimOrders ? (
+                          <form action={claimOrder}>
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button type="submit" className={getAdminButtonClassName("primary")}>
+                              <UserCheck className="h-4 w-4" />
+                              Uebernehmen
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Nicht zugewiesen
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-6 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                        {formatCurrencyAmount(financials.totalGross, financials.currency)}
+                      </td>
+                      <td className="p-6 text-right">
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className={getAdminButtonClassName("primary")}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </AdminCard>
     </div>
   );
 }

@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft, Layers3, Settings2, Upload } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import OptionsBuilder from "@/components/admin/OptionsBuilder";
+import {
+  AdminBadge,
+  AdminCard,
+  AdminPageHeader,
+  AdminStatCard,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import {
   buildServiceManagementSummary,
@@ -10,6 +16,7 @@ import {
   getServiceUploadSummary,
   getServiceVisibilityMeta,
 } from "@/lib/admin/service-display";
+import { prisma } from "@/lib/prisma";
 import { normalizeServiceConfiguration } from "@/lib/services/configuration/normalize";
 
 export default async function ManageService({
@@ -34,7 +41,9 @@ export default async function ManageService({
     },
   });
 
-  if (!service) return notFound();
+  if (!service) {
+    return notFound();
+  }
 
   const config = normalizeServiceConfiguration(service);
   const pricingMeta = getServicePricingModeMeta(config.pricing.mode);
@@ -46,87 +55,69 @@ export default async function ManageService({
     <div className="mx-auto w-full max-w-7xl space-y-8">
       <Link
         href="/admin/services"
-        className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 transition-colors hover:text-slate-950"
+        className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
         Zurueck zur Service-Liste
       </Link>
 
-      <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-              Kundenoptionen verwalten
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-              {service.name}
-            </h1>
-            <p className="max-w-4xl text-sm leading-6 text-slate-600">
-              {summary}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <span
-              className={`inline-flex rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.22em] ${visibilityMeta.badgeClassName}`}
-            >
-              {visibilityMeta.label}
-            </span>
-            <span
-              className={`inline-flex rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.22em] ${pricingMeta.badgeClassName}`}
-            >
-              {pricingMeta.label}
-            </span>
-            {uploadSummary.hasUploads && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                <Upload className="h-4 w-4" />
-                {uploadSummary.label}
-              </span>
-            )}
-          </div>
-        </div>
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Kundenoptionen verwalten"
+          title={service.name}
+          description={summary}
+          actions={
+            <>
+              <AdminBadge
+                tone={service.isActive ? "emerald" : "slate"}
+                className={visibilityMeta.badgeClassName}
+              >
+                {visibilityMeta.label}
+              </AdminBadge>
+              <AdminBadge tone="blue" className={pricingMeta.badgeClassName}>
+                {pricingMeta.label}
+              </AdminBadge>
+              {uploadSummary.hasUploads && (
+                <AdminBadge tone="amber">
+                  <Upload className="h-4 w-4" />
+                  {uploadSummary.label}
+                </AdminBadge>
+              )}
+            </>
+          }
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href={`/admin/services/${service.id}/edit`}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+            className={getAdminButtonClassName("secondary")}
           >
             <Settings2 className="h-4 w-4" />
             Einstellungen
           </Link>
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-white">
+          <span className={getAdminButtonClassName("primary")}>
             <Layers3 className="h-4 w-4" />
             Kundenoptionen
           </span>
         </div>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-            Felder
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-            {service.options.length}
-          </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <AdminStatCard label="Felder" value={service.options.length} tone="slate" />
+          <AdminStatCard
+            label="Grundpreis"
+            value={`${service.basePrice.toFixed(2)} EUR`}
+            tone="blue"
+          />
+          <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+              Service-Slug
+            </p>
+            <p className="mt-3 break-words text-base font-semibold text-slate-950 dark:text-slate-50">
+              /services/{service.slug}
+            </p>
+          </div>
         </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-            Grundpreis
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-            {service.basePrice.toFixed(2)} EUR
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-            Service-Slug
-          </p>
-          <p className="mt-3 text-lg font-bold tracking-tight text-slate-950">
-            /services/{service.slug}
-          </p>
-        </div>
-      </div>
+      </AdminCard>
 
       <OptionsBuilder serviceId={service.id} options={service.options} />
     </div>

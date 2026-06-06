@@ -1,6 +1,12 @@
 import { ArrowLeft, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { createAdminUser } from "@/app/actions/admin-users";
+import {
+  AdminCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import {
@@ -21,65 +27,53 @@ export default async function NewAdminUserPage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-600">
-            Admin Benutzerverwaltung
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-            Benutzer anlegen
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            Legen Sie hier einen neuen Admin- oder Staff-Zugang mit sicherem
-            Passwort an.
-          </p>
-        </div>
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Admin Benutzerverwaltung"
+          title="Benutzer anlegen"
+          description="Legen Sie hier einen neuen Admin- oder Staff-Zugang mit sicherem Passwort an."
+          actions={
+            <Link href="/admin/users" className={getAdminButtonClassName("secondary")}>
+              <ArrowLeft className="h-4 w-4" />
+              Zur Benutzerliste
+            </Link>
+          }
+        />
+      </AdminCard>
 
-        <Link
-          href="/admin/users"
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.22em] text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Zur Benutzerliste
-        </Link>
-      </div>
-
-      <section className="rounded-[32px] border border-white/70 bg-white p-8 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
-          <UserPlus className="h-5 w-5 text-slate-500" />
-          <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-950">
-            Neuer Benutzer
-          </h2>
-        </div>
-
+      <AdminSectionCard
+        title="Neuer Benutzer"
+        description="Benutzername, Rolle und Aktivstatus koennen direkt beim Anlegen festgelegt werden."
+        icon={UserPlus}
+      >
         {errorMessage && (
-          <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+          <div className="mb-6 rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
             {errorMessage}
           </div>
         )}
 
-        <form action={createAdminUser} className="mt-6 space-y-8">
+        <form action={createAdminUser} className="space-y-8">
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Benutzername
               </label>
               <input
                 name="username"
                 required
                 autoComplete="username"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
             </div>
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Anzeigename
               </label>
               <input
                 name="name"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-300">
                 Optional. Wenn leer, wird der Benutzername verwendet.
               </p>
             </div>
@@ -87,24 +81,24 @@ export default async function NewAdminUserPage({
 
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 E-Mail
               </label>
               <input
                 name="email"
                 type="email"
                 autoComplete="email"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
             </div>
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Rolle
               </label>
               <select
                 name="role"
                 defaultValue="STAFF"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               >
                 {ADMIN_ROLE_OPTIONS.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -117,7 +111,7 @@ export default async function NewAdminUserPage({
 
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Passwort
               </label>
               <input
@@ -126,15 +120,15 @@ export default async function NewAdminUserPage({
                 required
                 minLength={MIN_ADMIN_PASSWORD_LENGTH}
                 autoComplete="new-password"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-300">
                 Mindestens {MIN_ADMIN_PASSWORD_LENGTH} Zeichen, mindestens ein
                 Buchstabe und eine Zahl.
               </p>
             </div>
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.22em] text-slate-950">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Passwort bestaetigen
               </label>
               <input
@@ -143,37 +137,31 @@ export default async function NewAdminUserPage({
                 required
                 minLength={MIN_ADMIN_PASSWORD_LENGTH}
                 autoComplete="new-password"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm outline-none transition-colors focus:border-slate-950"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
             </div>
           </div>
 
-          <label className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
+          <label className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
             <input
               type="checkbox"
               name="isActive"
               defaultChecked
-              className="h-4 w-4 accent-slate-950"
+              className="h-4 w-4 accent-slate-950 dark:accent-slate-100"
             />
             Benutzer sofort aktivieren
           </label>
 
-          <div className="flex flex-wrap gap-3 pt-2">
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-4 text-xs font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-slate-800"
-            >
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" className={getAdminButtonClassName("primary")}>
               Benutzer speichern
             </button>
-            <Link
-              href="/admin/users"
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-4 text-xs font-bold uppercase tracking-[0.22em] text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
-            >
+            <Link href="/admin/users" className={getAdminButtonClassName("secondary")}>
               Abbrechen
             </Link>
           </div>
         </form>
-      </section>
+      </AdminSectionCard>
     </div>
   );
 }

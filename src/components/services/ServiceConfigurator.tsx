@@ -155,7 +155,7 @@ function formatDisplayNumber(value: number): string {
 }
 
 function getCheckoutUploadLimitHint(): string {
-  return `Aktuelles Upload-Limit im Checkout: ${MAX_SERVER_ACTION_UPLOAD_MB} MB pro Datei.`;
+  return `Maximale Dateigroesse: ${MAX_SERVER_ACTION_UPLOAD_MB} MB`;
 }
 
 function getMaxFileSizeValidationMessage(
@@ -303,6 +303,7 @@ export default function ServiceConfigurator({
   const [quantity, setQuantity] = useState<number>(1);
   const [orderNotes, setOrderNotes] = useState("");
   const [isAdded, setIsAdded] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   const priceResult = useMemo(
     () =>
@@ -346,10 +347,12 @@ export default function ServiceConfigurator({
     });
 
     if (!validationResult.ok) {
-      alert(validationResult.message);
+      setValidationMessage(validationResult.message);
       event.target.value = "";
       return;
     }
+
+    setValidationMessage(null);
 
     setOptionFileValues((previous) => ({
       ...previous,
@@ -379,10 +382,12 @@ export default function ServiceConfigurator({
     });
 
     if (!validationResult.ok) {
-      alert(validationResult.message);
+      setValidationMessage(validationResult.message);
       event.target.value = "";
       return;
     }
+
+    setValidationMessage(null);
 
     setUploadFieldFiles((previous) => ({
       ...previous,
@@ -721,8 +726,11 @@ export default function ServiceConfigurator({
     });
 
     if (missing.length > 0) {
-      return alert(`Bitte waehlen Sie: ${missing.join(", ")}`);
+      setValidationMessage(`Bitte waehlen Sie: ${missing.join(", ")}`);
+      return;
     }
+
+    setValidationMessage(null);
 
     const richOptions: Record<
       string,
@@ -1050,6 +1058,12 @@ export default function ServiceConfigurator({
           </p>
         </div>
       </div>
+
+      {validationMessage && (
+        <div className="rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-6 text-rose-700">
+          {validationMessage}
+        </div>
+      )}
 
       {config.designSettings.allowSecondaryColorPicker &&
         designData &&

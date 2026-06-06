@@ -163,11 +163,12 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
   return (
     <div className="space-y-1 mb-4">
       {snapshot.design && (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-          <span className="text-neutral-400">Modell:</span> {snapshot.design.model}
+        <p className="text-sm text-neutral-600">
+          <span className="font-medium text-neutral-900">Modell:</span>{" "}
+          {snapshot.design.model}
           {snapshot.color && (
             <>
-              <span className="ml-3 text-neutral-400">Farbe:</span>
+              <span className="ml-3 font-medium text-neutral-900">Farbe:</span>
               <span
                 className="inline-block w-3 h-3 ml-1 rounded-full border border-neutral-300 align-middle"
                 style={{ backgroundColor: snapshot.color.hex }}
@@ -177,28 +178,28 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
         </p>
       )}
 
-      <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-        <span className="text-neutral-400">Preismodell:</span>{" "}
+      <p className="text-sm text-neutral-600">
+        <span className="font-medium text-neutral-900">Preismodell:</span>{" "}
         {getPricingModelLabel(snapshot.pricingModel)}
       </p>
 
       {snapshot.size && (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-          <span className="text-neutral-400">{snapshot.size.fieldLabel}:</span>{" "}
+        <p className="text-sm text-neutral-600">
+          <span className="font-medium text-neutral-900">{snapshot.size.fieldLabel}:</span>{" "}
           {snapshot.size.value}
         </p>
       )}
 
       {snapshot.selectedPricingTier && (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-          <span className="text-neutral-400">Mengenstaffel:</span>{" "}
+        <p className="text-sm text-neutral-600">
+          <span className="font-medium text-neutral-900">Mengenstaffel:</span>{" "}
           {snapshot.selectedPricingTier.label}
         </p>
       )}
 
       {snapshot.area && (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-          <span className="text-neutral-400">Flaeche:</span>{" "}
+        <p className="text-sm text-neutral-600">
+          <span className="font-medium text-neutral-900">Fläche:</span>{" "}
           {snapshot.area.widthCm.toFixed(1)} x {snapshot.area.heightCm.toFixed(1)} cm
           {" "}({snapshot.area.areaSqm.toFixed(3)} m2)
         </p>
@@ -207,9 +208,9 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
       {snapshot.selectedOptions.map((option) => (
         <p
           key={`${option.fieldKey}-${option.valueLabel}`}
-          className="text-xs text-neutral-500 font-bold uppercase tracking-widest"
+          className="text-sm text-neutral-600"
         >
-          <span className="text-neutral-400">{option.fieldLabel}:</span>{" "}
+          <span className="font-medium text-neutral-900">{option.fieldLabel}:</span>{" "}
           {option.valueLabel}
           {option.priceImpact > 0
             ? ` (+${option.priceImpact.toFixed(2)} EUR)`
@@ -220,9 +221,9 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
       {snapshot.textFields.map((field) => (
         <p
           key={field.fieldKey}
-          className="text-xs text-neutral-500 font-bold uppercase tracking-widest"
+          className="text-sm text-neutral-600"
         >
-          <span className="text-neutral-400">{field.fieldLabel}:</span>{" "}
+          <span className="font-medium text-neutral-900">{field.fieldLabel}:</span>{" "}
           {field.value}
         </p>
       ))}
@@ -231,9 +232,9 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
         field.files.map((file, index) => (
           <p
             key={`${field.fieldKey}-${index}`}
-            className="text-xs text-neutral-500 font-bold uppercase tracking-widest"
+            className="text-sm text-neutral-600"
           >
-            <span className="text-neutral-400">{field.fieldLabel}:</span>{" "}
+            <span className="font-medium text-neutral-900">{field.fieldLabel}:</span>{" "}
             {file.fileName}
             {file.customerLabel ? ` (${file.customerLabel})` : ""}
           </p>
@@ -241,8 +242,8 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
       )}
 
       {snapshot.orderNotes && (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-2">
-          <span className="text-neutral-400">Anmerkung:</span>{" "}
+        <p className="mt-2 text-sm text-neutral-600">
+          <span className="font-medium text-neutral-900">Anmerkung:</span>{" "}
           {snapshot.orderNotes}
         </p>
       )}
@@ -268,15 +269,15 @@ export default function CartPage() {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-neutral-50 px-6">
         <ShoppingBag className="w-24 h-24 text-neutral-300 mb-8" />
-        <h1 className="text-3xl font-bold text-neutral-950 mb-4 uppercase tracking-tighter">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight text-neutral-950">
           Ihr Warenkorb ist leer
         </h1>
-        <p className="text-neutral-500 mb-8">
+        <p className="mb-8 text-sm text-neutral-500">
           Entdecken Sie unsere hochwertigen Druckleistungen.
         </p>
         <Link
           href="/services"
-          className="bg-neutral-950 text-white px-8 py-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors"
+          className="rounded-full bg-neutral-950 px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
         >
           Zu den Leistungen
         </Link>
@@ -287,7 +288,7 @@ export default function CartPage() {
   return (
     <div className="w-full min-h-screen bg-neutral-50 py-16">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <h1 className="text-4xl font-bold text-neutral-950 mb-12 uppercase tracking-tighter">
+        <h1 className="mb-12 text-4xl font-semibold tracking-tight text-neutral-950">
           Warenkorb
         </h1>
 
@@ -355,8 +356,8 @@ export default function CartPage() {
             })}
           </div>
 
-          <div className="w-full lg:w-1/3 bg-white border border-neutral-200 p-8 shadow-sm sticky top-24">
-            <h2 className="text-xl font-bold text-neutral-950 mb-6 uppercase tracking-tighter">
+          <div className="w-full lg:w-1/3 rounded-[28px] bg-white border border-neutral-200 p-8 shadow-sm sticky top-24">
+            <h2 className="mb-6 text-xl font-semibold text-neutral-950">
               Zusammenfassung
             </h2>
             <div className="space-y-4 mb-6 pb-6 border-b border-neutral-200">
@@ -374,18 +375,18 @@ export default function CartPage() {
               </div>
             </div>
             <div className="flex justify-between items-center mb-8">
-              <span className="text-sm font-bold uppercase tracking-widest text-neutral-950">
+              <span className="text-sm font-medium text-neutral-950">
                 Gesamtsumme
               </span>
-              <span className="text-3xl font-bold text-neutral-950 tracking-tighter">
+              <span className="text-3xl font-semibold tracking-tight text-neutral-950">
                 {formatCurrency(cartTotal)}
               </span>
             </div>
             <Link
               href="/checkout"
-              className="w-full flex items-center justify-center gap-2 bg-neutral-950 text-white px-8 py-5 font-bold uppercase tracking-widest text-xs hover:bg-neutral-800 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-neutral-950 px-8 py-5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
             >
-              Zur Kasse gehen <ArrowRight className="w-4 h-4" />
+              Zur Kasse <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

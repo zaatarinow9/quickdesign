@@ -1,5 +1,14 @@
+require("dotenv/config");
+
 const { pbkdf2Sync, randomBytes } = require("node:crypto");
 const { PrismaClient } = require("@prisma/client");
+const {
+  allowLocalSeed,
+  ensureRequiredEnvValue,
+  isLocalSqliteDatabaseUrl,
+  maskDatabaseTarget,
+  readEnvValue,
+} = require("./admin-db-utils.cjs");
 
 const prisma = new PrismaClient();
 
@@ -8,21 +17,6 @@ const HASH_ITERATIONS = 120000;
 const HASH_KEY_LENGTH = 32;
 const HASH_PREFIX = "pbkdf2_sha256";
 const MIN_ADMIN_PASSWORD_LENGTH = 10;
-
-function readEnvValue(name) {
-  const value = process.env[name];
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function ensureRequiredEnvValue(name, message) {
-  const value = readEnvValue(name);
-
-  if (!value) {
-    throw new Error(message);
-  }
-
-  return value;
-}
 
 function normalizeAdminUsername(value) {
   return value.trim().toLowerCase();
@@ -61,10 +55,21 @@ function hashAdminPassword(password) {
 }
 
 async function main() {
-  ensureRequiredEnvValue(
+  const databaseUrl = ensureRequiredEnvValue(
     "DATABASE_URL",
     "DATABASE_URL is missing. Set DATABASE_URL before running the SUPER_ADMIN bootstrap.",
   );
+  console.log(`Using database: ${maskDatabaseTarget(databaseUrl)}`);
+
+  if (isLocalSqliteDatabaseUrl(databaseUrl)) {
+    console.warn("WARNING: This points to local SQLite, not Supabase.");
+
+    if (!allowLocalSeed()) {
+      throw new Error(
+        "Refusing to continue. Set ADMIN_SEED_ALLOW_LOCAL=true to seed a local SQLite database intentionally.",
+      );
+    }
+  }
 
   const username = normalizeAdminUsername(
     ensureRequiredEnvValue(

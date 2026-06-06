@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "admin:doctor": "node prisma/admin-doctor.cjs",
+    "admin:seed": "node prisma/seed-admin.cjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -56,6 +56,29 @@ function normalizeUrlValue(value: string): string | null {
   }
 }
 
+function detectDatabaseProviderTarget(
+  databaseUrl: string,
+): "postgresql" | "sqlite" | "unknown" {
+  const normalizedValue = databaseUrl.trim().toLowerCase();
+
+  if (
+    normalizedValue.startsWith("postgresql://") ||
+    normalizedValue.startsWith("postgres://")
+  ) {
+    return "postgresql";
+  }
+
+  if (
+    normalizedValue.startsWith("file:") ||
+    normalizedValue.startsWith("sqlite:") ||
+    normalizedValue.includes("dev.db")
+  ) {
+    return "sqlite";
+  }
+
+  return "unknown";
+}
+
 function hasStrongSecret(value: string): boolean {
   return value.length >= MINIMUM_SECRET_LENGTH;
 }
@@ -218,6 +241,13 @@ export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[]
       level: "error",
       message:
         "DATABASE_URL fehlt. Ohne Datenbankverbindung kann die Anwendung nicht starten.",
+    });
+  } else if (detectDatabaseProviderTarget(databaseUrl) === "sqlite") {
+    warnings.push({
+      id: "database_url_sqlite",
+      level: warningLevel,
+      message:
+        "DATABASE_URL zeigt auf lokale SQLite. Fuer Admin-Authentifizierung und Benutzerverwaltung muss Supabase PostgreSQL verwendet werden.",
     });
   }
 

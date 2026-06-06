@@ -2,8 +2,8 @@ export const adminNavIconNames = [
   "dashboard",
   "orders",
   "customers",
-  "reports",
   "services",
+  "reports",
   "users",
 ] as const;
 

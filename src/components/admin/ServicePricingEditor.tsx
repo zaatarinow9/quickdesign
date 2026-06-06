@@ -252,19 +252,14 @@ function buildInitialAreaState(config: PricingConfigPayload): AreaPricingState {
 
   return {
     pricePerSqm: pricePerSqm > 0 ? pricePerSqm.toFixed(2) : "",
-    minimumAreaSqm:
-      minimumAreaSqm > 0 ? minimumAreaSqm.toFixed(2) : "0",
+    minimumAreaSqm: minimumAreaSqm > 0 ? minimumAreaSqm.toFixed(2) : "0",
     widthLabel:
       normalizeOptionalString(
-        typeof areaConfig?.widthLabel === "string"
-          ? areaConfig.widthLabel
-          : "",
+        typeof areaConfig?.widthLabel === "string" ? areaConfig.widthLabel : "",
       ) || "Breite (cm)",
     heightLabel:
       normalizeOptionalString(
-        typeof areaConfig?.heightLabel === "string"
-          ? areaConfig.heightLabel
-          : "",
+        typeof areaConfig?.heightLabel === "string" ? areaConfig.heightLabel : "",
       ) || "Hoehe (cm)",
   };
 }
@@ -330,9 +325,7 @@ function buildPricingPreview(
 
   switch (pricingMode) {
     case "quantity_tiers": {
-      const configuredTiers = quantityTiers.filter(
-        (tier) => tier.label.trim() !== "",
-      );
+      const configuredTiers = quantityTiers.filter((tier) => tier.label.trim() !== "");
 
       summaryLines.push(
         configuredTiers.length === 0
@@ -448,34 +441,34 @@ export default function ServicePricingEditor({
       <input type="hidden" name="pricingMode" value={pricingMode} />
       <input type="hidden" name="pricingConfigJson" value={pricingConfigJson} />
 
-      <div className="pb-4 border-b border-neutral-100">
-        <h2 className="text-sm font-bold text-neutral-950 uppercase tracking-widest">
-          Wie wird der Preis berechnet?
+      <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+          Preisgestaltung
         </h2>
-        <p className="text-sm text-neutral-500 mt-2">
-          Waehlt aus, wie der oeffentliche Preis berechnet wird, ohne die bestehende
-          Checkout- und Order-Architektur anzutasten.
+        <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
+          Legen Sie fest, wie der Preis berechnet wird, ohne die bestehende
+          Checkout- und Order-Logik zu veraendern.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-sky-100 bg-sky-50 p-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-sky-700">
+        <div className="rounded-3xl border border-sky-200 bg-sky-50 p-5 dark:border-sky-900/80 dark:bg-sky-950/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-200">
             Zusammenfassung
           </p>
-          <p className="mt-3 text-lg font-bold text-slate-950">
+          <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
             {pricingPreview.modeLabel}
           </p>
         </div>
-        <div className="rounded-3xl border border-neutral-200 bg-white p-5 md:col-span-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Kurzfassung
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {pricingPreview.summaryLines.map((line) => (
               <span
                 key={line}
-                className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-bold text-neutral-700"
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               >
                 {line}
               </span>
@@ -485,18 +478,16 @@ export default function ServicePricingEditor({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
+        <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
           Preismodell
         </label>
         <select
           name="pricingModeDisplay"
           value={pricingMode}
           onChange={(event) =>
-            setPricingMode(
-              normalizePricingMode(event.target.value),
-            )
+            setPricingMode(normalizePricingMode(event.target.value))
           }
-          className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+          className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
         >
           {PRICING_MODE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -504,43 +495,42 @@ export default function ServicePricingEditor({
             </option>
           ))}
         </select>
-        <p className="text-sm text-neutral-500 mt-3">
+        <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">
           {selectedModeConfig.description}
         </p>
       </div>
 
       {(pricingMode === "fixed" || pricingMode === "option_based") && (
-        <div className="border border-dashed border-neutral-300 px-4 py-4 text-sm text-neutral-500 bg-white">
-          Dieses Modell verwendet den vorhandenen Grundpreis. Aufpreise aus
-          Optionswerten bleiben weiterhin aktiv.
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+          Dieses Modell verwendet den vorhandenen Grundpreis. Preisaufschlaege
+          aus Kundenoptionen bleiben weiterhin aktiv.
         </div>
       )}
 
       {pricingMode === "custom_quote" && (
-        <div className="border border-dashed border-neutral-300 px-4 py-4 text-sm text-neutral-500 bg-white">
-          Im Store wird kein berechneter Preis angezeigt. Phase 3B markiert die
-          Leistung nur als Anfrage-Produkt; ein vollstaendiger Angebots-Workflow
-          folgt nicht in diesem Schritt.
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+          Im Store wird kein berechneter Preis angezeigt. Die Leistung bleibt in
+          diesem Schritt bewusst ein Anfrage-Produkt.
         </div>
       )}
 
       {pricingMode === "quantity_tiers" && (
-        <div className="space-y-6 bg-white border border-neutral-200 p-6">
+        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Mengenstaffeln
               </h3>
-              <p className="text-sm text-neutral-500 mt-2">
+              <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
                 Jede Staffel definiert eine Menge und einen festen Preis pro Set.
               </p>
             </div>
             <button
               type="button"
               onClick={addTierRow}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-neutral-950 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               Staffel hinzufuegen
             </button>
           </div>
@@ -549,7 +539,7 @@ export default function ServicePricingEditor({
             {quantityTiers.map((tier) => (
               <div
                 key={tier.id}
-                className="grid grid-cols-1 md:grid-cols-[minmax(0,1.4fr)_140px_140px_52px] gap-4 items-center"
+                className="grid grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,1.4fr)_140px_140px_56px]"
               >
                 <input
                   type="text"
@@ -559,7 +549,7 @@ export default function ServicePricingEditor({
                   }
                   placeholder="z. B. 1000 Stueck"
                   required={pricingMode === "quantity_tiers"}
-                  className="border border-neutral-300 p-3 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
                 />
                 <input
                   type="number"
@@ -571,7 +561,7 @@ export default function ServicePricingEditor({
                   }
                   placeholder="Menge"
                   required={pricingMode === "quantity_tiers"}
-                  className="border border-neutral-300 p-3 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
                 />
                 <div className="relative">
                   <input
@@ -584,18 +574,19 @@ export default function ServicePricingEditor({
                     }
                     placeholder="0.00"
                     required={pricingMode === "quantity_tiers"}
-                    className="w-full border border-neutral-300 p-3 pr-12 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 pr-12 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-xs">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     EUR
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeTierRow(tier.id)}
-                  className="p-3 text-red-500 hover:bg-red-50 transition-colors"
+                  className="rounded-2xl p-3 text-rose-500 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                  aria-label={`Staffel ${tier.label || tier.quantity} entfernen`}
                 >
-                  <Trash className="w-5 h-5" />
+                  <Trash className="h-5 w-5" />
                 </button>
               </div>
             ))}
@@ -604,19 +595,19 @@ export default function ServicePricingEditor({
       )}
 
       {pricingMode === "area" && (
-        <div className="space-y-6 bg-white border border-neutral-200 p-6">
+        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div>
-            <h3 className="text-xs font-bold text-neutral-950 uppercase tracking-widest">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
               Flaechenberechnung
             </h3>
-            <p className="text-sm text-neutral-500 mt-2">
+            <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
               Formel im Store: Flaeche m2 = (Breite cm / 100) x (Hoehe cm / 100).
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="relative">
-              <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Preis pro m2
               </label>
               <input
@@ -631,16 +622,16 @@ export default function ServicePricingEditor({
                   }))
                 }
                 required={pricingMode === "area"}
-                className="w-full border border-neutral-300 p-4 pr-14 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pr-14 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
-              <span className="absolute right-4 top-[49px] text-neutral-500 font-bold text-xs">
+              <span className="absolute right-4 top-[49px] text-xs font-semibold text-slate-500 dark:text-slate-400">
                 EUR
               </span>
             </div>
 
             <div className="relative">
-              <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
-                Mindestfläche (m2)
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                Mindestflaeche (m2)
               </label>
               <input
                 type="number"
@@ -653,17 +644,17 @@ export default function ServicePricingEditor({
                     minimumAreaSqm: event.target.value,
                   }))
                 }
-                className="w-full border border-neutral-300 p-4 pr-14 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pr-14 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
-              <span className="absolute right-4 top-[49px] text-neutral-500 font-bold text-xs">
+              <span className="absolute right-4 top-[49px] text-xs font-semibold text-slate-500 dark:text-slate-400">
                 m2
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Label Breite
               </label>
               <input
@@ -676,12 +667,12 @@ export default function ServicePricingEditor({
                   }))
                 }
                 required={pricingMode === "area"}
-                className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-neutral-950 mb-3 uppercase tracking-widest">
+              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
                 Label Hoehe
               </label>
               <input
@@ -694,7 +685,7 @@ export default function ServicePricingEditor({
                   }))
                 }
                 required={pricingMode === "area"}
-                className="w-full border border-neutral-300 p-4 outline-none focus:border-neutral-950 transition-colors text-sm bg-white"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
               />
             </div>
           </div>
@@ -703,4 +694,3 @@ export default function ServicePricingEditor({
     </section>
   );
 }
-

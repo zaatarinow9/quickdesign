@@ -281,17 +281,17 @@ function parsePricingConfig(
 
 function parseUploadConfig(
   formData: FormData,
-): Partial<ServiceConfigPayload> {
+): ServiceUploadFieldConfig[] {
   const rawConfig = getTrimmedString(formData, "uploadConfigJson")
   const parsedValue = parseRecordJson(rawConfig)
 
   if (!parsedValue) {
-    return {}
+    return []
   }
 
   const rawUploadFields = parsedValue.uploadFields
   if (!Array.isArray(rawUploadFields)) {
-    return { uploadFields: [] }
+    return []
   }
 
   const uploadFields = rawUploadFields
@@ -355,18 +355,41 @@ function parseUploadConfig(
     )
     .sort((left, right) => left.order - right.order)
 
-  return { uploadFields }
+  return uploadFields
+}
+
+function isCustomUploadFieldsEnabled(formData: FormData): boolean {
+  return getTrimmedString(formData, "useCustomUploadFields") === "true"
 }
 
 function buildServiceConfigJson(
   formData: FormData,
   pricingMode: SupportedServicePricingMode,
 ): string | null {
+  const existingConfig =
+    parseRecordJson(getTrimmedString(formData, "existingConfigJson")) ?? {}
   const pricingConfig = parsePricingConfig(formData, pricingMode)
-  const uploadConfig = parseUploadConfig(formData)
-  const configPayload: ServiceConfigPayload = {
-    ...pricingConfig,
-    ...uploadConfig,
+  const customUploadFieldsEnabled = isCustomUploadFieldsEnabled(formData)
+  const uploadFields = customUploadFieldsEnabled ? parseUploadConfig(formData) : null
+  const configPayload: Record<string, unknown> = {
+    ...existingConfig,
+  }
+
+  delete configPayload.quantityTiers
+  delete configPayload.area
+
+  if (pricingMode === "quantity_tiers") {
+    configPayload.quantityTiers = pricingConfig.quantityTiers ?? []
+  }
+
+  if (pricingMode === "area") {
+    configPayload.area = pricingConfig.area
+  }
+
+  if (customUploadFieldsEnabled) {
+    configPayload.uploadFields = uploadFields ?? []
+  } else {
+    delete configPayload.uploadFields
   }
 
   return Object.keys(configPayload).length > 0

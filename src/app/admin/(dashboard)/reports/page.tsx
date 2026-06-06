@@ -8,6 +8,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  AdminCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatCard,
+  getAdminButtonClassName,
+} from "@/components/admin/AdminUI";
 import { requireAdminPermission } from "@/lib/admin/auth";
 import { hasAdminPermission } from "@/lib/admin/permissions";
 import { formatCurrencyAmount } from "@/lib/orders/finance";
@@ -39,33 +46,7 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Erstattet",
 };
 
-function SummaryCard({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-}) {
-  return (
-    <div className="border border-neutral-200 bg-white p-6 shadow-sm">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-        {label}
-      </p>
-      <p className="mt-4 text-4xl font-bold tracking-tighter text-neutral-950">
-        {value}
-      </p>
-      {hint && (
-        <p className="mt-4 text-xs font-bold uppercase tracking-widest text-neutral-400">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ReportSection({
+function ReportTableSection({
   title,
   description,
   children,
@@ -75,15 +56,9 @@ function ReportSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border border-neutral-200 bg-white p-8 shadow-sm">
-      <div className="mb-6 border-b border-neutral-100 pb-4">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-950">
-          {title}
-        </h2>
-        {description && <p className="mt-2 text-sm text-neutral-500">{description}</p>}
-      </div>
+    <AdminSectionCard title={title} description={description}>
       {children}
-    </section>
+    </AdminSectionCard>
   );
 }
 
@@ -186,172 +161,142 @@ export default async function AdminReportsPage({
   const workloadRows = buildStaffWorkloadSummary(reportableOrders, staffUsers).filter(
     (row) => canViewAllReports || row.adminUserId === currentUser.id,
   );
-  const archivedOrdersCount = reportableOrders.filter(
-    (order) => Boolean(order.isArchived),
-  ).length;
+  const archivedOrdersCount = reportableOrders.filter((order) => Boolean(order.isArchived)).length;
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col gap-6 border-b border-neutral-100 pb-8 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="flex items-center gap-4 text-4xl font-bold uppercase tracking-tighter text-neutral-950">
-            <BarChart3 className="h-10 w-10" /> Reports
-          </h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            Monatsuebersicht fuer {monthRange.monthLabel}.
-          </p>
-        </div>
+    <div className="space-y-8">
+      <AdminCard className="p-6 md:p-8">
+        <AdminPageHeader
+          eyebrow="Reports"
+          title={`Monatsuebersicht ${monthRange.monthLabel}`}
+          description="Kennzahlen, Zahlungsstatus, Services und Teamlast fuer den ausgewaehlten Monat."
+          actions={
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <Link
+                href={`/admin/reports?month=${previousMonthValue}`}
+                className={getAdminButtonClassName("secondary")}
+              >
+                Vorheriger Monat
+              </Link>
+              <form className="flex flex-col gap-3 md:flex-row md:items-center">
+                <input
+                  type="month"
+                  name="month"
+                  defaultValue={monthRange.monthValue}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+                />
+                <button type="submit" className={getAdminButtonClassName("primary")}>
+                  Monat laden
+                </button>
+              </form>
+              <Link
+                href={`/admin/reports?month=${nextMonthValue}`}
+                className={getAdminButtonClassName("secondary")}
+              >
+                Naechster Monat
+              </Link>
+            </div>
+          }
+        />
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <Link
-            href={`/admin/reports?month=${previousMonthValue}`}
-            className="inline-flex items-center justify-center border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:border-neutral-950 hover:text-neutral-950"
-          >
-            Vorheriger Monat
-          </Link>
-          <form className="flex flex-col gap-3 md:flex-row md:items-center">
-            <input
-              type="month"
-              name="month"
-              defaultValue={monthRange.monthValue}
-              className="border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-neutral-950"
-            />
-            <button
-              type="submit"
-              className="bg-neutral-950 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
-            >
-              Monat laden
-            </button>
-          </form>
-          <Link
-            href={`/admin/reports?month=${nextMonthValue}`}
-            className="inline-flex items-center justify-center border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:border-neutral-950 hover:text-neutral-950"
-          >
-            Naechster Monat
-          </Link>
-        </div>
-      </div>
-
-      {!canViewAllReports && (
-        <div className="border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="text-xs font-bold uppercase tracking-widest text-amber-800">
-            Eingeschraenkte Sicht
-          </p>
-          <p className="mt-2">
+        {!canViewAllReports && (
+          <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
             Fuer Ihre Rolle werden nur eigene zugewiesene Auftraege und operative
-            Kennzahlen angezeigt. Finanzsummen des Gesamtunternehmens bleiben
-            verborgen.
-          </p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label={canViewAllReports ? "Auftraege im Monat" : "Meine Auftraege"}
-          value={summary.totalOrders}
-          hint={monthRange.monthValue}
-        />
-        <SummaryCard
-          label="Offene Auftraege"
-          value={summary.openOrders}
-          hint="nicht abgeschlossen / nicht storniert"
-        />
-        <SummaryCard
-          label="Erledigte Auftraege"
-          value={summary.completedOrders}
-          hint="zugestellt oder intern erledigt"
-        />
-        <SummaryCard
-          label="Unbezahlte Auftraege"
-          value={summary.unpaidOrders}
-          hint="offener Zahlungsbetrag vorhanden"
-        />
-        {canViewAllReports && (
-          <>
-            <SummaryCard
-              label="Netto Gesamt"
-              value={formatCurrencyAmount(summary.totalNet)}
-            />
-            <SummaryCard
-              label="Brutto Gesamt"
-              value={formatCurrencyAmount(summary.totalGross)}
-            />
-            <SummaryCard
-              label="MwSt Gesamt"
-              value={formatCurrencyAmount(summary.totalTax)}
-            />
-            <SummaryCard
-              label="Rabatt Gesamt"
-              value={formatCurrencyAmount(summary.totalDiscount)}
-            />
-            <SummaryCard
-              label="Bezahlt"
-              value={formatCurrencyAmount(summary.paidAmount)}
-            />
-            <SummaryCard
-              label="Offener Betrag"
-              value={formatCurrencyAmount(summary.unpaidAmount)}
-            />
-          </>
+            Kennzahlen angezeigt. Finanzsummen des Gesamtunternehmens bleiben verborgen.
+          </div>
         )}
-        <SummaryCard
-          label="Archivfaelle"
-          value={archivedOrdersCount}
-          hint="im gewaelten Monat"
-        />
-      </div>
 
-      {reportableOrders.length === 0 && (
-        <div className="flex flex-col items-center gap-4 border border-neutral-200 bg-white p-20 text-center shadow-sm">
-          <Package className="h-14 w-14 text-neutral-200" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-neutral-300">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminStatCard
+            label={canViewAllReports ? "Auftraege im Monat" : "Meine Auftraege"}
+            value={summary.totalOrders}
+            tone="slate"
+            icon={Package}
+            hint={monthRange.monthValue}
+          />
+          <AdminStatCard
+            label="Offene Auftraege"
+            value={summary.openOrders}
+            tone="amber"
+            icon={BarChart3}
+            hint="Nicht abgeschlossen oder storniert"
+          />
+          <AdminStatCard
+            label="Erledigte Auftraege"
+            value={summary.completedOrders}
+            tone="emerald"
+            icon={CreditCard}
+            hint="Zugestellt oder intern erledigt"
+          />
+          <AdminStatCard
+            label="Archivfaelle"
+            value={archivedOrdersCount}
+            tone="purple"
+            icon={FolderArchive}
+            hint="Im gewaehlten Monat"
+          />
+        </div>
+
+        {canViewAllReports && (
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <AdminStatCard label="Netto Gesamt" value={formatCurrencyAmount(summary.totalNet)} tone="blue" />
+            <AdminStatCard label="Brutto Gesamt" value={formatCurrencyAmount(summary.totalGross)} tone="emerald" />
+            <AdminStatCard label="MwSt Gesamt" value={formatCurrencyAmount(summary.totalTax)} tone="purple" />
+            <AdminStatCard label="Rabatt Gesamt" value={formatCurrencyAmount(summary.totalDiscount)} tone="rose" />
+            <AdminStatCard label="Offener Betrag" value={formatCurrencyAmount(summary.unpaidAmount)} tone="amber" />
+          </div>
+        )}
+      </AdminCard>
+
+      {reportableOrders.length === 0 ? (
+        <AdminCard className="p-12 text-center">
+          <Package className="mx-auto h-14 w-14 text-slate-300 dark:text-slate-600" />
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             Keine Auftraege fuer diesen Monat vorhanden
           </p>
-        </div>
-      )}
-
-      {reportableOrders.length > 0 && (
+        </AdminCard>
+      ) : (
         <>
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-            <ReportSection
+            <ReportTableSection
               title="Auftraege nach Status"
               description="Verteilung der Auftraege nach Hauptstatus im ausgewaehlten Monat."
             >
-              <div className="overflow-hidden border border-neutral-200">
+              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
-                  <thead className="bg-neutral-50">
+                  <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Status
                       </th>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Anzahl
                       </th>
                       {canViewAllReports && (
                         <>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Netto
                           </th>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Brutto
                           </th>
                         </>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                     {statusBreakdown.map((row) => (
                       <tr key={row.key}>
-                        <td className="p-4 text-sm font-bold text-neutral-950">
+                        <td className="p-4 text-sm font-semibold text-slate-950 dark:text-slate-50">
                           {ORDER_STATUS_LABELS[row.key] ?? row.key}
                         </td>
-                        <td className="p-4 text-sm text-neutral-700">{row.count}</td>
+                        <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{row.count}</td>
                         {canViewAllReports && (
                           <>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalNet)}
                             </td>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalGross)}
                             </td>
                           </>
@@ -361,47 +306,47 @@ export default async function AdminReportsPage({
                   </tbody>
                 </table>
               </div>
-            </ReportSection>
+            </ReportTableSection>
 
-            <ReportSection
+            <ReportTableSection
               title="Auftraege nach Zahlung"
               description="Zahlungsstand der Auftraege im ausgewaehlten Zeitraum."
             >
-              <div className="overflow-hidden border border-neutral-200">
+              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
-                  <thead className="bg-neutral-50">
+                  <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Zahlung
                       </th>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Anzahl
                       </th>
                       {canViewAllReports && (
                         <>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Netto
                           </th>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Brutto
                           </th>
                         </>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                     {paymentBreakdown.map((row) => (
                       <tr key={row.key}>
-                        <td className="p-4 text-sm font-bold text-neutral-950">
+                        <td className="p-4 text-sm font-semibold text-slate-950 dark:text-slate-50">
                           {PAYMENT_STATUS_LABELS[row.key] ?? row.key}
                         </td>
-                        <td className="p-4 text-sm text-neutral-700">{row.count}</td>
+                        <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{row.count}</td>
                         {canViewAllReports && (
                           <>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalNet)}
                             </td>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalGross)}
                             </td>
                           </>
@@ -411,46 +356,46 @@ export default async function AdminReportsPage({
                   </tbody>
                 </table>
               </div>
-            </ReportSection>
+            </ReportTableSection>
           </div>
 
           {canViewAllReports && (
             <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-              <ReportSection
+              <ReportTableSection
                 title="Top Services"
                 description="Leistungen mit dem hoechsten Netto-Umsatz im Monat."
               >
-                <div className="overflow-hidden border border-neutral-200">
+                <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left">
-                    <thead className="bg-neutral-50">
+                    <thead className="bg-slate-50 dark:bg-slate-950/70">
                       <tr>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Service
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Auftraege
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Menge
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Netto
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {topServices.map((service) => (
                         <tr key={service.serviceId}>
-                          <td className="p-4 text-sm font-bold text-neutral-950">
+                          <td className="p-4 text-sm font-semibold text-slate-950 dark:text-slate-50">
                             {service.serviceName}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {service.ordersCount}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {service.quantity}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {formatCurrencyAmount(service.totalNet)}
                           </td>
                         </tr>
@@ -458,43 +403,43 @@ export default async function AdminReportsPage({
                     </tbody>
                   </table>
                 </div>
-              </ReportSection>
+              </ReportTableSection>
 
-              <ReportSection
+              <ReportTableSection
                 title="Top Kunden"
                 description="Kunden mit dem hoechsten Brutto-Umsatz im Monat."
               >
-                <div className="overflow-hidden border border-neutral-200">
+                <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left">
-                    <thead className="bg-neutral-50">
+                    <thead className="bg-slate-50 dark:bg-slate-950/70">
                       <tr>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Kunde
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Firma
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Auftraege
                         </th>
-                        <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                        <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Brutto
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {topCustomers.map((customer) => (
                         <tr key={customer.id}>
-                          <td className="p-4 text-sm font-bold text-neutral-950">
+                          <td className="p-4 text-sm font-semibold text-slate-950 dark:text-slate-50">
                             {customer.name}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {customer.companyName || customer.email || "Ohne Firma"}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {customer.ordersCount}
                           </td>
-                          <td className="p-4 text-sm text-neutral-700">
+                          <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                             {formatCurrencyAmount(customer.totalGross)}
                           </td>
                         </tr>
@@ -502,12 +447,12 @@ export default async function AdminReportsPage({
                     </tbody>
                   </table>
                 </div>
-              </ReportSection>
+              </ReportTableSection>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-            <ReportSection
+            <ReportTableSection
               title="Staff Workload"
               description={
                 canViewAllReports
@@ -515,58 +460,60 @@ export default async function AdminReportsPage({
                   : "Ihre persoenliche Monatslast auf Basis zugewiesener Auftraege."
               }
             >
-              <div className="overflow-hidden border border-neutral-200">
+              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
-                  <thead className="bg-neutral-50">
+                  <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Teammitglied
                       </th>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Zugewiesen
                       </th>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Erledigt
                       </th>
-                      <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Offen
                       </th>
                       {canViewAllReports && (
                         <>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Netto
                           </th>
-                          <th className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                             Brutto
                           </th>
                         </>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                     {workloadRows.map((row) => (
                       <tr key={row.adminUserId}>
                         <td className="p-4">
-                          <p className="text-sm font-bold text-neutral-950">{row.name}</p>
-                          <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+                          <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                            {row.name}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             {row.role}
                           </p>
                         </td>
-                        <td className="p-4 text-sm text-neutral-700">
+                        <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                           {row.assignedOrdersCount}
                         </td>
-                        <td className="p-4 text-sm text-neutral-700">
+                        <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                           {row.completedAssignedOrdersCount}
                         </td>
-                        <td className="p-4 text-sm text-neutral-700">
+                        <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                           {row.openAssignedOrdersCount}
                         </td>
                         {canViewAllReports && (
                           <>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalNet)}
                             </td>
-                            <td className="p-4 text-sm text-neutral-700">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
                               {formatCurrencyAmount(row.totalGross)}
                             </td>
                           </>
@@ -576,73 +523,70 @@ export default async function AdminReportsPage({
                   </tbody>
                 </table>
               </div>
-            </ReportSection>
+            </ReportTableSection>
 
-            <ReportSection
+            <AdminSectionCard
               title="Monatskontext"
               description="Schnelle Einordnung des aktuell geladenen Monats."
+              icon={Users}
             >
               <div className="space-y-4">
-                <div className="flex items-start gap-4 border border-neutral-200 bg-neutral-50 p-4">
-                  <Package className="mt-1 h-5 w-5 text-neutral-500" />
+                <div className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                  <Package className="mt-1 h-5 w-5 text-slate-500 dark:text-slate-300" />
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                       Zeitraum
                     </p>
-                    <p className="mt-2 text-sm font-bold text-neutral-950">
-                      {format(monthRange.from, "dd.MM.yyyy")} bis{" "}
-                      {format(monthEnd, "dd.MM.yyyy")}
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {format(monthRange.from, "dd.MM.yyyy")} bis {format(monthEnd, "dd.MM.yyyy")}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4 border border-neutral-200 bg-neutral-50 p-4">
-                  <CreditCard className="mt-1 h-5 w-5 text-neutral-500" />
+                <div className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                  <CreditCard className="mt-1 h-5 w-5 text-slate-500 dark:text-slate-300" />
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                       Zahlungslage
                     </p>
-                    <p className="mt-2 text-sm font-bold text-neutral-950">
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
                       {summary.unpaidOrders} Auftraege mit offenem Betrag
                     </p>
                     {canViewAllReports && (
-                      <p className="mt-1 text-sm text-neutral-600">
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         Offen: {formatCurrencyAmount(summary.unpaidAmount)}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-start gap-4 border border-neutral-200 bg-neutral-50 p-4">
-                  <Users className="mt-1 h-5 w-5 text-neutral-500" />
+                <div className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                  <Users className="mt-1 h-5 w-5 text-slate-500 dark:text-slate-300" />
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                       Teamfokus
                     </p>
-                    <p className="mt-2 text-sm font-bold text-neutral-950">
-                      {workloadRows.reduce(
-                        (sum, row) => sum + row.openAssignedOrdersCount,
-                        0,
-                      )}{" "}
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {workloadRows.reduce((sum, row) => sum + row.openAssignedOrdersCount, 0)}{" "}
                       offene zugewiesene Auftraege
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4 border border-neutral-200 bg-neutral-50 p-4">
-                  <FolderArchive className="mt-1 h-5 w-5 text-neutral-500" />
+                <div className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                  <FolderArchive className="mt-1 h-5 w-5 text-slate-500 dark:text-slate-300" />
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                       Archiv
                     </p>
-                    <p className="mt-2 text-sm font-bold text-neutral-950">
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
                       {archivedOrdersCount} archivierte Auftraege im Monat
                     </p>
-                    <p className="mt-1 text-sm text-neutral-600">
+                    <p className="mt-1 text-sm leading-7 text-slate-600 dark:text-slate-300">
                       Archivierte Auftraege bleiben in Reports sichtbar, sind aber
                       standardmaessig aus der Listenansicht ausgeblendet.
                     </p>
                   </div>
                 </div>
               </div>
-            </ReportSection>
+            </AdminSectionCard>
           </div>
         </>
       )}

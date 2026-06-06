@@ -1,7 +1,66 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --app-background: #f8fafc;
+    --app-foreground: #0f172a;
+    --app-panel: #ffffff;
+    --app-panel-muted: #f8fafc;
+    --app-border: #e2e8f0;
+    --app-subtle: #475569;
+  }
+
+  .dark {
+    --app-background: #020617;
+    --app-foreground: #e2e8f0;
+    --app-panel: #0f172a;
+    --app-panel-muted: #111827;
+    --app-border: #1e293b;
+    --app-subtle: #94a3b8;
+  }
+
+  html {
+    background-color: var(--app-background);
+  }
+
   body {
+    min-height: 100vh;
+    background-color: var(--app-background);
+    color: var(--app-foreground);
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    letter-spacing: normal;
     @apply antialiased;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(56, 189, 248, 0.28);
+    color: inherit;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    letter-spacing: normal;
+  }
+
+  p,
+  li,
+  label {
+    word-break: normal;
+  }
+
+  :focus-visible {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
   }
 }
