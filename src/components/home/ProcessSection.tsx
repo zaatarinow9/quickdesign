@@ -1,57 +1,68 @@
-import { MousePointerClick, Settings2, Printer, Truck } from "lucide-react";
+import {
+  MousePointerClick,
+  Printer,
+  Settings2,
+  Truck,
+} from "lucide-react";
 
 const PROCESS_STEPS = [
   {
     icon: MousePointerClick,
-    title: "Produkt Wählen",
-    description: "Wählen Sie aus unserem breiten Sortiment an hochwertigen Druckprodukten."
+    title: "Produkt waehlen",
+    description:
+      "Waehlen Sie die passende Leistung aus dem Katalog und starten Sie direkt im Konfigurator.",
   },
   {
     icon: Settings2,
     title: "Konfigurieren",
-    description: "Passen Sie Format, Material und Veredelungen an Ihre Bedürfnisse an."
+    description:
+      "Format, Materialien, Veredelungen und Pflichtangaben bleiben in einem klaren Ablauf gebuendelt.",
   },
   {
     icon: Printer,
     title: "Produktion",
-    description: "Wir drucken mit modernster Technologie für höchste Präzision."
+    description:
+      "Unsere Druckvorbereitung uebernimmt Ihre Daten, prueft Uploads und begleitet die Fertigung.",
   },
   {
     icon: Truck,
-    title: "Schnelle Lieferung",
-    description: "Sichere und pünktliche Zustellung direkt an Ihre Wunschadresse."
-  }
+    title: "Liefern",
+    description:
+      "Sie verfolgen den Auftrag digital und behalten den Status bis zur Auslieferung im Blick.",
+  },
 ];
 
 export default function ProcessSection() {
   return (
-    <section className="w-full bg-neutral-50 py-32 px-6 md:px-12 border-t border-neutral-200">
-      <div className="w-full text-center mb-24">
-        <span className="text-neutral-500 uppercase tracking-widest text-xs font-bold mb-4 block">
-          Der Ablauf
-        </span>
-        <h2 className="text-4xl md:text-5xl font-bold text-neutral-950 tracking-tighter">
-          Von der Idee zum fertigen Produkt
-        </h2>
-      </div>
+    <section className="border-t border-slate-200 bg-slate-50 py-20 sm:py-24">
+      <div className="public-container">
+        <div className="max-w-2xl">
+          <p className="section-eyebrow">Der Ablauf</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+            Von der Konfiguration bis zur Auslieferung bleibt jeder Schritt
+            nachvollziehbar.
+          </h2>
+        </div>
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-12 relative">
-        <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-[1px] bg-neutral-300 z-0"></div>
-        
-        {PROCESS_STEPS.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <div key={index} className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-white border border-neutral-200 shadow-sm rounded-none flex items-center justify-center mb-8">
-                <Icon className="w-8 h-8 text-neutral-950" />
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          {PROCESS_STEPS.map((step) => {
+            const Icon = step.icon;
+
+            return (
+              <div key={step.title} className="surface-card p-6">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold tracking-tight text-slate-950">
+                  {step.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {step.description}
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-neutral-950 mb-4">{step.title}</h3>
-              <p className="text-neutral-500 text-sm leading-relaxed max-w-xs">
-                {step.description}
-              </p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </section>
   );

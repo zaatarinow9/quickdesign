@@ -1,5 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  CreditCard,
+  Loader2,
+} from "lucide-react";
 import { createOrder } from "@/app/actions/order";
 import { useCartStore, type CartItem } from "@/lib/store/cart";
 import type { LegacyConfigurationTextInput } from "@/lib/services/configuration/snapshot";
@@ -8,15 +17,6 @@ import {
   MAX_SERVER_ACTION_UPLOAD_MB,
   getServerActionUploadLimitMessage,
 } from "@/lib/storage/upload-limits";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  CreditCard,
-  Loader2,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 function sanitizeOptionalUrl(value: string | null | undefined): string | undefined {
   if (!value) {
@@ -170,6 +170,10 @@ function hasOversizedPendingUpload(items: CartItem[]): boolean {
   );
 }
 
+function formatCurrency(value: number): string {
+  return `${value.toFixed(2)} EUR`;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart } = useCartStore();
@@ -188,21 +192,27 @@ export default function CheckoutPage() {
     0,
   );
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return null;
+  }
+
   if (items.length === 0 && !success) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-slate-50 px-6 text-center">
-        <p className="text-sm text-slate-500">
-          Ihr Warenkorb ist leer
+        <p className="text-sm leading-7 text-slate-500">
+          Ihr Warenkorb ist leer.
         </p>
-        <Link href="/" className="text-sm font-medium text-slate-700 underline underline-offset-4">
-          Zurück zum Shop
+        <Link
+          href="/services"
+          className="text-sm font-medium text-slate-700 underline underline-offset-4"
+        >
+          Zurueck zu den Leistungen
         </Link>
       </div>
     );
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
 
@@ -246,17 +256,18 @@ export default function CheckoutPage() {
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-16">
-        <div className="w-full max-w-xl rounded-[32px] border border-slate-200 bg-white p-10 text-center shadow-xl">
+        <div className="surface-card w-full max-w-xl p-8 text-center sm:p-10">
           <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg">
             <CheckCircle2 className="h-10 w-10" />
           </div>
           <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
-            Bestellung erfolgreich!
+            Bestellung erfolgreich
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
-            Vielen Dank für Ihren Auftrag. Wir haben die Details erhalten.
+            Vielen Dank. Wir haben Ihren Auftrag erhalten und kuemmern uns jetzt
+            um die weitere Bearbeitung.
           </p>
-          {orderNumber && (
+          {orderNumber ? (
             <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 px-6 py-5">
               <span className="mb-1 block text-xs font-medium text-slate-500">
                 Bestellnummer
@@ -265,7 +276,7 @@ export default function CheckoutPage() {
                 #{orderNumber}
               </span>
             </div>
-          )}
+          ) : null}
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <button
               type="button"
@@ -288,132 +299,142 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-20">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 lg:grid-cols-2 xl:gap-16">
-        <div className="space-y-10">
-          <Link
-            href="/cart"
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950"
-          >
-            <ArrowLeft className="h-4 w-4" /> Zurück zum Warenkorb
-          </Link>
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-sky-700">
-              Bestellung vorbereiten
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
-              Bestellung abschließen
-            </h1>
-            <p className="max-w-xl text-sm leading-7 text-slate-600">
-              Ihre Auswahl aus dem Konfigurator wird mit allen hochgeladenen
-              Dateien und Konfigurationsdaten übernommen.
-            </p>
-          </div>
-
-          {errorMessage && (
-            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-7 text-rose-700">
-              {errorMessage}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm md:p-10">
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-slate-700">
-                  Vollständiger Name
-                </label>
-                <input
-                  name="name"
-                  required
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-slate-700">
-                  E-Mail-Adresse
-                </label>
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
-                />
-              </div>
-              <div className="pt-4">
-                <label className="mb-4 block text-sm font-medium text-slate-700">
-                  Zahlungsmethode
-                </label>
-                <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <CreditCard className="h-5 w-5 text-slate-700" />
-                  <span className="text-sm font-semibold text-slate-950">
-                    Simulierte Zahlung
-                  </span>
-                  <span className="ml-auto rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
-                    Aktiv
-                  </span>
-                </div>
-                <p className="mt-4 text-sm leading-7 text-slate-500">
-                  Uploads über 4 MB werden aus Sicherheitsgründen vor dem
-                  Absenden blockiert.
-                </p>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-3 rounded-full bg-slate-950 py-5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Bestellung wird gespeichert
-                </>
-              ) : (
-                "Bestellung abschließen"
-              )}
-            </button>
-          </form>
-        </div>
-
-        <div className="sticky top-24 h-fit rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm md:p-10">
-          <h2 className="mb-8 border-b border-slate-200 pb-6 text-lg font-semibold text-slate-950">
-            Zusammenfassung
-          </h2>
-          <div className="mb-10 max-h-[300px] space-y-6 overflow-y-auto pr-2">
-            {items.map((item) => (
-              <div
-                key={item.cartItemId}
-                className="flex gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-4"
+    <div className="bg-slate-50 py-14 sm:py-16 lg:py-20">
+      <div className="public-container">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] xl:gap-12">
+          <div className="space-y-8">
+            <div>
+              <Link
+                href="/cart"
+                className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950"
               >
-                <div className="h-16 w-16 shrink-0 rounded-2xl bg-white p-2">
-                  <img
-                    src={item.image}
-                    className="h-full w-full object-contain"
-                    alt=""
-                  />
+                <ArrowLeft className="h-4 w-4" />
+                Zurueck zum Warenkorb
+              </Link>
+              <p className="section-eyebrow mt-8">Checkout</p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
+                Bestellung abschliessen
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">
+                Ihre Auswahl aus dem Konfigurator wird mit allen Konfigurations-
+                und Upload-Daten uebernommen. Im letzten Schritt fehlen nur noch
+                Ihre Kontaktdaten.
+              </p>
+            </div>
+
+            {errorMessage ? (
+              <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-7 text-rose-700">
+                {errorMessage}
+              </div>
+            ) : null}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="surface-card space-y-8 p-6 sm:p-8 lg:p-10">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Vollstaendiger Name
+                    </label>
+                    <input
+                      name="name"
+                      required
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-700">
+                      E-Mail-Adresse
+                    </label>
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-950">
-                  {item.name}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Menge: {item.quantity}
+
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm">
+                        <CreditCard className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">
+                          Simulierte Zahlung
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Aktiv fuer die aktuelle Bestellstrecke
+                        </p>
+                      </div>
+                    </div>
+                    <span className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
+                      Aktiv
+                    </span>
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-slate-500">
+                    Uploads ueber {MAX_SERVER_ACTION_UPLOAD_MB} MB werden aus
+                    Sicherheitsgruenden vor dem Absenden blockiert.
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-slate-950">
-                  {normalizeDisplayPrice(item.totalPrice).toFixed(2)} EUR
-                </p>
               </div>
-            ))}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-slate-950 py-5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Bestellung wird gespeichert
+                  </>
+                ) : (
+                  "Bestellung abschliessen"
+                )}
+              </button>
+            </form>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-200 pt-6">
-            <span className="text-sm font-medium text-slate-500">
-              Gesamt
-            </span>
-            <span className="text-4xl font-semibold tracking-tight text-slate-950">
-              {cartTotal.toFixed(2)} EUR
-            </span>
-          </div>
+
+          <aside className="surface-card p-6 sm:p-8 lg:sticky lg:top-28">
+            <h2 className="border-b border-slate-200 pb-5 text-lg font-semibold text-slate-950">
+              Zusammenfassung
+            </h2>
+            <div className="mt-6 space-y-4">
+              {items.map((item) => (
+                <div
+                  key={item.cartItemId}
+                  className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="h-16 w-16 shrink-0 rounded-2xl bg-white p-2">
+                    <img
+                      src={item.image}
+                      className="h-full w-full object-contain"
+                      alt={item.name}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-950">
+                      {item.name}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Menge: {item.quantity}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-950">
+                    {formatCurrency(normalizeDisplayPrice(item.totalPrice))}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
+              <span className="text-sm font-medium text-slate-500">Gesamt</span>
+              <span className="text-3xl font-semibold tracking-tight text-slate-950">
+                {formatCurrency(cartTotal)}
+              </span>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

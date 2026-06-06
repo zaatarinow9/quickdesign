@@ -28,15 +28,15 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Erstattet",
 };
 
-const BRAND_FALLBACK_NAME = "QUICKDESIGN";
+const BRAND_FALLBACK_NAME = "QuickDesign";
 const BRAND_ADDRESS_LINES = [
   "Musterstrasse 1",
   "12345 Musterstadt",
   "Deutschland",
 ];
 const BRAND_CONTACT_LINES = [
-  "Telefon: +49 000 000000",
-  "E-Mail: info@quickdesign.de",
+  "Telefon: +49 1577 2785677",
+  "E-Mail: info@quickdesign24.de",
 ];
 const BRAND_LEGAL_LINES = [
   "USt-IdNr.: DE000000000",
@@ -139,12 +139,12 @@ export async function getOrderDocumentRecord(
 }
 
 export function getOrderDocumentBranding(): OrderDocumentBranding {
-  const preferredLogoPath = join(process.cwd(), "public", "brand", "logo.png");
-  const fallbackLogoPath = join(process.cwd(), "public", "logo.png");
+  const preferredLogoPath = join(process.cwd(), "public", "logo.png");
+  const fallbackLogoPath = join(process.cwd(), "public", "brand", "logo.png");
   const logoSrc = existsSync(preferredLogoPath)
-    ? "/brand/logo.png"
+    ? "/logo.png"
     : existsSync(fallbackLogoPath)
-      ? "/logo.png"
+      ? "/brand/logo.png"
       : null;
 
   return {

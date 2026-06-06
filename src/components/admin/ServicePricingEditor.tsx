@@ -442,7 +442,7 @@ export default function ServicePricingEditor({
       <input type="hidden" name="pricingConfigJson" value={pricingConfigJson} />
 
       <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+        <h2 className="text-base font-semibold tracking-tight text-slate-950 dark:text-slate-100">
           Preisgestaltung
         </h2>
         <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -453,7 +453,7 @@ export default function ServicePricingEditor({
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-sky-200 bg-sky-50 p-5 dark:border-sky-900/80 dark:bg-sky-950/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-200">
+          <p className="text-xs font-medium tracking-[0.08em] text-sky-700 dark:text-sky-200">
             Zusammenfassung
           </p>
           <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
@@ -461,7 +461,7 @@ export default function ServicePricingEditor({
           </p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
             Kurzfassung
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -478,7 +478,7 @@ export default function ServicePricingEditor({
       </div>
 
       <div>
-        <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+        <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
           Preismodell
         </label>
         <select
@@ -518,7 +518,7 @@ export default function ServicePricingEditor({
         <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                 Mengenstaffeln
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -597,7 +597,7 @@ export default function ServicePricingEditor({
       {pricingMode === "area" && (
         <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+            <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-100">
               Flaechenberechnung
             </h3>
             <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -607,7 +607,7 @@ export default function ServicePricingEditor({
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="relative">
-              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Preis pro m2
               </label>
               <input
@@ -630,7 +630,7 @@ export default function ServicePricingEditor({
             </div>
 
             <div className="relative">
-              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Mindestflaeche (m2)
               </label>
               <input
@@ -654,7 +654,7 @@ export default function ServicePricingEditor({
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Label Breite
               </label>
               <input
@@ -672,7 +672,7 @@ export default function ServicePricingEditor({
             </div>
 
             <div>
-              <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Label Hoehe
               </label>
               <input

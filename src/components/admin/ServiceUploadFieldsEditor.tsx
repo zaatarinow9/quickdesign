@@ -386,7 +386,7 @@ export default function ServiceUploadFieldsEditor({
       />
 
       <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+        <h2 className="text-base font-semibold tracking-tight text-slate-950 dark:text-slate-100">
           Datei-Uploads
         </h2>
         <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -397,7 +397,7 @@ export default function ServiceUploadFieldsEditor({
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/80 dark:bg-amber-950/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+          <p className="text-xs font-medium tracking-[0.08em] text-amber-700 dark:text-amber-200">
             Effektives Limit
           </p>
           <p className="mt-3 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
@@ -405,7 +405,7 @@ export default function ServiceUploadFieldsEditor({
           </p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
             Vorschau
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -431,7 +431,7 @@ export default function ServiceUploadFieldsEditor({
         />
         <label
           htmlFor="custom-upload-fields"
-          className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100"
+          className="text-sm font-medium text-slate-700 dark:text-slate-200"
         >
           Eigene Upload-Felder verwenden
         </label>
@@ -446,7 +446,7 @@ export default function ServiceUploadFieldsEditor({
         <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+              <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                 Upload-Anforderungen
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -475,7 +475,7 @@ export default function ServiceUploadFieldsEditor({
                       <Upload className="h-4 w-4 text-slate-500 dark:text-slate-300" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                      <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
                         Upload-Feld #{index + 1}
                       </p>
                       <p className="text-sm text-slate-500 dark:text-slate-300">
@@ -495,7 +495,7 @@ export default function ServiceUploadFieldsEditor({
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Feldname
                     </label>
                     <input
@@ -510,7 +510,7 @@ export default function ServiceUploadFieldsEditor({
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Feld-Key
                     </label>
                     <input
@@ -526,7 +526,7 @@ export default function ServiceUploadFieldsEditor({
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                  <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Kundenhinweis
                   </label>
                   <input
@@ -542,7 +542,7 @@ export default function ServiceUploadFieldsEditor({
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Erlaubte Dateitypen
                     </label>
                     <input
@@ -561,7 +561,7 @@ export default function ServiceUploadFieldsEditor({
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Reihenfolge
                     </label>
                     <input
@@ -579,7 +579,7 @@ export default function ServiceUploadFieldsEditor({
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Maximale Dateien
                     </label>
                     <input
@@ -595,7 +595,7 @@ export default function ServiceUploadFieldsEditor({
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Maximale Dateigroesse
                     </label>
                     <input
@@ -629,7 +629,7 @@ export default function ServiceUploadFieldsEditor({
                   </div>
 
                   <div className="space-y-3">
-                    <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Optionen
                     </label>
                     <label className="flex min-h-[52px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 dark:border-slate-700 dark:bg-slate-900">
@@ -645,7 +645,7 @@ export default function ServiceUploadFieldsEditor({
                         }
                         className="h-4 w-4 accent-slate-950 dark:accent-slate-100"
                       />
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                         Pflichtfeld
                       </span>
                     </label>
@@ -662,7 +662,7 @@ export default function ServiceUploadFieldsEditor({
                         }
                         className="h-4 w-4 accent-slate-950 dark:accent-slate-100"
                       />
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                         Kundenlabel
                       </span>
                     </label>

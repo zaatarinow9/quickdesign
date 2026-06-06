@@ -52,10 +52,10 @@ export default async function ManageService({
   const summary = buildServiceManagementSummary(config);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8">
+    <div className="w-full space-y-8">
       <Link
         href="/admin/services"
-        className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
         Zurueck zur Service-Liste
@@ -109,7 +109,7 @@ export default async function ManageService({
             tone="blue"
           />
           <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+            <p className="text-xs font-medium tracking-[0.08em] text-emerald-700 dark:text-emerald-200">
               Service-Slug
             </p>
             <p className="mt-3 break-words text-base font-semibold text-slate-950 dark:text-slate-50">

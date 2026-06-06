@@ -33,16 +33,18 @@ export default async function ServiceDetailsPage({
   const config = normalizeServiceConfiguration(service);
 
   return (
-    <div className="min-h-screen w-full bg-neutral-50 py-8 md:py-10">
-      <div className="mx-auto max-w-7xl px-6 md:px-12">
+    <div className="bg-slate-50 py-8 sm:py-10 lg:py-12">
+      <div className="public-container">
         <Link
           href="/services"
-          className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
         >
           <ArrowLeft className="h-4 w-4" /> Zurueck zur Uebersicht
         </Link>
 
-        <ServiceWorkspace service={service} config={config} />
+        <div className="mt-6 lg:mt-8">
+          <ServiceWorkspace service={service} config={config} />
+        </div>
       </div>
     </div>
   );

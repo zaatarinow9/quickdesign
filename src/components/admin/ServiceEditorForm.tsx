@@ -273,7 +273,7 @@ export default function ServiceEditorForm({
       <AdminCard className="p-6 md:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
+            <p className="text-xs font-semibold tracking-[0.12em] text-sky-600 dark:text-sky-300">
               Service Verwaltung
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-4xl">
@@ -322,7 +322,7 @@ export default function ServiceEditorForm({
                     : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-600"
                 }`}
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                <p className="text-sm font-semibold">
                   {tab.label}
                 </p>
                 <p
@@ -339,7 +339,7 @@ export default function ServiceEditorForm({
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/80">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
               Kurzuebersicht
             </p>
             <p className="mt-3 text-lg font-semibold text-slate-950 dark:text-slate-50">
@@ -376,7 +376,7 @@ export default function ServiceEditorForm({
             <div className="space-y-8">
               <div className="space-y-6">
                 <div className="border-b border-slate-100 pb-4 dark:border-slate-800">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                  <h2 className="text-base font-semibold tracking-tight text-slate-950 dark:text-slate-100">
                     Grundeinstellungen
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -387,7 +387,7 @@ export default function ServiceEditorForm({
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Service-Name
                     </label>
                     <input
@@ -400,7 +400,7 @@ export default function ServiceEditorForm({
                     />
                   </div>
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Slug
                     </label>
                     <input
@@ -416,7 +416,7 @@ export default function ServiceEditorForm({
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Bild-URL
                     </label>
                     <input
@@ -429,7 +429,7 @@ export default function ServiceEditorForm({
                     />
                   </div>
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Grundpreis (EUR)
                     </label>
                     <input
@@ -446,7 +446,7 @@ export default function ServiceEditorForm({
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                  <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Kurzbeschreibung
                   </label>
                   <textarea
@@ -462,7 +462,7 @@ export default function ServiceEditorForm({
 
               <div className="space-y-6">
                 <div className="border-b border-slate-100 pb-4 dark:border-slate-800">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                  <h2 className="text-base font-semibold tracking-tight text-slate-950 dark:text-slate-100">
                     Sichtbarkeit und interne Hinweise
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
@@ -473,7 +473,7 @@ export default function ServiceEditorForm({
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Design-Modus
                     </label>
                     <select
@@ -487,7 +487,7 @@ export default function ServiceEditorForm({
                     </select>
                   </div>
                   <div>
-                    <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                       Legacy Datei-Limit
                     </label>
                     <input
@@ -511,7 +511,7 @@ export default function ServiceEditorForm({
                       onChange={(event) => setHasDesigner(event.target.checked)}
                       className="h-5 w-5 accent-slate-950"
                     />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                       Designer aktiv
                     </span>
                   </label>
@@ -523,7 +523,7 @@ export default function ServiceEditorForm({
                       onChange={(event) => setHasColorPicker(event.target.checked)}
                       className="h-5 w-5 accent-slate-950"
                     />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                       Farbwahl aktiv
                     </span>
                   </label>
@@ -535,7 +535,7 @@ export default function ServiceEditorForm({
                       onChange={(event) => setIsActive(event.target.checked)}
                       className="h-5 w-5 accent-slate-950"
                     />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                       Sichtbarkeit im Shop
                     </span>
                   </label>

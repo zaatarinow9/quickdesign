@@ -20,14 +20,12 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   const updateServiceWithId = updateService.bind(null, id);
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      <ServiceEditorForm
-        mode="edit"
-        action={updateServiceWithId}
-        service={service}
-        optionCount={service.options.length}
-        optionsHref={`/admin/services/${service.id}`}
-      />
-    </div>
+    <ServiceEditorForm
+      mode="edit"
+      action={updateServiceWithId}
+      service={service}
+      optionCount={service.options.length}
+      optionsHref={`/admin/services/${service.id}`}
+    />
   );
 }

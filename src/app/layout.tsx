@@ -9,8 +9,18 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Print Studio",
-  description: "Hochwertige Druckdienstleistungen und Komplettloesungen",
+  metadataBase: new URL("https://quickdesign24.de"),
+  title: {
+    default: "QuickDesign",
+    template: "%s | QuickDesign",
+  },
+  description:
+    "QuickDesign begleitet Druck, Werbetechnik und Bestellungen mit klaren Online-Konfiguratoren und sauberem Checkout.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -25,11 +35,11 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${inter.className} min-h-screen bg-slate-50 text-slate-950`}
+        className={`${inter.className} flex min-h-screen flex-col overflow-x-hidden bg-slate-50 text-slate-950`}
       >
         <ThemeBridge />
         <Header />
-        <main className="flex min-h-screen flex-1 flex-col">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
         <Footer />
       </body>
     </html>

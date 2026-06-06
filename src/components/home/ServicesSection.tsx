@@ -1,71 +1,72 @@
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { prisma } from "@/lib/prisma"; // استيراد Prisma للتعامل مع قاعدة البيانات
-import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from "react";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
 export default async function ServicesSection() {
-  // جلب الخدمات الحقيقية والمضافة فقط من قاعدة البيانات
   const services = await prisma.service.findMany({
-    take: 3, // عرض آخر 3 خدمات مضافة فقط في الصفحة الرئيسية
-    orderBy: {
-      createdAt: 'desc'
-    }
+    where: { isActive: true },
+    take: 3,
+    orderBy: [{ order: "asc" }, { updatedAt: "desc" }],
   });
 
-  // إذا لم تكن هناك خدمات مضافة بعد، لا نعرض القسم أو نعرض رسالة بسيطة
-  if (services.length === 0) return null;
+  if (services.length === 0) {
+    return null;
+  }
 
   return (
-    <section className="w-full bg-white py-32 px-6 md:px-12">
-      <div className="w-full flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
-        <div className="max-w-2xl">
-          <span className="text-neutral-500 uppercase tracking-widest text-[10px] font-bold mb-4 block">
-            Unsere Expertise
-          </span>
-          <h2 className="text-4xl md:text-6xl font-bold text-neutral-950 tracking-tighter leading-[1.1]">
-            Exzellenz in jedem Druckformat.
-          </h2>
-        </div>
-        <Link 
-          href="/services" 
-          className="group flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-neutral-950 hover:text-neutral-500 transition-colors"
-        >
-          Alle Leistungen
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-2" />
-        </Link>
-      </div>
-
-      <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-8">
-        {services.map((service) => (
-          <Link 
-            key={service.id} 
-            href={`/services/${service.slug}`}
-            className="group relative w-full h-[650px] overflow-hidden bg-neutral-100 block"
+    <section className="bg-white py-20 sm:py-24">
+      <div className="public-container">
+        <div className="flex flex-col gap-6 border-b border-slate-200 pb-10 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="section-eyebrow">Ausgewaehlte Leistungen</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
+              Saubere Konfiguratoren fuer die Leistungen, die am haeufigsten
+              angefragt werden.
+            </h2>
+          </div>
+          <Link
+            href="/services"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition-colors hover:text-slate-950"
           >
-            <div className="absolute inset-0 bg-neutral-950/10 z-10 transition-opacity duration-500 group-hover:opacity-40"></div>
-            
-            {/* عرض الصورة الحقيقية للخدمة المضافة من لوحة التحكم */}
-            <img 
-              src={service.image} 
-              alt={service.name} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-            />
+            Alle Leistungen ansehen
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
-            <div className="absolute bottom-0 left-0 w-full p-8 z-20 translate-y-4 transition-transform duration-500 group-hover:translate-y-0">
-              <div className="bg-white/95 backdrop-blur-md p-10 shadow-2xl">
-                <h3 className="text-2xl font-bold text-neutral-950 mb-4 tracking-tight">
-                  {service.name}
-                </h3>
-                <p className="text-neutral-600 text-sm leading-relaxed mb-8 line-clamp-2">
-                  {service.description}
-                </p>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 flex items-center gap-2">
-                  Details <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+        <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {services.map((service) => (
+            <Link
+              key={service.id}
+              href={`/services/${service.slug}`}
+              className="group surface-card overflow-hidden transition-transform duration-300 hover:-translate-y-1"
+            >
+              <div className="relative h-60 overflow-hidden bg-slate-100">
+                <img
+                  src={service.image}
+                  alt={service.name}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+              </div>
+
+              <div className="space-y-4 p-6">
+                <div>
+                  <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
+                    {service.name}
+                  </h3>
+                  <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
+                    {service.description}
+                  </p>
+                </div>
+
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition-colors group-hover:text-slate-950">
+                  Details ansehen
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );

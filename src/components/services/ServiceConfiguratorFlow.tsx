@@ -305,7 +305,7 @@ function Stepper({
   isComplete: (stepId: FlowStepId) => boolean;
 }) {
   return (
-    <div className="grid gap-3 md:grid-cols-4">
+    <div className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
       {steps.map((step, index) => {
         const active = step.id === currentStep;
         const complete = isComplete(step.id);
@@ -320,7 +320,7 @@ function Stepper({
               }
             }}
             disabled={!canSelect(step.id)}
-            className={`rounded-[24px] border px-4 py-4 text-left transition-all ${
+            className={`min-w-[220px] rounded-[24px] border px-4 py-4 text-left transition-all md:min-w-0 ${
               active
                 ? "border-neutral-950 bg-neutral-950 text-white shadow-lg"
                 : complete
@@ -2013,7 +2013,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm">
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.2fr)_240px]">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6 p-6 md:p-8">
             <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
               <div className="space-y-3">
@@ -2050,8 +2050,8 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             />
           </div>
 
-          <div className="border-t border-neutral-200 bg-neutral-50 p-6 lg:border-l lg:border-t-0">
-            <div className="flex h-full items-center justify-center overflow-hidden rounded-[24px] border border-neutral-200 bg-white p-4">
+          <div className="border-t border-neutral-200 bg-neutral-50 p-6 xl:border-l xl:border-t-0">
+            <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-[24px] border border-neutral-200 bg-white p-4">
               {config.designSettings.showCanvas ? (
                 <div className="flex h-full w-full items-center justify-center rounded-[20px] bg-neutral-50">
                   <ImageIcon className="h-8 w-8 text-neutral-300" />
@@ -2060,7 +2060,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 <img
                   src={service.image}
                   alt={service.name}
-                  className="h-32 w-full object-contain"
+                  className="h-44 w-full object-contain sm:h-52"
                 />
               )}
             </div>
@@ -2075,9 +2075,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div>{renderCurrentStep()}</div>
+        <div className="min-w-0">{renderCurrentStep()}</div>
 
-        <aside className="space-y-4 xl:sticky xl:top-24">
+        <aside className="space-y-4 xl:sticky xl:top-28">
           <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>

@@ -23,12 +23,15 @@
 
   html {
     background-color: var(--app-background);
+    overflow-x: hidden;
+    scroll-behavior: smooth;
   }
 
   body {
     min-height: 100vh;
     background-color: var(--app-background);
     color: var(--app-foreground);
+    overflow-x: hidden;
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
@@ -38,6 +41,14 @@
 
   * {
     box-sizing: border-box;
+  }
+
+  main,
+  section,
+  article,
+  aside,
+  div {
+    min-width: 0;
   }
 
   ::selection {
@@ -59,8 +70,34 @@
     word-break: normal;
   }
 
+  img,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
   :focus-visible {
     outline: 2px solid #0ea5e9;
     outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .public-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .admin-container {
+    @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .surface-card {
+    @apply rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900;
+  }
+
+  .section-eyebrow {
+    @apply text-xs font-semibold tracking-[0.12em] text-slate-500 dark:text-slate-400;
   }
 }

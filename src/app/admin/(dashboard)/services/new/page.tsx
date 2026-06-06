@@ -6,8 +6,6 @@ export default async function NewService() {
   await requireAdminPermission("canManageServices");
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      <ServiceEditorForm mode="create" action={createService} />
-    </div>
+    <ServiceEditorForm mode="create" action={createService} />
   );
 }
