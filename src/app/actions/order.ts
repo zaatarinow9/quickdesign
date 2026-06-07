@@ -36,11 +36,15 @@ import {
   normalizeNonNegativeNumber as normalizeMoneyValue,
   normalizePaymentStatus,
 } from "@/lib/orders/finance";
+import { buildCustomerOrderConfirmationEmail } from "@/lib/orders/confirmation-email";
 import {
   buildManualOrderItem,
   parseManualOrderPayload,
 } from "@/lib/orders/manual";
 import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting";
+import { normalizeEmailAddress } from "@/lib/email/address";
+import { sendSmtpMail } from "@/lib/email/smtp";
+import { getConfiguredAppBaseUrl, getPublicAppBaseUrl } from "@/lib/env";
 import type { CartItem } from "@/lib/store/cart";
 import { normalizeServiceConfiguration } from "@/lib/services/configuration/normalize";
 import {
@@ -260,6 +264,77 @@ async function addOrderActivity({
       message,
     },
   });
+}
+
+function buildCheckoutTrackingUrl(): string | null {
+  const appBaseUrl = getConfiguredAppBaseUrl() || getPublicAppBaseUrl();
+
+  if (!appBaseUrl) {
+    return null;
+  }
+
+  try {
+    return new URL("/track", appBaseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+async function sendCheckoutOrderConfirmationEmail({
+  orderId,
+  orderNumber,
+  customerName,
+  customerEmail,
+  createdAt,
+  totalGross,
+  items,
+}: {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  createdAt: Date;
+  totalGross: number;
+  items: CreateOrderItemInput[];
+}): Promise<void> {
+  const recipient = normalizeEmailAddress(customerEmail);
+
+  if (!recipient) {
+    return;
+  }
+
+  try {
+    const confirmationEmail = buildCustomerOrderConfirmationEmail({
+      orderNumber,
+      orderDate: createdAt,
+      customerName,
+      trackUrl: buildCheckoutTrackingUrl(),
+      contactEmail: process.env.SMTP_FROM || "info@quickdesign.de",
+      currency: DEFAULT_ORDER_CURRENCY,
+      totalGross,
+      items: items.map((item) => ({
+        serviceName: item.name,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        selectedOptions: item.selectedOptions,
+        configurationSnapshot: item.configurationSnapshot,
+      })),
+    });
+
+    await sendSmtpMail({
+      to: recipient,
+      subject: confirmationEmail.subject,
+      text: confirmationEmail.text,
+      html: confirmationEmail.html,
+    });
+  } catch (error) {
+    console.error("Checkout confirmation email failed:", {
+      orderId,
+      orderNumber,
+      customerEmail: recipient,
+      error,
+    });
+  }
 }
 
 function revalidateOrderAdminViews(orderId: string): void {
@@ -1155,6 +1230,10 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       select: {
         id: true,
         orderNumber: true,
+        createdAt: true,
+        customerName: true,
+        customerEmail: true,
+        totalAmount: true,
       },
     });
     uploadedStoragePaths.length = 0;
@@ -1164,6 +1243,19 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       adminUserId: null,
       type: "CHECKOUT_CREATED",
       message: "Neue Bestellung wurde ueber den Checkout angelegt.",
+    });
+
+    await sendCheckoutOrderConfirmationEmail({
+      orderId: order.id,
+      orderNumber: String(order.orderNumber),
+      customerName: order.customerName,
+      customerEmail: order.customerEmail ?? "",
+      createdAt: order.createdAt,
+      totalGross: order.totalAmount,
+      items: preparedItems.map((preparedItem) => ({
+        ...preparedItem.item,
+        totalPrice: preparedItem.totalPrice,
+      })),
     });
 
     return {

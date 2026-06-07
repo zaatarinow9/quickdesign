@@ -11,23 +11,28 @@ const SIZE_STYLES: Record<
   {
     frame: string;
     image: string;
+    sizes: string;
   }
 > = {
   header: {
-    frame: "h-12 w-[170px] rounded-2xl px-3 py-2 sm:h-14 sm:w-[188px]",
+    frame: "h-10 w-[156px] sm:h-11 sm:w-[170px]",
     image: "object-contain object-left",
+    sizes: "170px",
   },
   compact: {
-    frame: "h-10 w-[144px] rounded-xl px-3 py-2",
+    frame: "h-9 w-[138px]",
     image: "object-contain object-left",
+    sizes: "138px",
   },
   sidebar: {
-    frame: "h-14 w-[196px] rounded-2xl px-3 py-2",
+    frame: "h-10 w-[168px] sm:h-11 sm:w-[180px]",
     image: "object-contain object-left",
+    sizes: "180px",
   },
   document: {
-    frame: "h-16 w-[220px] rounded-2xl px-3 py-2",
+    frame: "h-12 w-[190px]",
     image: "object-contain object-left",
+    sizes: "190px",
   },
 };
 
@@ -53,7 +58,7 @@ export default function LogoMark({
   const frame = (
     <span
       className={cn(
-        "inline-flex items-center border border-slate-200/80 bg-white shadow-sm ring-1 ring-black/4 dark:border-white/10 dark:bg-white",
+        "relative inline-flex items-center justify-start overflow-hidden rounded-2xl",
         SIZE_STYLES[size].frame,
         frameClassName,
       )}
@@ -65,7 +70,7 @@ export default function LogoMark({
           fill
           priority={priority}
           className={cn("select-none", SIZE_STYLES[size].image)}
-          sizes="220px"
+          sizes={SIZE_STYLES[size].sizes}
         />
       </span>
     </span>

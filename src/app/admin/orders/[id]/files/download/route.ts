@@ -1,38 +1,31 @@
-import { NextResponse } from "next/server";
-import { getCurrentAdminUser } from "@/lib/admin/auth";
-import { hasAdminPermission } from "@/lib/admin/permissions";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminUser } from "@/lib/admin/auth";
 import { prisma } from "@/lib/prisma";
+import { extractStoredOrderTextInputs } from "@/lib/services/configuration/snapshot";
 import { getSnapshotUploadFileRecords } from "@/lib/storage/order-files";
 import {
   createSignedSupabaseDownloadUrl,
   getSupabaseStorageBucketName,
 } from "@/lib/storage/supabase-storage";
-import {
-  extractStoredOrderTextInputs,
-  getSnapshotOrBuildLegacy,
-  normalizeLegacySelectedOptions,
-} from "@/lib/services/configuration/snapshot";
+
+function buildFileOpenErrorResponse(status: number): NextResponse {
+  return NextResponse.json(
+    { error: "Datei konnte nicht geoeffnet werden." },
+    { status },
+  );
+}
 
 export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const currentUser = await getCurrentAdminUser();
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> | { id: string } },
+): Promise<NextResponse> {
+  await requireAdminUser();
 
-  if (!currentUser) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
-  }
-
-  if (!hasAdminPermission(currentUser, "canManageOrders")) {
-    return NextResponse.redirect(new URL("/admin?forbidden=1", request.url));
-  }
-
-  const { id } = await context.params;
-  const requestUrl = new URL(request.url);
-  const requestedPath = requestUrl.searchParams.get("path")?.trim() ?? "";
+  const { id } = await Promise.resolve(context.params);
+  const requestedPath = request.nextUrl.searchParams.get("path")?.trim() ?? "";
 
   if (!requestedPath) {
-    return NextResponse.json({ error: "Missing file path." }, { status: 400 });
+    return buildFileOpenErrorResponse(400);
   }
 
   const order = await prisma.order.findUnique({
@@ -41,71 +34,62 @@ export async function GET(
       id: true,
       items: {
         select: {
-          serviceId: true,
-          serviceName: true,
-          price: true,
-          quantity: true,
-          selectedOptions: true,
           textInputs: true,
-          designData: true,
-          orderNotes: true,
-        },
-        orderBy: {
-          id: "asc",
         },
       },
     },
   });
 
   if (!order) {
-    return NextResponse.redirect(new URL("/admin/orders", request.url));
+    return buildFileOpenErrorResponse(404);
   }
 
   const configuredBucket = getSupabaseStorageBucketName();
-  const matchingFile = order.items
+  const matchedFile = order.items
     .flatMap((item) => {
-      const selectedOptions = normalizeLegacySelectedOptions(item.selectedOptions);
-      const storedTextInputs = extractStoredOrderTextInputs(item.textInputs);
-      const snapshot = getSnapshotOrBuildLegacy({
-        serviceId: item.serviceId,
-        serviceName: item.serviceName,
-        basePrice: item.price,
-        totalPrice: item.price,
-        quantity: item.quantity,
-        selectedOptions,
-        textInputs: storedTextInputs.textInputs,
-        designData: item.designData,
-        orderNotes: item.orderNotes,
-        configurationSnapshot: storedTextInputs.configurationSnapshot,
-      });
+      const { configurationSnapshot } = extractStoredOrderTextInputs(item.textInputs);
 
-      return getSnapshotUploadFileRecords(snapshot);
+      if (!configurationSnapshot) {
+        return [];
+      }
+
+      return getSnapshotUploadFileRecords(configurationSnapshot);
     })
     .find(
       (file) =>
-        file.isStored &&
         file.path === requestedPath &&
-        file.bucket === configuredBucket,
+        file.bucket === configuredBucket &&
+        typeof file.path === "string" &&
+        file.path.length > 0,
     );
 
-  if (!matchingFile?.path) {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
+  if (!matchedFile?.path) {
+    return buildFileOpenErrorResponse(404);
   }
 
   try {
     const signedUrl = await createSignedSupabaseDownloadUrl({
-      path: matchingFile.path,
-      downloadFileName: matchingFile.originalName,
-      expiresInSeconds: 300,
+      path: matchedFile.path,
+      downloadFileName: matchedFile.originalName ?? matchedFile.fileName,
     });
 
-    return NextResponse.redirect(new URL(signedUrl));
-  } catch (error) {
-    console.error("Order file download signing failed:", error);
+    if (!signedUrl) {
+      console.error("Order file signed URL creation returned no URL.", {
+        orderId: order.id,
+        requestedPath,
+      });
 
-    return NextResponse.json(
-      { error: "Download URL could not be created." },
-      { status: 500 },
-    );
+      return buildFileOpenErrorResponse(500);
+    }
+
+    return NextResponse.redirect(signedUrl);
+  } catch (error) {
+    console.error("Order file signed URL creation failed.", {
+      orderId: order.id,
+      requestedPath,
+      error,
+    });
+
+    return buildFileOpenErrorResponse(500);
   }
 }

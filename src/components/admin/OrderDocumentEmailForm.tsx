@@ -21,6 +21,9 @@ const DEFAULT_MESSAGE_BY_TYPE: Record<OrderDocumentQueryType, string> = {
   order: "Guten Tag,\n\nanbei erhalten Sie Ihren Auftrag.",
 };
 
+const FIELD_CLASS_NAME =
+  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-200 dark:focus:ring-slate-200/10";
+
 function OrderDocumentEmailSubmitButton() {
   const { pending } = useFormStatus();
 
@@ -28,9 +31,10 @@ function OrderDocumentEmailSubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center justify-center gap-2 bg-neutral-950 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-400"
+      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white dark:disabled:bg-slate-700 dark:disabled:text-slate-300"
     >
-      <Send className="h-4 w-4" /> {pending ? "Wird gesendet" : "Per E-Mail senden"}
+      <Send className="h-4 w-4" />
+      {pending ? "Wird gesendet" : "Per E-Mail senden"}
     </button>
   );
 }
@@ -100,18 +104,18 @@ export function OrderDocumentEmailForm({
   };
 
   return (
-    <div className="space-y-4 border border-neutral-200 bg-white p-5 shadow-sm">
+    <div className="space-y-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
       <div className="flex items-start gap-3">
-        <div className="mt-1 flex h-10 w-10 items-center justify-center border border-neutral-200 bg-neutral-50 text-neutral-700">
+        <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
           <Mail className="h-4 w-4" />
         </div>
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
             Dokument versenden
           </p>
-          <p className="text-sm text-neutral-600">
-            Der Versand nutzt in Phase 8B einen sicheren Dokumentlink. PDF-Anhaenge
-            werden spaeter serverseitig nachgezogen.
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Der Versand nutzt einen sicheren Dokumentlink. Der PDF-Download erfolgt
+            weiterhin ueber die Browser-Druckansicht.
           </p>
         </div>
       </div>
@@ -127,7 +131,7 @@ export function OrderDocumentEmailForm({
           }
         >
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Dokumenttyp
             </label>
             <select
@@ -142,7 +146,7 @@ export function OrderDocumentEmailForm({
                   handleDocumentTypeChange(nextDocumentType);
                 }
               }}
-              className="w-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none focus:border-neutral-950"
+              className={FIELD_CLASS_NAME}
             >
               {ORDER_DOCUMENT_LINKS.map((documentLink) => (
                 <option key={documentLink.type} value={documentLink.type}>
@@ -153,7 +157,7 @@ export function OrderDocumentEmailForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Empfaenger
             </label>
             <input
@@ -161,42 +165,42 @@ export function OrderDocumentEmailForm({
               type="email"
               required
               defaultValue={defaultRecipient}
-              className="w-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none focus:border-neutral-950"
+              className={FIELD_CLASS_NAME}
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
             Betreff
           </label>
           <input
             name="subject"
             value={subject}
             onChange={(event) => setSubject(event.target.value)}
-            className="w-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none focus:border-neutral-950"
+            className={FIELD_CLASS_NAME}
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-            Nachricht optional
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Nachricht
           </label>
           <textarea
             name="message"
             rows={compact ? 4 : 5}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            className="w-full resize-none border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none focus:border-neutral-950"
+            className={`${FIELD_CLASS_NAME} resize-none`}
           />
         </div>
 
         {state.status !== "idle" ? (
           <div
-            className={`border px-4 py-3 text-sm ${
+            className={`rounded-2xl border px-4 py-3 text-sm ${
               state.status === "success"
-                ? "border-green-200 bg-green-50 text-green-800"
-                : "border-red-200 bg-red-50 text-red-800"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/80 dark:bg-emerald-950/40 dark:text-emerald-200"
+                : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/80 dark:bg-rose-950/40 dark:text-rose-200"
             }`}
           >
             {state.message}

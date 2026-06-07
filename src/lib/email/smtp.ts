@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Buffer } from "node:buffer";
+import { randomUUID } from "node:crypto";
 import { createConnection, type Socket } from "node:net";
 import { connect as connectTls, type TLSSocket } from "node:tls";
 import {
@@ -17,6 +18,8 @@ type SmtpMessage = {
   to: string;
   subject: string;
   text: string;
+  html?: string | null;
+  replyTo?: string | null;
 };
 
 type SmtpResponse = {
@@ -27,6 +30,7 @@ type SmtpResponse = {
 type SmtpReaderState = {
   buffer: string;
 };
+
 const SOCKET_TIMEOUT_MS = 15_000;
 
 function sanitizeHeaderValue(value: string): string {
@@ -51,6 +55,10 @@ function chunkBase64(value: string, size = 76): string {
   return chunks.join("\r\n");
 }
 
+function encodeBodyPart(value: string): string {
+  return chunkBase64(Buffer.from(value, "utf8").toString("base64"));
+}
+
 function dotStuffText(value: string): string {
   return value
     .split("\r\n")
@@ -59,18 +67,52 @@ function dotStuffText(value: string): string {
 }
 
 function buildRawMessage(message: SmtpMessage, from: string): string {
-  const body = chunkBase64(Buffer.from(message.text, "utf8").toString("base64"));
-
-  return [
+  const textBody = encodeBodyPart(message.text);
+  const html = message.html?.trim();
+  const replyTo = message.replyTo ? sanitizeHeaderValue(message.replyTo) : null;
+  const headers = [
     `From: ${encodeHeaderValue(from)}`,
     `To: ${encodeHeaderValue(message.to)}`,
     `Subject: ${encodeHeaderValue(message.subject)}`,
     `Date: ${new Date().toUTCString()}`,
     "MIME-Version: 1.0",
+  ];
+
+  if (replyTo) {
+    headers.push(`Reply-To: ${encodeHeaderValue(replyTo)}`);
+  }
+
+  if (!html) {
+    return [
+      ...headers,
+      "Content-Type: text/plain; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      dotStuffText(textBody),
+    ].join("\r\n");
+  }
+
+  const boundary = `quickdesign-${randomUUID()}`;
+  const htmlBody = encodeBodyPart(html);
+  const multipartBody = [
+    `--${boundary}`,
     "Content-Type: text/plain; charset=utf-8",
     "Content-Transfer-Encoding: base64",
     "",
-    dotStuffText(body),
+    textBody,
+    `--${boundary}`,
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    htmlBody,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  return [
+    ...headers,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    dotStuffText(multipartBody),
   ].join("\r\n");
 }
 
@@ -269,6 +311,8 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
   const recipient = normalizeEmailAddress(message.to);
   const subject = sanitizeHeaderValue(message.subject);
   const text = message.text.trim();
+  const html = message.html?.trim() || null;
+  const replyTo = message.replyTo ? sanitizeHeaderValue(message.replyTo) : null;
 
   if (!recipient) {
     throw new Error("SMTP recipient address is invalid.");
@@ -305,6 +349,8 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
         to: recipient,
         subject,
         text,
+        html,
+        replyTo,
       },
       config.from,
     );
