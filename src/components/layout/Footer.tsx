@@ -66,10 +66,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/admin/login"
+                  href="/track"
                   className="transition-colors hover:text-slate-950"
                 >
-                  Admin Login
+                  Auftrag verfolgen
                 </Link>
               </li>
             </ul>

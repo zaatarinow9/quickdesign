@@ -10,10 +10,11 @@ import {
   hasAdminPermission,
   isSuperAdmin,
 } from "@/lib/admin/permissions";
-import { createOrLinkCustomer } from "@/lib/customers";
+import { createOrLinkCustomer, normalizeCustomerEmail } from "@/lib/customers";
 import {
   buildOrderStoragePath,
   buildSnapshotUploadFile,
+  getSnapshotUploadFileRecords,
   isInlineBrowserUrl,
   validateSelectedFile,
   type CartPendingUploadSource,
@@ -37,10 +38,20 @@ import {
   normalizePaymentStatus,
 } from "@/lib/orders/finance";
 import { buildCustomerOrderConfirmationEmail } from "@/lib/orders/confirmation-email";
+import { createOrderDocumentShareToken } from "@/lib/orders/document-share";
+import {
+  buildSharedOrderDocumentHref,
+  normalizeOrderDocumentQueryType,
+} from "@/lib/orders/documents";
 import {
   buildManualOrderItem,
   parseManualOrderPayload,
 } from "@/lib/orders/manual";
+import {
+  createUniqueOrderCode,
+  isLegacyNumericOrderLookup,
+  normalizePublicOrderLookup,
+} from "@/lib/orders/order-number";
 import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting";
 import { normalizeEmailAddress } from "@/lib/email/address";
 import { sendSmtpMail } from "@/lib/email/smtp";
@@ -57,18 +68,6 @@ import {
   type LegacyConfigurationTextInputs,
   type ServiceConfigurationSnapshot,
 } from "@/lib/services/configuration/snapshot";
-
-type TrackableOrderRow = {
-  id: string;
-  orderNumber: number;
-  customerName: string;
-  customerEmail: string | null;
-  totalAmount: number;
-  status: string;
-  trackingNumber: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
 
@@ -90,8 +89,52 @@ type OrderFinancialUpdateSource = {
 };
 
 export type CreateOrderResult =
-  | { ok: true; orderId: string; orderNumber: string }
+  | {
+      ok: true;
+      orderId: string;
+      orderNumber: string;
+      publicOrderCode: string;
+    }
   | { ok: false; error: string };
+
+export type CustomerOrderSummary = {
+  createdAt: string;
+  itemCount: number;
+  legacyOrderNumber: string;
+  publicOrderCode: string;
+  status: string;
+  statusLabel: string;
+  totalAmount: number;
+};
+
+export type CustomerOrderDocumentLink = {
+  href: string;
+  label: string;
+};
+
+export type CustomerOrderDetailItem = {
+  fileNames: string[];
+  id: string;
+  itemTotal: number;
+  notes: string | null;
+  optionLines: string[];
+  quantity: number;
+  serviceName: string;
+};
+
+export type CustomerOrderDetail = {
+  createdAt: string;
+  customerNotes: string | null;
+  documentLinks: CustomerOrderDocumentLink[];
+  items: CustomerOrderDetailItem[];
+  legacyOrderNumber: string;
+  nextStep: string;
+  paymentStatusLabel: string | null;
+  publicOrderCode: string;
+  status: string;
+  statusLabel: string;
+  totalAmount: number;
+};
 
 type CreateOrderItemInput = {
   cartItemId: string;
@@ -283,6 +326,7 @@ function buildCheckoutTrackingUrl(): string | null {
 async function sendCheckoutOrderConfirmationEmail({
   orderId,
   orderNumber,
+  publicOrderCode,
   customerName,
   customerEmail,
   createdAt,
@@ -291,6 +335,7 @@ async function sendCheckoutOrderConfirmationEmail({
 }: {
   orderId: string;
   orderNumber: string;
+  publicOrderCode: string | null;
   customerName: string;
   customerEmail: string;
   createdAt: Date;
@@ -306,6 +351,7 @@ async function sendCheckoutOrderConfirmationEmail({
   try {
     const confirmationEmail = buildCustomerOrderConfirmationEmail({
       orderNumber,
+      publicOrderCode,
       orderDate: createdAt,
       customerName,
       trackUrl: buildCheckoutTrackingUrl(),
@@ -1149,6 +1195,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       email: customerEmail,
     });
     const nextOrderNumber = await getNextOrderNumber();
+    const publicOrderCode = await createUniqueOrderCode(prisma);
     const financials = calculateOrderFinancials({
       subtotalNet: totalAmount,
       discountType: "NONE",
@@ -1230,6 +1277,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       select: {
         id: true,
         orderNumber: true,
+        trackingNumber: true,
         createdAt: true,
         customerName: true,
         customerEmail: true,
@@ -1248,6 +1296,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
     await sendCheckoutOrderConfirmationEmail({
       orderId: order.id,
       orderNumber: String(order.orderNumber),
+      publicOrderCode: order.trackingNumber,
       customerName: order.customerName,
       customerEmail: order.customerEmail ?? "",
       createdAt: order.createdAt,
@@ -1262,6 +1311,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       ok: true,
       orderId: order.id,
       orderNumber: String(order.orderNumber),
+      publicOrderCode: order.trackingNumber ?? String(order.orderNumber),
     };
   } catch (error) {
     if (uploadedStoragePaths.length > 0) {
@@ -1420,9 +1470,11 @@ export async function createManualOrder(formData: FormData): Promise<void> {
   }
 
   const nextOrderNumber = await getNextOrderNumber();
+  const publicOrderCode = await createUniqueOrderCode(prisma);
   const order = await prisma.order.create({
     data: {
       orderNumber: nextOrderNumber,
+      trackingNumber: publicOrderCode,
       customerId: customer.id,
       customerName: customer.name,
       customerEmail: customer.email,
@@ -1850,33 +1902,331 @@ export async function addOrderInternalNote(formData: FormData): Promise<void> {
   revalidateOrderAdminViews(orderId);
 }
 
-export async function trackOrder(orderNumberStr: string) {
-  const orderNumber = parseInt(orderNumberStr, 10);
-  if (Number.isNaN(orderNumber)) {
+const PUBLIC_PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PAID: "Bezahlt",
+  PARTIALLY_PAID: "Teilweise bezahlt",
+  REFUNDED: "Erstattet",
+  UNPAID: "Offen",
+};
+
+const PUBLIC_ORDER_STATUS_LABELS: Record<string, string> = {
+  CANCELED: "Storniert",
+  DELIVERED: "Zugestellt",
+  PAID: "Eingegangen",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+};
+
+function getPublicOrderCode(input: {
+  orderNumber: number;
+  trackingNumber: string | null;
+}): string {
+  return input.trackingNumber?.trim() || String(input.orderNumber);
+}
+
+function getPublicOrderStatusLabel(status: string): string {
+  return PUBLIC_ORDER_STATUS_LABELS[status] ?? "In Bearbeitung";
+}
+
+function getPublicOrderNextStep(status: string): string {
+  switch (status) {
+    case "PAID":
+      return "Wir haben Ihren Auftrag erhalten und pruefen die weiteren Schritte.";
+    case "PROCESSING":
+      return "Ihr Auftrag befindet sich aktuell in der Bearbeitung oder Produktion.";
+    case "SHIPPED":
+      return "Ihr Auftrag ist unterwegs. Bitte pruefen Sie den Zustellstatus regelmaessig.";
+    case "DELIVERED":
+      return "Ihr Auftrag wurde zugestellt.";
+    case "CANCELED":
+      return "Dieser Auftrag wurde storniert. Bei Rueckfragen helfen wir Ihnen gern weiter.";
+    default:
+      return "Ihr Auftrag wird aktuell bearbeitet.";
+  }
+}
+
+function getCustomerSafePaymentStatusLabel(
+  paymentStatus: string | null | undefined,
+): string | null {
+  if (!paymentStatus?.trim()) {
     return null;
   }
 
-  const order: TrackableOrderRow | null = await prisma.order.findFirst({
-    where: { orderNumber },
+  return PUBLIC_PAYMENT_STATUS_LABELS[normalizePaymentStatus(paymentStatus)] ?? null;
+}
+
+function buildCustomerOrderEmailWhere(email: string): Prisma.OrderWhereInput {
+  return {
+    OR: [
+      {
+        customerEmail: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
+      {
+        customer: {
+          is: {
+            email,
+          },
+        },
+      },
+    ],
+  };
+}
+
+function buildCustomerOrderLookupWhere(lookup: string): Prisma.OrderWhereInput {
+  const normalizedLookup = normalizePublicOrderLookup(lookup);
+
+  if (isLegacyNumericOrderLookup(normalizedLookup)) {
+    return {
+      OR: [
+        { orderNumber: Number.parseInt(normalizedLookup, 10) },
+        {
+          trackingNumber: {
+            equals: normalizedLookup,
+            mode: "insensitive",
+          },
+        },
+      ],
+    };
+  }
+
+  return {
+    trackingNumber: {
+      equals: normalizedLookup,
+      mode: "insensitive",
+    },
+  };
+}
+
+function buildCustomerDocumentLinks(order: {
+  documentType: string | null;
+  id: string;
+}): CustomerOrderDocumentLink[] {
+  const documentType = normalizeOrderDocumentQueryType(null, order.documentType);
+  const documentLabel =
+    documentType === "invoice"
+      ? "Rechnung ansehen"
+      : documentType === "offer"
+        ? "Angebot ansehen"
+        : "Auftragsdokument ansehen";
+  const token = createOrderDocumentShareToken({
+    orderId: order.id,
+    type: documentType,
+  });
+
+  return [
+    {
+      href: buildSharedOrderDocumentHref(
+        order.id,
+        documentType,
+        token.expires,
+        token.signature,
+      ),
+      label: documentLabel,
+    },
+  ];
+}
+
+function buildCustomerOrderItemDetails(
+  item: {
+    designData: Prisma.JsonValue | null;
+    id: string;
+    itemDescription: string | null;
+    orderNotes: string | null;
+    price: number;
+    quantity: number;
+    selectedOptions: Prisma.JsonValue | null;
+    serviceId: string;
+    serviceName: string;
+    textInputs: Prisma.JsonValue | null;
+  },
+): CustomerOrderDetailItem {
+  const storedTextInputs = extractStoredOrderTextInputs(item.textInputs);
+  const snapshot = getSnapshotOrBuildLegacy({
+    serviceId: item.serviceId,
+    serviceName: item.serviceName,
+    basePrice: item.price,
+    totalPrice: item.price,
+    quantity: item.quantity,
+    selectedOptions: normalizeLegacySelectedOptions(item.selectedOptions),
+    textInputs: storedTextInputs.textInputs,
+    designData: item.designData,
+    orderNotes: item.orderNotes,
+    configurationSnapshot: storedTextInputs.configurationSnapshot,
+  });
+  const optionLines = [
+    ...snapshot.selectedOptions.map(
+      (option) => `${option.fieldLabel}: ${option.valueLabel}`,
+    ),
+    ...snapshot.textFields.map((field) => `${field.fieldLabel}: ${field.value}`),
+    ...(snapshot.size
+      ? [`${snapshot.size.fieldLabel}: ${snapshot.size.value}`]
+      : []),
+    ...(snapshot.color
+      ? [`${snapshot.color.fieldLabel}: ${snapshot.color.value}`]
+      : []),
+  ].slice(0, 8);
+  const fileNames = getSnapshotUploadFileRecords(snapshot)
+    .map((file) => file.originalName.trim())
+    .filter((fileName) => fileName !== "");
+  const notes =
+    snapshot.orderNotes?.trim() ||
+    item.itemDescription?.trim() ||
+    normalizeOptionalString(item.orderNotes);
+
+  return {
+    fileNames,
+    id: item.id,
+    itemTotal: normalizeMoneyValue(item.price),
+    notes,
+    optionLines,
+    quantity: item.quantity,
+    serviceName: item.serviceName,
+  };
+}
+
+function buildCustomerOrderSummary(order: {
+  _count: { items: number };
+  createdAt: Date;
+  orderNumber: number;
+  status: string;
+  totalAmount: number;
+  trackingNumber: string | null;
+}): CustomerOrderSummary {
+  return {
+    createdAt: order.createdAt.toISOString(),
+    itemCount: order._count.items,
+    legacyOrderNumber: String(order.orderNumber),
+    publicOrderCode: getPublicOrderCode(order),
+    status: order.status,
+    statusLabel: getPublicOrderStatusLabel(order.status),
+    totalAmount: normalizeMoneyValue(order.totalAmount),
+  };
+}
+
+function buildCustomerOrderDetail(order: {
+  createdAt: Date;
+  customerNotes: string | null;
+  documentType: string | null;
+  id: string;
+  items: Array<{
+    designData: Prisma.JsonValue | null;
+    id: string;
+    itemDescription: string | null;
+    orderNotes: string | null;
+    price: number;
+    quantity: number;
+    selectedOptions: Prisma.JsonValue | null;
+    serviceId: string;
+    serviceName: string;
+    textInputs: Prisma.JsonValue | null;
+  }>;
+  orderNumber: number;
+  paymentStatus: string | null;
+  status: string;
+  totalAmount: number;
+  totalGross: number | null;
+  trackingNumber: string | null;
+}): CustomerOrderDetail {
+  return {
+    createdAt: order.createdAt.toISOString(),
+    customerNotes: normalizeOptionalString(order.customerNotes),
+    documentLinks: buildCustomerDocumentLinks(order),
+    items: order.items.map((item) => buildCustomerOrderItemDetails(item)),
+    legacyOrderNumber: String(order.orderNumber),
+    nextStep: getPublicOrderNextStep(order.status),
+    paymentStatusLabel: getCustomerSafePaymentStatusLabel(order.paymentStatus),
+    publicOrderCode: getPublicOrderCode(order),
+    status: order.status,
+    statusLabel: getPublicOrderStatusLabel(order.status),
+    totalAmount: normalizeMoneyValue(order.totalGross ?? order.totalAmount),
+  };
+}
+
+export async function findCustomerOrdersByEmail(
+  email: string,
+): Promise<CustomerOrderSummary[]> {
+  const normalizedEmail = normalizeCustomerEmail(email);
+
+  if (!normalizedEmail) {
+    return [];
+  }
+
+  const orders = await prisma.order.findMany({
+    where: buildCustomerOrderEmailWhere(normalizedEmail),
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      orderNumber: true,
+      trackingNumber: true,
+      totalAmount: true,
+      status: true,
+      createdAt: true,
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  return orders.map((order) => buildCustomerOrderSummary(order));
+}
+
+export async function findCustomerOrderDetails(input: {
+  email: string;
+  lookup: string;
+}): Promise<CustomerOrderDetail | null> {
+  const normalizedEmail = normalizeCustomerEmail(input.email);
+  const normalizedLookup = normalizePublicOrderLookup(input.lookup);
+
+  if (!normalizedEmail || !normalizedLookup) {
+    return null;
+  }
+
+  const order = await prisma.order.findFirst({
+    where: {
+      AND: [
+        buildCustomerOrderEmailWhere(normalizedEmail),
+        buildCustomerOrderLookupWhere(normalizedLookup),
+      ],
+    },
     select: {
       id: true,
       orderNumber: true,
-      customerName: true,
-      customerEmail: true,
-      totalAmount: true,
-      status: true,
       trackingNumber: true,
+      totalAmount: true,
+      totalGross: true,
+      status: true,
+      paymentStatus: true,
+      customerNotes: true,
+      documentType: true,
       createdAt: true,
-      updatedAt: true,
+      items: {
+        orderBy: {
+          id: "asc",
+        },
+        select: {
+          id: true,
+          serviceId: true,
+          serviceName: true,
+          quantity: true,
+          price: true,
+          itemDescription: true,
+          selectedOptions: true,
+          textInputs: true,
+          designData: true,
+          orderNotes: true,
+        },
+      },
     },
   });
+
   if (!order) {
     return null;
   }
 
-  const items = await prisma.orderItem.findMany({
-    where: { orderId: order.id },
-  });
-
-  return { ...order, items };
+  return buildCustomerOrderDetail(order);
 }

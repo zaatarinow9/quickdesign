@@ -3,6 +3,7 @@
 import type { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAdminLoginPath } from "@/lib/admin/admin-routes";
 import { clearAdminSession, setAdminSession } from "@/lib/admin/auth";
 import { verifyAdminPassword } from "@/lib/admin/password";
 import {
@@ -60,13 +61,14 @@ function resolveAdminLoginCandidate(
 }
 
 export async function loginAdmin(formData: FormData): Promise<void> {
+  const adminLoginPath = getAdminLoginPath();
   const identifier = normalizeAdminLoginIdentifier(
     getFormString(formData, "username"),
   );
   const password = getFormString(formData, "password");
 
   if (!identifier.raw || !password) {
-    redirect("/admin/login?error=invalid");
+    redirect(`${adminLoginPath}?error=invalid`);
   }
 
   const loginWhereClauses: Prisma.AdminUserWhereInput[] = [
@@ -102,22 +104,22 @@ export async function loginAdmin(formData: FormData): Promise<void> {
   const user = resolveAdminLoginCandidate(identifier, matchingUsers);
 
   if (!user) {
-    redirect("/admin/login?error=invalid");
+    redirect(`${adminLoginPath}?error=invalid`);
   }
 
   if (!user.isActive) {
-    redirect("/admin/login?error=inactive");
+    redirect(`${adminLoginPath}?error=inactive`);
   }
 
   if (!(await verifyAdminPassword(password, user.passwordHash))) {
-    redirect("/admin/login?error=invalid");
+    redirect(`${adminLoginPath}?error=invalid`);
   }
 
   try {
     await setAdminSession(user.id);
   } catch (error) {
     console.error("Failed to establish admin session.", error);
-    redirect("/admin/login?error=config");
+    redirect(`${adminLoginPath}?error=config`);
   }
 
   redirect("/admin");
@@ -125,5 +127,5 @@ export async function loginAdmin(formData: FormData): Promise<void> {
 
 export async function logoutAdmin(): Promise<void> {
   await clearAdminSession();
-  redirect("/admin/login");
+  redirect(getAdminLoginPath());
 }

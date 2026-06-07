@@ -181,6 +181,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [publicOrderCode, setPublicOrderCode] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   useEffect(() => {
@@ -240,6 +241,7 @@ export default function CheckoutPage() {
         return;
       }
 
+      setPublicOrderCode(result.publicOrderCode);
       setOrderNumber(result.orderNumber);
       clearCart();
       setSuccess(true);
@@ -265,16 +267,22 @@ export default function CheckoutPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
             Vielen Dank. Wir haben Ihren Auftrag erhalten und kuemmern uns jetzt
-            um die weitere Bearbeitung.
+            um die weitere Bearbeitung. Fuer das Tracking verwenden Sie bitte den
+            Code unten zusammen mit Ihrer E-Mail-Adresse.
           </p>
-          {orderNumber ? (
+          {publicOrderCode ? (
             <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 px-6 py-5">
               <span className="mb-1 block text-xs font-medium text-slate-500">
-                Bestellnummer
+                Tracking-Code
               </span>
               <span className="text-lg font-semibold text-slate-950">
-                #{orderNumber}
+                {publicOrderCode}
               </span>
+              {orderNumber ? (
+                <span className="mt-2 block text-sm text-slate-500">
+                  Interne Bestellnummer: #{orderNumber}
+                </span>
+              ) : null}
             </div>
           ) : null}
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">

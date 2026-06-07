@@ -56,6 +56,20 @@ function normalizeUrlValue(value: string): string | null {
   }
 }
 
+function normalizePathValue(value: string): string | null {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue.startsWith("/") || trimmedValue === "/") {
+    return null;
+  }
+
+  if (trimmedValue.includes("?") || trimmedValue.includes("#")) {
+    return null;
+  }
+
+  return trimmedValue.replace(/\/+$/, "");
+}
+
 function detectDatabaseProviderTarget(
   databaseUrl: string,
 ): "postgresql" | "sqlite" | "unknown" {
@@ -220,6 +234,7 @@ export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[]
   const databaseUrl = readEnvValue("DATABASE_URL");
   const adminSessionSecret = readEnvValue("ADMIN_SESSION_SECRET");
   const documentShareSecret = readEnvValue("ORDER_DOCUMENT_SHARE_SECRET");
+  const adminLoginPath = readEnvValue("ADMIN_LOGIN_PATH");
   const appUrl = readEnvValue("APP_URL");
   const publicAppUrl = readEnvValue("NEXT_PUBLIC_APP_URL");
   const hasConfiguredAppUrl = Boolean(appUrl || publicAppUrl);
@@ -291,6 +306,22 @@ export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[]
       level: "warning",
       message:
         "ADMIN_SESSION_SECRET und ORDER_DOCUMENT_SHARE_SECRET sollten getrennt gesetzt werden, damit Sitzungen und Dokumentlinks nicht dasselbe Secret teilen.",
+    });
+  }
+
+  if (!adminLoginPath) {
+    warnings.push({
+      id: "admin_login_path_missing",
+      level: warningLevel,
+      message:
+        "ADMIN_LOGIN_PATH fehlt. Legen Sie fuer Produktion einen nicht offensichtlichen Admin-Login-Pfad fest.",
+    });
+  } else if (!normalizePathValue(adminLoginPath)) {
+    warnings.push({
+      id: "admin_login_path_invalid",
+      level: warningLevel,
+      message:
+        "ADMIN_LOGIN_PATH ist ungueltig. Verwenden Sie einen absoluten Pfad wie /zugang-q24 ohne Query oder Fragment.",
     });
   }
 

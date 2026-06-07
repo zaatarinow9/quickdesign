@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, User } from "lucide-react";
+import { PackageSearch, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ export default function Header() {
   const pathname = usePathname();
   const items = useCartStore((state) => state.items);
   const [mounted, setMounted] = useState(false);
+  const isTrackingPage = pathname.startsWith("/track");
 
   useEffect(() => {
     setMounted(true);
@@ -71,12 +72,16 @@ export default function Header() {
               ) : null}
             </Link>
             <Link
-              href="/admin/login"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
-              aria-label="Admin Login"
+              href="/track"
+              className={`inline-flex h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${
+                isTrackingPage
+                  ? "border-slate-950 bg-slate-950 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-950"
+              }`}
+              aria-label="Auftrag verfolgen"
             >
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Admin</span>
+              <PackageSearch className="h-4 w-4" />
+              <span className="hidden sm:inline">Tracking</span>
             </Link>
           </div>
         </div>

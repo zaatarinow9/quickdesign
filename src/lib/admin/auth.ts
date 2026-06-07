@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getAdminLoginPath } from "@/lib/admin/admin-routes";
 import { prisma } from "@/lib/prisma";
 import {
   hasAdminPermission,
@@ -136,7 +137,7 @@ export async function requireAdminUser(): Promise<CurrentAdminUser> {
   const user = await getCurrentAdminUser();
 
   if (!user) {
-    redirect("/admin/login");
+    redirect(getAdminLoginPath());
   }
 
   return user;

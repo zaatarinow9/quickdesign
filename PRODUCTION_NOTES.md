@@ -4,6 +4,7 @@
 
 - `DATABASE_URL`
 - `ADMIN_SESSION_SECRET`
+- `ADMIN_LOGIN_PATH`
 - `APP_URL` or `NEXT_PUBLIC_APP_URL`
 - `ORDER_DOCUMENT_SHARE_SECRET`
 - `SMTP_HOST`
@@ -30,11 +31,20 @@
 ## Security Expectations
 
 - Use a unique `ADMIN_SESSION_SECRET` with at least 32 characters.
+- Set `ADMIN_LOGIN_PATH` to an obscure path such as `/zugang-q24` and keep it out of public navigation.
 - Use a separate `ORDER_DOCUMENT_SHARE_SECRET` with at least 32 characters.
 - Set `APP_URL` to the canonical production origin so document emails do not depend on request headers.
 - Do not deploy with the default `admin / admin123` credentials.
+- Hidden admin URLs are only an additional layer of obscurity and never a replacement for strong passwords, session security, or role checks.
 - Shared document links are signed and expire automatically after 72 hours.
 - SMTP credentials must stay server-side only and must never be exposed to client bundles.
+
+## Public Access
+
+- Public visitors should use `/track` for customer order lookups.
+- The storefront no longer exposes any admin login link or admin icon in the public navigation.
+- Old bookmarks to `/admin/login` should redirect to the configured hidden admin path.
+- Do not share the hidden admin URL publicly.
 
 ## Admin Bootstrap
 
@@ -65,6 +75,7 @@
 
 - `DATABASE_URL`
 - `ADMIN_SESSION_SECRET`
+- `ADMIN_LOGIN_PATH`
 - `APP_URL` or `NEXT_PUBLIC_APP_URL`
 - `ORDER_DOCUMENT_SHARE_SECRET`
 - `SMTP_HOST`
