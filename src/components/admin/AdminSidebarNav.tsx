@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  CalendarDays,
   LayoutDashboard,
   Package,
   ShoppingBag,
@@ -22,6 +23,7 @@ type AdminSidebarNavProps = {
 const iconMap: Record<AdminNavIconName, ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
   orders: ShoppingBag,
+  appointments: CalendarDays,
   customers: UserRound,
   services: Package,
   reports: BarChart3,

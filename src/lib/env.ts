@@ -11,6 +11,7 @@ export type EnvironmentReadinessWarning = {
   id: string;
   level: "warning" | "error";
   message: string;
+  surface?: "dashboard" | "diagnostics" | "all";
 };
 
 export type SmtpEnvironmentConfig = {
@@ -228,8 +229,11 @@ export function getSmtpEnvironmentConfig(): SmtpEnvironmentConfig {
   };
 }
 
-export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[] {
+export function getEnvironmentReadinessWarnings(options?: {
+  surface?: "dashboard" | "diagnostics" | "all";
+}): EnvironmentReadinessWarning[] {
   const warnings: EnvironmentReadinessWarning[] = [];
+  const requestedSurface = options?.surface ?? "all";
   const warningLevel = getWarningLevel();
   const databaseUrl = readEnvValue("DATABASE_URL");
   const adminSessionSecret = readEnvValue("ADMIN_SESSION_SECRET");
@@ -312,16 +316,18 @@ export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[]
   if (!adminLoginPath) {
     warnings.push({
       id: "admin_login_path_missing",
-      level: warningLevel,
+      level: "warning",
       message:
         "ADMIN_LOGIN_PATH fehlt. Legen Sie fuer Produktion einen nicht offensichtlichen Admin-Login-Pfad fest.",
+      surface: "diagnostics",
     });
   } else if (!normalizePathValue(adminLoginPath)) {
     warnings.push({
       id: "admin_login_path_invalid",
-      level: warningLevel,
+      level: "warning",
       message:
         "ADMIN_LOGIN_PATH ist ungueltig. Verwenden Sie einen absoluten Pfad wie /zugang-q24 ohne Query oder Fragment.",
+      surface: "diagnostics",
     });
   }
 
@@ -365,5 +371,12 @@ export function getEnvironmentReadinessWarnings(): EnvironmentReadinessWarning[]
     }
   }
 
-  return warnings;
+  if (requestedSurface === "all") {
+    return warnings;
+  }
+
+  return warnings.filter((warning) => {
+    const surface = warning.surface ?? "all";
+    return surface === "all" || surface === requestedSurface;
+  });
 }

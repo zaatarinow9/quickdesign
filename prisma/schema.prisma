@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum WorkSessionStatus {
+  RUNNING
+  STOPPED
+}
+
 model Service {
   id             String          @id @default(cuid())
   name           String
@@ -70,6 +82,8 @@ model Customer {
   notes       String?
   isActive    Boolean  @default(true)
   orders      Order[]
+  appointments Appointment[]
+  workSessions WorkSession[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -117,6 +131,8 @@ model Order {
   archivedBy     AdminUser?      @relation("ArchivedOrders", fields: [archivedById], references: [id], onDelete: SetNull)
   items          OrderItem[]
   activities     OrderActivity[]
+  appointments   Appointment[]
+  workSessions   WorkSession[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -153,6 +169,9 @@ model AdminUser {
   isActive       Boolean         @default(true)
   assignedOrders Order[]         @relation("AssignedOrders")
   archivedOrders Order[]         @relation("ArchivedOrders")
+  assignedAppointments Appointment[] @relation("AssignedAppointments")
+  createdAppointments  Appointment[] @relation("CreatedAppointments")
+  workSessions         WorkSession[] @relation("WorkSessionUser")
   activities     OrderActivity[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -167,4 +186,62 @@ model OrderActivity {
   type        String
   message     String
   createdAt   DateTime    @default(now())
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  title          String
+  description    String?
+  status         AppointmentStatus @default(SCHEDULED)
+  startAt        DateTime
+  endAt          DateTime?
+  reminderAt     DateTime?
+  reminderSentAt DateTime?
+  customerId     String?
+  customer       Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderId        String?
+  order          Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  assignedUserId String?
+  assignedUser   AdminUser?        @relation("AssignedAppointments", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  createdById    String?
+  createdBy      AdminUser?        @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
+  location       String?
+  notes          String?
+  workSessions   WorkSession[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([startAt])
+  @@index([status])
+  @@index([assignedUserId])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([reminderAt])
+}
+
+model WorkSession {
+  id              String            @id @default(cuid())
+  title           String?
+  status          WorkSessionStatus @default(RUNNING)
+  startedAt       DateTime
+  stoppedAt       DateTime?
+  durationMinutes Int?
+  customerId      String?
+  customer        Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderId         String?
+  order           Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  appointmentId   String?
+  appointment     Appointment?      @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  userId          String
+  user            AdminUser         @relation("WorkSessionUser", fields: [userId], references: [id])
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([userId])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([appointmentId])
 }

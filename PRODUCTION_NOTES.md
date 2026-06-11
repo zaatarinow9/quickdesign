@@ -5,6 +5,7 @@
 - `DATABASE_URL`
 - `ADMIN_SESSION_SECRET`
 - `ADMIN_LOGIN_PATH`
+- `CRON_SECRET`
 - `APP_URL` or `NEXT_PUBLIC_APP_URL`
 - `ORDER_DOCUMENT_SHARE_SECRET`
 - `SMTP_HOST`
@@ -31,8 +32,10 @@
 ## Security Expectations
 
 - Use a unique `ADMIN_SESSION_SECRET` with at least 32 characters.
-- Set `ADMIN_LOGIN_PATH` to an obscure path such as `/zugang-q24` and keep it out of public navigation.
+- Set `ADMIN_LOGIN_PATH="/zugang-q24"` or a similar obscure path and keep it out of public navigation.
+- Add `ADMIN_LOGIN_PATH` to the Vercel Environment Variables and redeploy after changing it.
 - Use a separate `ORDER_DOCUMENT_SHARE_SECRET` with at least 32 characters.
+- Use a separate `CRON_SECRET` to protect `/api/cron/appointment-reminders`.
 - Set `APP_URL` to the canonical production origin so document emails do not depend on request headers.
 - Do not deploy with the default `admin / admin123` credentials.
 - Hidden admin URLs are only an additional layer of obscurity and never a replacement for strong passwords, session security, or role checks.
@@ -45,6 +48,21 @@
 - The storefront no longer exposes any admin login link or admin icon in the public navigation.
 - Old bookmarks to `/admin/login` should redirect to the configured hidden admin path.
 - Do not share the hidden admin URL publicly.
+
+## Appointment Reminders
+
+- Appointment reminders are sent to the assigned `AdminUser` employee only.
+- If `AdminUser.email` is empty, the system falls back to `username` only when it is a valid email address.
+- Missing employee email addresses do not block appointment creation. Reminder runs skip those records and report a warning.
+- Manual reminder checks are available in `/admin/appointments` through the `Erinnerungen pruefen` action.
+- For automated reminders on Vercel, configure a cron job that calls:
+
+```bash
+GET /api/cron/appointment-reminders
+Authorization: Bearer <CRON_SECRET>
+```
+
+- If `CRON_SECRET` is missing or wrong, the cron route returns `401 unauthorized`.
 
 ## Admin Bootstrap
 
@@ -62,6 +80,7 @@
 
 - Install dependencies.
 - Configure all required environment variables in Vercel.
+- Set `ADMIN_LOGIN_PATH="/zugang-q24"` (or another hidden path) in Vercel and redeploy.
 - Confirm `DATABASE_URL` uses the Supabase Session Pooler connection string.
 - Run Prisma generate for the target environment.
 - Push the Prisma schema to the target database.
@@ -69,6 +88,7 @@
 - Seed the service catalog.
 - Build the app before release.
 - Confirm document email sending with a staging mailbox.
+- Confirm appointment reminder delivery and the protected cron endpoint.
 - Confirm shared document links open, expire, and reject tampered signatures.
 
 ## Vercel Environment Variables Checklist
@@ -76,6 +96,7 @@
 - `DATABASE_URL`
 - `ADMIN_SESSION_SECRET`
 - `ADMIN_LOGIN_PATH`
+- `CRON_SECRET`
 - `APP_URL` or `NEXT_PUBLIC_APP_URL`
 - `ORDER_DOCUMENT_SHARE_SECRET`
 - `SMTP_HOST`

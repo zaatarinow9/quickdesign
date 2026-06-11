@@ -4,6 +4,9 @@ export type AdminPermission =
   | "canManageServices"
   | "canManageUsers"
   | "canManageOrders"
+  | "canViewAppointments"
+  | "canManageAppointments"
+  | "canManageWorkSessions"
   | "canAssignOrders"
   | "canClaimOrders"
   | "canUpdateAssignedOrders"
@@ -53,12 +56,15 @@ export function hasAdminPermission(
 
   switch (permission) {
     case "canManageOrders":
+    case "canViewAppointments":
+    case "canManageWorkSessions":
     case "canClaimOrders":
     case "canUpdateAssignedOrders":
     case "canViewReports":
     case "canViewCustomers":
     case "canCreateManualOrders":
       return role === "ADMIN" || role === "STAFF";
+    case "canManageAppointments":
     case "canViewAllReports":
     case "canApplyDiscounts":
     case "canEditFinancials":
@@ -98,6 +104,22 @@ export function canEditFinancials(user: AdminPermissionUser | null): boolean {
 
 export function canViewReports(user: AdminPermissionUser | null): boolean {
   return hasAdminPermission(user, "canViewReports");
+}
+
+export function canViewAppointments(user: AdminPermissionUser | null): boolean {
+  return hasAdminPermission(user, "canViewAppointments");
+}
+
+export function canManageAppointments(
+  user: AdminPermissionUser | null,
+): boolean {
+  return hasAdminPermission(user, "canManageAppointments");
+}
+
+export function canManageWorkSessions(
+  user: AdminPermissionUser | null,
+): boolean {
+  return hasAdminPermission(user, "canManageWorkSessions");
 }
 
 export function canViewAllReports(user: AdminPermissionUser | null): boolean {

@@ -29,6 +29,22 @@ function sortAdminUsers(users) {
   });
 }
 
+function normalizeConfiguredPath(value) {
+  const trimmedValue = typeof value === "string" ? value.trim() : "";
+
+  if (
+    !trimmedValue ||
+    !trimmedValue.startsWith("/") ||
+    trimmedValue === "/" ||
+    trimmedValue.includes("?") ||
+    trimmedValue.includes("#")
+  ) {
+    return null;
+  }
+
+  return trimmedValue.replace(/\/+$/, "");
+}
+
 async function main() {
   const databaseUrl = ensureRequiredEnvValue(
     "DATABASE_URL",
@@ -40,6 +56,19 @@ async function main() {
     `Database provider target detected from DATABASE_URL: ${providerTarget}`,
   );
   console.log(`Using database: ${maskDatabaseTarget(databaseUrl)}`);
+
+  const adminLoginPath = normalizeConfiguredPath(process.env.ADMIN_LOGIN_PATH);
+  if (!process.env.ADMIN_LOGIN_PATH || !process.env.ADMIN_LOGIN_PATH.trim()) {
+    console.warn(
+      "WARNING: ADMIN_LOGIN_PATH is missing. Runtime will fall back to /admin/login until you configure an obscure hidden login path in Vercel and redeploy.",
+    );
+  } else if (!adminLoginPath) {
+    console.warn(
+      `WARNING: ADMIN_LOGIN_PATH is invalid (${process.env.ADMIN_LOGIN_PATH}). Use an absolute path like /zugang-q24 without query or fragment.`,
+    );
+  } else {
+    console.log(`Configured hidden admin login path: ${adminLoginPath}`);
+  }
 
   if (isLocalSqliteDatabaseUrl(databaseUrl)) {
     console.warn("WARNING: This points to local SQLite, not Supabase.");

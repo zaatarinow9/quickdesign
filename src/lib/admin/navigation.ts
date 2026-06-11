@@ -1,6 +1,7 @@
 export const adminNavIconNames = [
   "dashboard",
   "orders",
+  "appointments",
   "customers",
   "services",
   "reports",

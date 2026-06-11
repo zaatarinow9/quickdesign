@@ -24,8 +24,12 @@ import {
   updateOrderFinancials,
   updateOrderStatus,
 } from "@/app/actions/order";
+import { startWorkSession, stopWorkSession } from "@/app/actions/work-sessions";
+import { AppointmentHistoryList } from "@/components/admin/AppointmentHistoryList";
 import { OrderDocumentEmailForm } from "@/components/admin/OrderDocumentEmailForm";
+import { WorkSessionList } from "@/components/admin/WorkSessionList";
 import { requireAdminPermission } from "@/lib/admin/auth";
+import { formatWorkDuration, sumWorkSessionMinutes } from "@/lib/appointments/format";
 import {
   canUpdateOrder,
   hasAdminPermission,
@@ -47,6 +51,7 @@ import {
 } from "@/lib/orders/finance";
 import { canArchiveOrder as canArchiveOrderRecord } from "@/lib/orders/reporting";
 import { prisma } from "@/lib/prisma";
+import { prismaWithAppointmentModels } from "@/lib/prisma-appointments";
 import {
   buildAdminOrderFileDownloadHref,
   getSnapshotUploadFileRecords,
@@ -406,6 +411,9 @@ export default async function OrderDetailsPage({
     created?: string;
     forbidden?: string;
     restored?: string;
+    sessionError?: string;
+    sessionStarted?: string;
+    sessionStopped?: string;
   }>;
 }) {
   const { id } = await params;
@@ -478,6 +486,89 @@ export default async function OrderDetailsPage({
         },
       })
     : [];
+  const [currentRunningSession, orderAppointments, orderWorkSessions] = await Promise.all([
+    prismaWithAppointmentModels.workSession.findFirst<{
+      id: string;
+      orderId: string | null;
+    }>({
+      where: {
+        userId: currentUser.id,
+        status: "RUNNING",
+      },
+      select: {
+        id: true,
+        orderId: true,
+      },
+    }),
+    prismaWithAppointmentModels.appointment.findMany<{
+      id: string;
+      title: string;
+      status: "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+      startAt: Date;
+      notes: string | null;
+      assignedUser: {
+        name: string;
+      } | null;
+      workSessions: Array<{
+        durationMinutes: number | null;
+        startedAt: Date;
+        stoppedAt: Date | null;
+      }>;
+    }>({
+      where: {
+        orderId: order.id,
+      },
+      orderBy: [{ startAt: "desc" }, { createdAt: "desc" }],
+      include: {
+        assignedUser: {
+          select: {
+            name: true,
+          },
+        },
+        workSessions: {
+          select: {
+            durationMinutes: true,
+            startedAt: true,
+            stoppedAt: true,
+          },
+        },
+      },
+    }),
+    prismaWithAppointmentModels.workSession.findMany<{
+      id: string;
+      title: string | null;
+      status: "RUNNING" | "STOPPED";
+      startedAt: Date;
+      stoppedAt: Date | null;
+      durationMinutes: number | null;
+      notes: string | null;
+      user: {
+        name: string;
+      };
+      appointment: {
+        title: string;
+      } | null;
+    }>({
+      where: {
+        orderId: order.id,
+      },
+      orderBy: {
+        startedAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        appointment: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    }),
+  ]);
   const customerLocation = order.customer
     ? formatCustomerLocation(order.customer)
     : "";
@@ -498,6 +589,15 @@ export default async function OrderDetailsPage({
     },
     {} as Record<OrderDocumentQueryType, string>,
   );
+  const orderWorkMinutes = sumWorkSessionMinutes(orderWorkSessions);
+  const upcomingOrderAppointments = orderAppointments.filter((appointment) => {
+    return appointment.status === "SCHEDULED" && appointment.startAt >= new Date();
+  });
+  const orderAppointmentHistory = orderAppointments.filter((appointment) => {
+    return !(
+      appointment.status === "SCHEDULED" && appointment.startAt >= new Date()
+    );
+  });
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -531,6 +631,21 @@ export default async function OrderDetailsPage({
       {pageParams.forbidden && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
           Sie haben fuer diese Aktion keine Berechtigung.
+        </div>
+      )}
+      {pageParams.sessionStarted && (
+        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
+          Arbeitssitzung wurde gestartet.
+        </div>
+      )}
+      {pageParams.sessionStopped && (
+        <div className="border border-green-100 bg-green-50 p-4 text-xs font-bold uppercase tracking-widest text-green-700">
+          Arbeitssitzung wurde gestoppt.
+        </div>
+      )}
+      {pageParams.sessionError === "running" && (
+        <div className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold uppercase tracking-widest text-amber-800">
+          Es laeuft bereits eine andere Sitzung fuer diesen Benutzer.
         </div>
       )}
       {isArchivedOrder && (
@@ -1320,6 +1435,124 @@ export default async function OrderDetailsPage({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <div className="border border-neutral-200 bg-white p-8 shadow-sm">
+          <div className="mb-8 flex flex-col gap-4 border-b border-neutral-100 pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                Terminverlauf
+              </h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                Kommende, abgeschlossene und stornierte Termine fuer diesen Auftrag.
+              </p>
+            </div>
+            <Link
+              href="/admin/appointments"
+              className="inline-flex items-center gap-2 border border-neutral-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+            >
+              Alle Termine
+            </Link>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Kommende Termine
+              </h3>
+              <AppointmentHistoryList
+                appointments={upcomingOrderAppointments.map((appointment) => ({
+                  id: appointment.id,
+                  title: appointment.title,
+                  status: appointment.status,
+                  startAt: appointment.startAt,
+                  assignedUserName: appointment.assignedUser?.name ?? null,
+                  notes: appointment.notes,
+                  customerName: order.customer?.name ?? order.customerName,
+                  orderNumber: order.orderNumber,
+                  workSessions: appointment.workSessions,
+                }))}
+                emptyMessage="Keine kommenden Termine fuer diesen Auftrag."
+              />
+            </div>
+            <div>
+              <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                Abgeschlossene Termine
+              </h3>
+              <AppointmentHistoryList
+                appointments={orderAppointmentHistory.map((appointment) => ({
+                  id: appointment.id,
+                  title: appointment.title,
+                  status: appointment.status,
+                  startAt: appointment.startAt,
+                  assignedUserName: appointment.assignedUser?.name ?? null,
+                  notes: appointment.notes,
+                  customerName: order.customer?.name ?? order.customerName,
+                  orderNumber: order.orderNumber,
+                  workSessions: appointment.workSessions,
+                }))}
+                emptyMessage="Noch keine Termin-Historie fuer diesen Auftrag."
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-neutral-200 bg-white p-8 shadow-sm">
+          <div className="mb-8 flex flex-col gap-4 border-b border-neutral-100 pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                Arbeitsverlauf
+              </h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                Gearbeitete Zeit fuer diesen Auftrag: {formatWorkDuration(orderWorkMinutes)}.
+              </p>
+            </div>
+            {(currentRunningSession?.orderId === order.id ||
+              canEditOrder ||
+              canAssignOrders) &&
+              (currentRunningSession?.orderId === order.id ? (
+                <form action={stopWorkSession}>
+                  <input type="hidden" name="sessionId" value={currentRunningSession.id} />
+                  <input type="hidden" name="returnTo" value={`/admin/orders/${order.id}`} />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 border border-red-200 bg-red-50 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-red-700 transition-colors hover:bg-red-100"
+                  >
+                    Sitzung stoppen
+                  </button>
+                </form>
+              ) : (
+                <form action={startWorkSession}>
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <input type="hidden" name="customerId" value={order.customerId ?? ""} />
+                  <input type="hidden" name="returnTo" value={`/admin/orders/${order.id}`} />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 bg-neutral-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
+                  >
+                    Sitzung starten
+                  </button>
+                </form>
+              ))}
+          </div>
+
+          <WorkSessionList
+            sessions={orderWorkSessions.map((session) => ({
+              id: session.id,
+              title: session.title,
+              status: session.status,
+              startedAt: session.startedAt,
+              stoppedAt: session.stoppedAt,
+              durationMinutes: session.durationMinutes,
+              userName: session.user.name,
+              appointmentTitle: session.appointment?.title ?? null,
+              orderNumber: order.orderNumber,
+              notes: session.notes,
+            }))}
+            emptyMessage="Noch keine Arbeitssitzungen fuer diesen Auftrag vorhanden."
+          />
         </div>
       </div>
 

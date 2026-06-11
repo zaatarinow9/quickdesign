@@ -7,7 +7,10 @@ import LogoMark from "@/components/layout/LogoMark";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { requireAdminUser } from "@/lib/admin/auth";
 import type { AdminNavItem } from "@/lib/admin/navigation";
-import { hasAdminPermission } from "@/lib/admin/permissions";
+import {
+  canViewAppointments,
+  hasAdminPermission,
+} from "@/lib/admin/permissions";
 
 export default async function AdminLayout({
   children,
@@ -20,6 +23,7 @@ export default async function AdminLayout({
     "canManageServices",
   );
   const canManageUsers = hasAdminPermission(currentUser, "canManageUsers");
+  const canSeeAppointments = canViewAppointments(currentUser);
   const canViewCustomers = hasAdminPermission(currentUser, "canViewCustomers");
   const canViewReports = hasAdminPermission(currentUser, "canViewReports");
   const navItems: AdminNavItem[] = [
@@ -34,6 +38,14 @@ export default async function AdminLayout({
       iconName: "orders",
     },
   ];
+
+  if (canSeeAppointments) {
+    navItems.push({
+      href: "/admin/appointments",
+      label: "Termine",
+      iconName: "appointments",
+    });
+  }
 
   if (canViewCustomers) {
     navItems.push({

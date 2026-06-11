@@ -16,7 +16,7 @@ export type AdminSecurityWarning = EnvironmentReadinessWarning;
 export async function getAdminSecurityWarnings(): Promise<
   AdminSecurityWarning[]
 > {
-  const warnings = [...getEnvironmentReadinessWarnings()];
+  const warnings = [...getEnvironmentReadinessWarnings({ surface: "dashboard" })];
   const defaultAdminUser = await prisma.adminUser.findFirst({
     where: {
       username: {

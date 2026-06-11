@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import {
   Activity,
   ArrowRight,
+  CalendarDays,
   Clock3,
   Euro,
   Layers3,
@@ -21,6 +22,10 @@ import {
   getAdminButtonClassName,
 } from "@/components/admin/AdminUI";
 import { requireAdminUser } from "@/lib/admin/auth";
+import {
+  formatAppointmentDateTime,
+  formatWorkDuration,
+} from "@/lib/appointments/format";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/admin/password";
 import { hasAdminPermission } from "@/lib/admin/permissions";
 import {
@@ -36,6 +41,40 @@ import {
   type ReportableOrder,
 } from "@/lib/orders/reporting";
 import { prisma } from "@/lib/prisma";
+import { prismaWithAppointmentModels } from "@/lib/prisma-appointments";
+
+type DashboardAppointment = {
+  id: string;
+  title: string;
+  startAt: Date;
+  customer: {
+    name: string;
+  } | null;
+  order: {
+    id: string;
+    orderNumber: number;
+  } | null;
+  assignedUser: {
+    name: string;
+  } | null;
+};
+
+type DashboardRunningSession = {
+  id: string;
+  title: string | null;
+  startedAt: Date;
+  user: {
+    name: string;
+  };
+  appointment: {
+    id: string;
+    title: string;
+  } | null;
+  order: {
+    id: string;
+    orderNumber: number;
+  } | null;
+};
 
 function getPasswordErrorMessage(errorCode: string | undefined): string | null {
   switch (errorCode) {
@@ -71,6 +110,10 @@ export default async function AdminDashboard({
   const canViewAllReports = hasAdminPermission(currentUser, "canViewAllReports");
   const currentMonth = getMonthRange();
   const passwordErrorMessage = getPasswordErrorMessage(params.passwordError);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
 
   const [
     orders,
@@ -79,6 +122,10 @@ export default async function AdminDashboard({
     servicesCount,
     customersCount,
     securityWarnings,
+    todayAppointments,
+    upcomingAppointments,
+    runningSessions,
+    todayWorkSessions,
   ] = await Promise.all([
     prisma.order.findMany({
       where: canViewAllReports ? undefined : { assignedToId: currentUser.id },
@@ -166,6 +213,115 @@ export default async function AdminDashboard({
     canManageServices ? prisma.service.count() : Promise.resolve(null),
     canViewAllReports ? prisma.customer.count() : Promise.resolve(null),
     getAdminSecurityWarnings(),
+    prismaWithAppointmentModels.appointment.findMany<DashboardAppointment>({
+      where: {
+        ...(canViewAllReports ? {} : { assignedUserId: currentUser.id }),
+        startAt: {
+          gte: todayStart,
+          lt: todayEnd,
+        },
+      },
+      orderBy: {
+        startAt: "asc",
+      },
+      take: 6,
+      include: {
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+        assignedUser: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+    prismaWithAppointmentModels.appointment.findMany<DashboardAppointment>({
+      where: {
+        ...(canViewAllReports ? {} : { assignedUserId: currentUser.id }),
+        status: "SCHEDULED",
+        startAt: {
+          gte: new Date(),
+        },
+      },
+      orderBy: {
+        startAt: "asc",
+      },
+      take: 6,
+      include: {
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+        assignedUser: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+    prismaWithAppointmentModels.workSession.findMany<DashboardRunningSession>({
+      where: {
+        ...(canViewAllReports ? {} : { userId: currentUser.id }),
+        status: "RUNNING",
+      },
+      orderBy: {
+        startedAt: "desc",
+      },
+      take: 6,
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        appointment: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+      },
+    }),
+    prismaWithAppointmentModels.workSession.findMany<{
+      durationMinutes: number | null;
+      startedAt: Date;
+      stoppedAt: Date | null;
+    }>({
+      where: {
+        ...(canViewAllReports ? {} : { userId: currentUser.id }),
+        startedAt: {
+          gte: todayStart,
+          lt: todayEnd,
+        },
+      },
+      select: {
+        durationMinutes: true,
+        startedAt: true,
+        stoppedAt: true,
+      },
+    }),
   ]);
 
   const summary = buildOrdersSummary(orders as ReportableOrder[]);
@@ -176,10 +332,6 @@ export default async function AdminDashboard({
     );
   });
   const currentMonthSummary = buildOrdersSummary(currentMonthOrders);
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(todayStart);
-  todayEnd.setDate(todayEnd.getDate() + 1);
   const ordersTodayCount = orders.filter(
     (order) => order.createdAt >= todayStart && order.createdAt < todayEnd,
   ).length;
@@ -197,6 +349,18 @@ export default async function AdminDashboard({
   const myVisibleOrders = canViewAllReports
     ? (orders as ReportableOrder[]).filter((order) => order.assignedToId === currentUser.id)
     : (orders as ReportableOrder[]);
+  const todayWorkMinutes = todayWorkSessions.reduce((sum, session) => {
+    if (session.durationMinutes !== null) {
+      return sum + session.durationMinutes;
+    }
+
+    const startedAt = new Date(session.startedAt).getTime();
+    const stoppedAt = session.stoppedAt
+      ? new Date(session.stoppedAt).getTime()
+      : Date.now();
+
+    return sum + Math.max(0, Math.ceil((stoppedAt - startedAt) / 60_000));
+  }, 0);
 
   return (
     <div className="space-y-8">
@@ -358,6 +522,37 @@ export default async function AdminDashboard({
               hint="Aktive Kundenprofile"
             />
           )}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminStatCard
+            label="Termine heute"
+            value={todayAppointments.length}
+            icon={CalendarDays}
+            tone="blue"
+            hint="Sichtbare Termine am heutigen Tag"
+          />
+          <AdminStatCard
+            label="Kommende Termine"
+            value={upcomingAppointments.length}
+            icon={CalendarDays}
+            tone="emerald"
+            hint="Naechste geplante Termine"
+          />
+          <AdminStatCard
+            label="Laufende Sitzungen"
+            value={runningSessions.length}
+            icon={Activity}
+            tone="amber"
+            hint="Aktive Arbeitssitzungen"
+          />
+          <AdminStatCard
+            label="Arbeitszeit heute"
+            value={formatWorkDuration(todayWorkMinutes)}
+            icon={Clock3}
+            tone="slate"
+            hint="Erfasste Sitzungsdauer heute"
+          />
         </div>
 
         {canViewAllReports && (
@@ -532,6 +727,125 @@ export default async function AdminDashboard({
                   </p>
                 </div>
               ))
+            )}
+          </div>
+        </AdminSectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <AdminSectionCard
+          title="Heute im Kalender"
+          description="Direkter Blick auf heutige Termine inklusive Kunde, Auftrag und Zuweisung."
+          icon={CalendarDays}
+          actions={
+            <Link href="/admin/appointments" className={getAdminButtonClassName("ghost")}>
+              Termine
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          <div className="space-y-4">
+            {todayAppointments.length === 0 ? (
+              <AdminEmptyState
+                icon={CalendarDays}
+                title="Heute keine Termine vorhanden."
+                description="Neue Termine erscheinen hier automatisch als Schnellzugriff."
+              />
+            ) : (
+              todayAppointments.map((appointment) => (
+                <Link
+                  key={appointment.id}
+                  href={`/admin/appointments/${appointment.id}`}
+                  className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700 dark:hover:bg-slate-900 md:grid-cols-[170px_minmax(0,1fr)_180px]"
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Zeitpunkt
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {formatAppointmentDateTime(appointment.startAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Termin
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {appointment.title}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {appointment.customer?.name || "Kein Kunde"}
+                      {appointment.order ? ` · #${appointment.order.orderNumber}` : ""}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Zuweisung
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {appointment.assignedUser?.name || "Nicht zugewiesen"}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </AdminSectionCard>
+
+        <AdminSectionCard
+          title="Laufende Arbeit"
+          description="Aktive Sitzungen und der naechste geplante Termin fuer die aktuelle Sicht."
+          icon={Activity}
+          actions={
+            <Link href="/admin/appointments" className={getAdminButtonClassName("ghost")}>
+              Arbeitszeit
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          <div className="space-y-4">
+            {runningSessions.length === 0 && upcomingAppointments.length === 0 ? (
+              <AdminEmptyState
+                icon={Activity}
+                title="Keine aktive Arbeitszeit"
+                description="Laufende Sitzungen oder der naechste Termin erscheinen hier automatisch."
+              />
+            ) : (
+              <>
+                {runningSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Laufende Sitzung
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {session.title || session.appointment?.title || "Arbeitssitzung"}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {session.user.name}
+                      {session.order ? ` · Auftrag #${session.order.orderNumber}` : ""}
+                    </p>
+                  </div>
+                ))}
+                {upcomingAppointments[0] && (
+                  <Link
+                    href={`/admin/appointments/${upcomingAppointments[0].id}`}
+                    className="block rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-colors hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Naechster Termin
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {upcomingAppointments[0].title}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {formatAppointmentDateTime(upcomingAppointments[0].startAt)}
+                    </p>
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </AdminSectionCard>
