@@ -39,7 +39,7 @@ export default async function ServiceDetailsPage({
           href="/services"
           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
         >
-          <ArrowLeft className="h-4 w-4" /> Zurueck zur Uebersicht
+          <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
         </Link>
 
         <div className="mt-6 lg:mt-8">

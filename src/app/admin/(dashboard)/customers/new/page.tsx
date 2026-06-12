@@ -18,7 +18,7 @@ export default async function NewCustomerPage({
         href="/admin/customers"
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zu Kunden
+        <ArrowLeft className="h-3 w-3" /> Zurück zu Kunden
       </Link>
 
       <div className="border-b border-neutral-100 pb-8">

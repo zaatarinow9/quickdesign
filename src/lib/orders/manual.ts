@@ -458,7 +458,7 @@ export function buildManualOrderItem(input: {
   if (input.config.pricing.mode === "area" && input.config.pricing.area) {
     textInputs.pricing_model = {
       optionName: "Preismodell",
-      value: "Flaechenpreis",
+      value: "Flächenpreis",
     };
     textInputs.pricing_width_cm = {
       optionName: input.config.pricing.area.widthLabel,
@@ -469,7 +469,7 @@ export function buildManualOrderItem(input: {
       value: `${formatDisplayNumber(priceResult.heightCm)} cm`,
     };
     textInputs.pricing_area_sqm = {
-      optionName: "Flaeche",
+      optionName: "Fläche",
       value: `${priceResult.billableAreaSqm.toFixed(3)} m2`,
     };
   }

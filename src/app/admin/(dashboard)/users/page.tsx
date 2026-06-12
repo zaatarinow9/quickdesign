@@ -70,7 +70,7 @@ export default async function AdminUsersPage({
         <AdminPageHeader
           eyebrow="Admin Benutzerverwaltung"
           title="Team und Berechtigungen"
-          description="Nur Super Admins duerfen interne Benutzer erstellen, Rollen aendern, Passwoerter zuruecksetzen und Zugriffe aktivieren oder deaktivieren."
+          description="Nur Super Admins dürfen interne Benutzer erstellen, Rollen ändern, Passwörter zurücksetzen und Zugriffe aktivieren oder deaktivieren."
           actions={
             <Link href="/admin/users/new" className={getAdminButtonClassName("primary")}>
               <UserPlus className="h-4 w-4" />
@@ -118,7 +118,7 @@ export default async function AdminUsersPage({
               Benutzerliste
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-              Rollen, Status und letzte Pflege im Ueberblick.
+              Rollen, Status und letzte Pflege im Überblick.
             </p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default async function AdminUsersPage({
                             href={`/admin/users/${user.id}/edit#password-reset`}
                             className={getAdminButtonClassName("secondary")}
                           >
-                            Passwort zuruecksetzen
+                            Passwort zurücksetzen
                           </Link>
                           <form action={toggleActiveAction}>
                             <input type="hidden" name="returnTo" value="/admin/users" />

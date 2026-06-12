@@ -81,7 +81,7 @@ function getPasswordErrorMessage(errorCode: string | undefined): string | null {
     case "current":
       return "Das aktuelle Passwort stimmt nicht.";
     case "match":
-      return "Die Passwoerter stimmen nicht ueberein.";
+      return "Die Passwörter stimmen nicht überein.";
     case "missing":
       return "Bitte fuellen Sie alle Passwortfelder aus.";
     case "reuse":
@@ -415,14 +415,14 @@ export default async function AdminDashboard({
 
       <AdminCard className="p-6 md:p-8">
         <AdminPageHeader
-          eyebrow="Dashboard"
-          title="Admin Ueberblick"
+          eyebrow="Übersicht"
+          title="Admin-Übersicht"
           description={`Willkommen, ${currentUser.name}. Ihre Rolle: ${currentUser.role}.`}
           actions={
             <>
               <Link href="/admin/orders" className={getAdminButtonClassName("secondary")}>
                 <Package className="h-4 w-4" />
-                Auftraege
+                Aufträge
               </Link>
               {hasAdminPermission(currentUser, "canViewReports") && (
                 <Link
@@ -446,7 +446,7 @@ export default async function AdminDashboard({
             hint="Bestellungen seit Mitternacht"
           />
           <AdminStatCard
-            label="Offene Auftraege"
+            label="Offene Aufträge"
             value={summary.openOrders}
             icon={Package}
             tone="amber"
@@ -457,7 +457,7 @@ export default async function AdminDashboard({
             value={waitingCustomerCount}
             icon={Activity}
             tone="purple"
-            hint="Kundenfreigabe oder Rueckmeldung ausstehend"
+            hint="Kundenfreigabe oder Rückmeldung ausstehend"
           />
           <AdminStatCard
             label={canViewAllReports ? "Monat Brutto" : "Meine Sicht"}
@@ -471,21 +471,21 @@ export default async function AdminDashboard({
             hint={
               canViewAllReports
                 ? currentMonth.monthLabel
-                : "Sichtbare Auftraege fuer Ihre Rolle"
+                : "Sichtbare Aufträge für Ihre Rolle"
             }
           />
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminStatCard
-            label={canViewAllReports ? "Gesamtauftraege" : "Meine Auftraege"}
+            label={canViewAllReports ? "Gesamtaufträge" : "Meine Aufträge"}
             value={summary.totalOrders}
             icon={Package}
             tone="slate"
             hint={
               canViewAllReports
-                ? "Inklusive archivierter Auftraege"
-                : "Zugewiesene Auftraege fuer Ihre Rolle"
+                ? "Inklusive archivierter Aufträge"
+                : "Zugewiesene Aufträge für Ihre Rolle"
             }
           />
           <AdminStatCard
@@ -493,7 +493,7 @@ export default async function AdminDashboard({
             value={assignedToMeCount}
             icon={UserCheck}
             tone="blue"
-            hint="Aktive Auftraege in meiner Queue"
+            hint="Aktive Aufträge in meiner Queue"
           />
           {canViewAllReports && (
             <AdminStatCard
@@ -501,7 +501,7 @@ export default async function AdminDashboard({
               value={unassignedOrdersCount}
               icon={Activity}
               tone="amber"
-              hint="Aktive Auftraege ohne Bearbeiter"
+              hint="Aktive Aufträge ohne Bearbeiter"
             />
           )}
           {servicesCount !== null && (
@@ -510,7 +510,7 @@ export default async function AdminDashboard({
               value={servicesCount}
               icon={Layers3}
               tone="blue"
-              hint="Derzeit im System verfuegbar"
+              hint="Derzeit im System verfügbar"
             />
           )}
           {customersCount !== null && (
@@ -537,7 +537,7 @@ export default async function AdminDashboard({
             value={upcomingAppointments.length}
             icon={CalendarDays}
             tone="emerald"
-            hint="Naechste geplante Termine"
+            hint="Nächste geplante Termine"
           />
           <AdminStatCard
             label="Laufende Sitzungen"
@@ -580,7 +580,7 @@ export default async function AdminDashboard({
               value={summary.unpaidOrders}
               icon={Clock3}
               tone="amber"
-              hint="Offener Zahlungsbetrag groesser als 0"
+              hint="Offener Zahlungsbetrag größer als 0"
             />
           </div>
         )}
@@ -588,10 +588,10 @@ export default async function AdminDashboard({
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <AdminSectionCard
-          title="Letzte Auftraege"
-          description={`Schnellzugriff auf die zuletzt eingegangenen oder sichtbaren Auftraege.${
+          title="Letzte Aufträge"
+          description={`Schnellzugriff auf die zuletzt eingegangenen oder sichtbaren Aufträge.${
             !canViewAllReports
-              ? " Fuer Staff werden nur eigene zugewiesene Auftraege gezeigt."
+              ? " Für Staff werden nur eigene zugewiesene Aufträge gezeigt."
               : ""
           }`}
           icon={Package}
@@ -606,8 +606,8 @@ export default async function AdminDashboard({
             {recentOrders.length === 0 ? (
               <AdminEmptyState
                 icon={Package}
-                title="Keine aktuellen Auftraege vorhanden."
-                description="Sobald neue Auftraege eingehen, erscheinen sie hier als Schnellzugriff."
+                title="Keine aktuellen Aufträge vorhanden."
+                description="Sobald neue Aufträge eingehen, erscheinen sie hier als Schnellzugriff."
               />
             ) : (
               recentOrders.map((order) => (
@@ -671,7 +671,7 @@ export default async function AdminDashboard({
         </AdminSectionCard>
 
         <AdminSectionCard
-          title="Letzte Aktivitaeten"
+          title="Letzte Aktivitäten"
           description="Interne Notizen, Statuswechsel und Workflow-Ereignisse."
           icon={Activity}
           actions={
@@ -680,7 +680,7 @@ export default async function AdminDashboard({
                 href={`/admin/reports?month=${currentMonth.monthValue}`}
                 className={getAdminButtonClassName("ghost")}
               >
-                Reports
+                Auswertungen
                 <ArrowRight className="h-4 w-4" />
               </Link>
             ) : null
@@ -690,7 +690,7 @@ export default async function AdminDashboard({
             {recentActivities.length === 0 ? (
               <AdminEmptyState
                 icon={Activity}
-                title="Noch keine Aktivitaeten vorhanden."
+                title="Noch keine Aktivitäten vorhanden."
                 description="Statuswechsel und interne Aktionen erscheinen hier automatisch."
               />
             ) : (
@@ -794,7 +794,7 @@ export default async function AdminDashboard({
 
         <AdminSectionCard
           title="Laufende Arbeit"
-          description="Aktive Sitzungen und der naechste geplante Termin fuer die aktuelle Sicht."
+          description="Aktive Sitzungen und der nächste geplante Termin für die aktuelle Sicht."
           icon={Activity}
           actions={
             <Link href="/admin/appointments" className={getAdminButtonClassName("ghost")}>
@@ -808,7 +808,7 @@ export default async function AdminDashboard({
               <AdminEmptyState
                 icon={Activity}
                 title="Keine aktive Arbeitszeit"
-                description="Laufende Sitzungen oder der naechste Termin erscheinen hier automatisch."
+                description="Laufende Sitzungen oder der nächste Termin erscheinen hier automatisch."
               />
             ) : (
               <>
@@ -835,7 +835,7 @@ export default async function AdminDashboard({
                     className="block rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition-colors hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700 dark:hover:bg-slate-900"
                   >
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      Naechster Termin
+                      Nächster Termin
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
                       {upcomingAppointments[0].title}
@@ -860,8 +860,8 @@ export default async function AdminDashboard({
                 Eigene Monatslast
               </h2>
               <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Finanzsummen bleiben fuer Ihre Rolle eingeschraenkt. Offener Betrag
-                in Ihren sichtbaren Auftraegen:{" "}
+                Finanzsummen bleiben für Ihre Rolle eingeschränkt. Offener Betrag
+                in Ihren sichtbaren Aufträgen:{" "}
                 {formatCurrencyAmount(
                   myVisibleOrders.reduce((sum, order) => {
                     return order.isArchived ? sum : sum + getOrderOutstandingAmount(order);
@@ -874,8 +874,8 @@ export default async function AdminDashboard({
       )}
 
       <AdminSectionCard
-        title="Eigenes Passwort aendern"
-        description={`Verwenden Sie fuer den Admin-Zugang ein eigenes starkes Passwort mit mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.`}
+        title="Eigenes Passwort ändern"
+        description={`Verwenden Sie für den Admin-Zugang ein eigenes starkes Passwort mit mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen, Buchstaben und Zahlen.`}
         icon={UserCheck}
       >
         <form action={changeCurrentAdminPassword} className="grid gap-6 md:grid-cols-3">
@@ -904,7 +904,7 @@ export default async function AdminDashboard({
           </div>
           <div>
             <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-slate-100">
-              Neues Passwort bestaetigen
+              Neues Passwort bestätigen
             </label>
             <input
               name="confirmPassword"

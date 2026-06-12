@@ -8,21 +8,21 @@ import {
 const PROCESS_STEPS = [
   {
     icon: MousePointerClick,
-    title: "Produkt waehlen",
+    title: "Produkt wählen",
     description:
-      "Waehlen Sie die passende Leistung aus dem Katalog und starten Sie direkt im Konfigurator.",
+      "Wählen Sie die passende Leistung aus dem Katalog und starten Sie direkt im Konfigurator.",
   },
   {
     icon: Settings2,
     title: "Konfigurieren",
     description:
-      "Format, Materialien, Veredelungen und Pflichtangaben bleiben in einem klaren Ablauf gebuendelt.",
+      "Format, Materialien, Veredelungen und Pflichtangaben bleiben in einem klaren Ablauf gebündelt.",
   },
   {
     icon: Printer,
     title: "Produktion",
     description:
-      "Unsere Druckvorbereitung uebernimmt Ihre Daten, prueft Uploads und begleitet die Fertigung.",
+      "Unsere Druckvorbereitung übernimmt Ihre Daten, prüft Uploads und begleitet die Fertigung.",
   },
   {
     icon: Truck,

@@ -339,12 +339,12 @@ export default async function AdminAppointmentsPage({
           )}
           {params.forbidden && (
             <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
-              Fuer diese Aktion fehlen die erforderlichen Berechtigungen.
+              Für diese Aktion fehlen die erforderlichen Berechtigungen.
             </div>
           )}
           {params.reminderCheck && (
             <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200">
-              Erinnerungslauf abgeschlossen. Gesendet: {params.sent ?? 0}, uebersprungen:{" "}
+              Erinnerungslauf abgeschlossen. Gesendet: {params.sent ?? 0}, übersprungen:{" "}
               {params.skipped ?? 0}, fehlgeschlagen: {params.failed ?? 0}.
             </div>
           )}
@@ -379,7 +379,7 @@ export default async function AdminAppointmentsPage({
           description={
             canManageAllAppointments
               ? "Planen, erinnern und dokumentieren Sie Kundentermine inklusive Arbeitszeit."
-              : "Hier sehen Sie Ihre zugewiesenen Termine und koennen Ihre eigenen Arbeitssitzungen starten oder stoppen."
+              : "Hier sehen Sie Ihre zugewiesenen Termine und können Ihre eigenen Arbeitssitzungen starten oder stoppen."
           }
           actions={
             canManageAllAppointments ? (
@@ -551,7 +551,7 @@ export default async function AdminAppointmentsPage({
                 Filter anwenden
               </button>
               <Link href="/admin/appointments" className={getAdminButtonClassName("ghost")}>
-                Zuruecksetzen
+                Zurücksetzen
               </Link>
             </div>
           </form>

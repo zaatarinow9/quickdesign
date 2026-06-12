@@ -40,7 +40,7 @@ function OrderTimeline({ status }: { status: string }) {
   if (status === "CANCELED") {
     return (
       <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-6 text-sm leading-7 text-rose-700">
-        Dieser Auftrag wurde storniert. Bei Rueckfragen helfen wir Ihnen gerne
+        Dieser Auftrag wurde storniert. Bei Rückfragen helfen wir Ihnen gerne
         weiter.
       </div>
     );
@@ -142,7 +142,7 @@ export default function TrackOrderPage() {
 
   async function handleShowDetails(code: string) {
     if (!activeEmail) {
-      setEmailError("Bitte suchen Sie Ihre Auftraege zuerst ueber Ihre E-Mail-Adresse.");
+      setEmailError("Bitte suchen Sie Ihre Aufträge zuerst über Ihre E-Mail-Adresse.");
       return;
     }
 
@@ -178,7 +178,7 @@ export default function TrackOrderPage() {
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
             Geben Sie Ihre E-Mail-Adresse oder Ihren Tracking-Code ein, um Ihre
-            aktuellen Auftraege, Statusmeldungen und sichere Dokumente
+            aktuellen Aufträge, Statusmeldungen und sichere Dokumente
             einzusehen.
           </p>
         </div>
@@ -194,7 +194,7 @@ export default function TrackOrderPage() {
                   Mit Auftragsnummer suchen
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Fuer die Detailansicht benoetigen wir Ihren Code und Ihre
+                  Für die Detailansicht benötigen wir Ihren Code und Ihre
                   E-Mail-Adresse.
                 </p>
               </div>
@@ -221,7 +221,7 @@ export default function TrackOrderPage() {
                 {lookupLoading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Suche laeuft
+                    Suche läuft
                   </>
                 ) : (
                   <>
@@ -249,8 +249,8 @@ export default function TrackOrderPage() {
                   Mit E-Mail-Adresse suchen
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Sie sehen eine begrenzte Liste Ihrer letzten Auftraege und
-                  koennen anschliessend einzelne Details oeffnen.
+                  Sie sehen eine begrenzte Liste Ihrer letzten Aufträge und
+                  können anschließend einzelne Details öffnen.
                 </p>
               </div>
             </div>
@@ -271,11 +271,11 @@ export default function TrackOrderPage() {
                 {emailLoading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Auftraege werden geladen
+                    Aufträge werden geladen
                   </>
                 ) : (
                   <>
-                    Auftraege anzeigen
+                    Aufträge anzeigen
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -296,10 +296,10 @@ export default function TrackOrderPage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500">
-                    Auftragsuebersicht
+                    Auftragsübersicht
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                    Ihre letzten Auftraege
+                    Ihre letzten Aufträge
                   </h2>
                 </div>
                 {activeEmail ? (
@@ -360,10 +360,10 @@ export default function TrackOrderPage() {
               ) : (
                 <div className="mt-6 rounded-[28px] border border-dashed border-slate-300 bg-white px-6 py-8 text-center">
                   <p className="text-lg font-semibold text-slate-950">
-                    Keine Auftraege gefunden.
+                    Keine Aufträge gefunden.
                   </p>
                   <p className="mt-2 text-sm leading-7 text-slate-500">
-                    Bitte pruefen Sie Ihre E-Mail-Adresse oder nutzen Sie die
+                    Bitte prüfen Sie Ihre E-Mail-Adresse oder nutzen Sie die
                     Suche mit Tracking-Code.
                   </p>
                 </div>
@@ -420,7 +420,7 @@ export default function TrackOrderPage() {
                   </p>
                 </div>
                 <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 sm:p-6">
-                  <p className="text-sm font-medium text-slate-500">Naechster Schritt</p>
+                  <p className="text-sm font-medium text-slate-500">Nächster Schritt</p>
                   <p className="mt-3 text-sm leading-7 text-slate-700">
                     {selectedOrder.nextStep}
                   </p>
@@ -438,8 +438,8 @@ export default function TrackOrderPage() {
                         Dokumente
                       </h3>
                       <p className="mt-1 text-sm leading-6 text-slate-500">
-                        Diese Links sind signiert und nur fuer eine begrenzte Zeit
-                        gueltig.
+                        Diese Links sind signiert und nur für eine begrenzte Zeit
+                        gültig.
                       </p>
                     </div>
                   </div>

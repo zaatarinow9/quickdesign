@@ -52,7 +52,7 @@ export default async function AdminNewOrderPage({
         href="/admin/orders"
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zu Auftraegen
+        <ArrowLeft className="h-3 w-3" /> Zurück zu Aufträgen
       </Link>
 
       <div className="border-b border-neutral-100 pb-8">
@@ -76,12 +76,12 @@ export default async function AdminNewOrderPage({
       )}
       {params.error === "service" && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Mindestens eine gewaehlte Leistung ist nicht mehr verfuegbar.
+          Mindestens eine gewählte Leistung ist nicht mehr verfügbar.
         </div>
       )}
       {params.error === "assignee" && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Die gewaehlte Zuweisung ist ungueltig.
+          Die gewählte Zuweisung ist ungültig.
         </div>
       )}
 

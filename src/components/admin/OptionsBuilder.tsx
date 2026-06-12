@@ -128,10 +128,10 @@ const FIELD_TYPE_OPTIONS: {
   },
   {
     kind: "size",
-    label: "Groesse",
+    label: "Größe",
     storedAs: "size",
     usesValues: true,
-    description: "Kann jetzt explizit als Groessenfeld gespeichert werden, ohne auf Namens-Inferenz zu warten.",
+    description: "Kann jetzt explizit als Größenfeld gespeichert werden, ohne auf Namens-Inferenz zu warten.",
   },
   {
     kind: "textarea",
@@ -329,7 +329,7 @@ function getStoredTypeLabel(type: string): string {
     case "color":
       return "Farbwahl";
     case "size":
-      return "Groesse";
+      return "Größe";
     case "textarea":
       return "Langer Text";
     case "radio":

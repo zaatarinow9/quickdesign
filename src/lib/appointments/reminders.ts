@@ -97,7 +97,7 @@ function buildReminderEmailContent(appointment: AppointmentReminderTarget): {
   const lines = [
     `Hallo ${appointment.assignedUser?.name ?? "Team"},`,
     "",
-    `dies ist eine Erinnerung fuer den Termin "${appointment.title}".`,
+    `dies ist eine Erinnerung für den Termin "${appointment.title}".`,
     "",
     `Beginn: ${format(appointment.startAt, "dd.MM.yyyy HH:mm")}`,
     appointment.customer ? `Kunde: ${appointment.customer.name}` : null,
@@ -112,7 +112,7 @@ function buildReminderEmailContent(appointment: AppointmentReminderTarget): {
 
   const htmlParts = [
     `<p>Hallo ${escapeHtml(appointment.assignedUser?.name ?? "Team")},</p>`,
-    `<p>dies ist eine Erinnerung fuer den Termin "<strong>${escapeHtml(appointment.title)}</strong>".</p>`,
+    `<p>dies ist eine Erinnerung für den Termin "<strong>${escapeHtml(appointment.title)}</strong>".</p>`,
     "<ul>",
     `<li><strong>Beginn:</strong> ${format(appointment.startAt, "dd.MM.yyyy HH:mm")}</li>`,
     appointment.customer
@@ -129,9 +129,9 @@ function buildReminderEmailContent(appointment: AppointmentReminderTarget): {
       : "",
     "</ul>",
     appointmentLink
-      ? `<p><a href="${appointmentLink}">Termin im Adminbereich oeffnen</a></p>`
+      ? `<p><a href="${appointmentLink}">Termin im Adminbereich öffnen</a></p>`
       : "",
-    orderLink ? `<p><a href="${orderLink}">Auftrag oeffnen</a></p>` : "",
+    orderLink ? `<p><a href="${orderLink}">Auftrag öffnen</a></p>` : "",
     "<p>Bitte planen Sie den Termin entsprechend ein.</p>",
   ].filter((part) => part !== "");
 
@@ -210,7 +210,7 @@ export async function sendDueAppointmentReminders(
     if (!recipient) {
       result.skippedCount += 1;
       result.warnings.push(
-        `Termin ${appointment.title} konnte nicht versendet werden, weil dem Mitarbeiter keine gueltige E-Mail-Adresse zugeordnet ist.`,
+        `Termin ${appointment.title} konnte nicht versendet werden, weil dem Mitarbeiter keine gültige E-Mail-Adresse zugeordnet ist.`,
       );
       continue;
     }

@@ -122,5 +122,5 @@ export function buildServiceManagementSummary(
     return `Dieser Service nutzt ${pricingMeta.label.toLowerCase()} und erwartet ${uploadSummary.label.toLowerCase()}.`;
   }
 
-  return `Dieser Service nutzt ${pricingMeta.label.toLowerCase()} und benoetigt keine zusaetzlichen Kundendateien.`;
+  return `Dieser Service nutzt ${pricingMeta.label.toLowerCase()} und benötigt keine zusätzlichen Kundendateien.`;
 }

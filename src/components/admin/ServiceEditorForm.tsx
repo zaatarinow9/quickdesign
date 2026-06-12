@@ -180,7 +180,7 @@ function buildPreviewSentence(
     }.`;
   }
 
-  return `Dieser Service nutzt ${pricingPreview.modeLabel.toLowerCase()} und benoetigt keine zusaetzlichen Kundendateien.`;
+  return `Dieser Service nutzt ${pricingPreview.modeLabel.toLowerCase()} und benötigt keine zusätzlichen Kundendateien.`;
 }
 
 function buildFlowPreviewItems(
@@ -340,7 +340,7 @@ export default function ServiceEditorForm({
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/80">
             <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
-              Kurzuebersicht
+              Kurzübersicht
             </p>
             <p className="mt-3 text-lg font-semibold text-slate-950 dark:text-slate-50">
               {name.trim() || "Unbenannte Leistung"}
@@ -638,14 +638,14 @@ export default function ServiceEditorForm({
                       Status
                     </p>
                     <p className="mt-3 text-sm font-medium leading-7 text-slate-700 dark:text-slate-200">
-                      Bestehende Services bleiben vollstaendig kompatibel.
+                      Bestehende Services bleiben vollständig kompatibel.
                     </p>
                   </div>
                 </div>
               </div>
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-950/80">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                  Naechster Schritt
+                  Nächster Schritt
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   Oeffnen Sie den bestehenden Options-Builder, um Pflichtfelder,
@@ -656,15 +656,15 @@ export default function ServiceEditorForm({
                   className={`${getAdminButtonClassName("primary")} mt-5`}
                 >
                   <Layers3 className="h-4 w-4" />
-                  Kundenoptionen oeffnen
+                  Kundenoptionen öffnen
                 </Link>
               </div>
             </div>
           ) : (
             <AdminEmptyState
               icon={Layers3}
-              title="Kundenoptionen sind nach dem ersten Speichern verfuegbar."
-              description="Speichern Sie die neue Leistung zuerst. Danach koennen Sie Auswahlfelder, Pflichtangaben und Preisaufschlaege sauber verwalten."
+              title="Kundenoptionen sind nach dem ersten Speichern verfügbar."
+              description="Speichern Sie die neue Leistung zuerst. Danach können Sie Auswahlfelder, Pflichtangaben und Preisaufschläge sauber verwalten."
             />
           )}
         </AdminCard>
@@ -750,7 +750,7 @@ export default function ServiceEditorForm({
               <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
                 {optionsHref
                   ? "Select-, Radio-, Text- und Zahlenfelder werden weiterhin separat gepflegt."
-                  : "Nach dem ersten Speichern koennen Sie die Kundenoptionen direkt ergaenzen."}
+                  : "Nach dem ersten Speichern können Sie die Kundenoptionen direkt ergänzen."}
               </p>
               {optionsHref && (
                 <Link

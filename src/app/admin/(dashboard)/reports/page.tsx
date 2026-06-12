@@ -167,9 +167,9 @@ export default async function AdminReportsPage({
     <div className="space-y-8">
       <AdminCard className="p-6 md:p-8">
         <AdminPageHeader
-          eyebrow="Reports"
-          title={`Monatsuebersicht ${monthRange.monthLabel}`}
-          description="Kennzahlen, Zahlungsstatus, Services und Teamlast fuer den ausgewaehlten Monat."
+          eyebrow="Auswertungen"
+          title={`Monatsübersicht ${monthRange.monthLabel}`}
+          description="Kennzahlen, Zahlungsstatus, Leistungen und Teamlast für den ausgewählten Monat."
           actions={
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <Link
@@ -193,7 +193,7 @@ export default async function AdminReportsPage({
                 href={`/admin/reports?month=${nextMonthValue}`}
                 className={getAdminButtonClassName("secondary")}
               >
-                Naechster Monat
+                Nächster Monat
               </Link>
             </div>
           }
@@ -201,39 +201,39 @@ export default async function AdminReportsPage({
 
         {!canViewAllReports && (
           <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            Fuer Ihre Rolle werden nur eigene zugewiesene Auftraege und operative
+            Für Ihre Rolle werden nur eigene zugewiesene Aufträge und operative
             Kennzahlen angezeigt. Finanzsummen des Gesamtunternehmens bleiben verborgen.
           </div>
         )}
 
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdminStatCard
-            label={canViewAllReports ? "Auftraege im Monat" : "Meine Auftraege"}
+            label={canViewAllReports ? "Aufträge im Monat" : "Meine Aufträge"}
             value={summary.totalOrders}
             tone="slate"
             icon={Package}
             hint={monthRange.monthValue}
           />
           <AdminStatCard
-            label="Offene Auftraege"
+            label="Offene Aufträge"
             value={summary.openOrders}
             tone="amber"
             icon={BarChart3}
             hint="Nicht abgeschlossen oder storniert"
           />
           <AdminStatCard
-            label="Erledigte Auftraege"
+            label="Erledigte Aufträge"
             value={summary.completedOrders}
             tone="emerald"
             icon={CreditCard}
             hint="Zugestellt oder intern erledigt"
           />
           <AdminStatCard
-            label="Archivfaelle"
+            label="Archivfälle"
             value={archivedOrdersCount}
             tone="purple"
             icon={FolderArchive}
-            hint="Im gewaehlten Monat"
+            hint="Im gewählten Monat"
           />
         </div>
 
@@ -252,17 +252,17 @@ export default async function AdminReportsPage({
         <AdminCard className="p-12 text-center">
           <Package className="mx-auto h-14 w-14 text-slate-300 dark:text-slate-600" />
           <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-            Keine Auftraege fuer diesen Monat vorhanden
+            Keine Aufträge für diesen Monat vorhanden
           </p>
         </AdminCard>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
             <ReportTableSection
-              title="Auftraege nach Status"
-              description="Verteilung der Auftraege nach Hauptstatus im ausgewaehlten Monat."
+              title="Aufträge nach Status"
+              description="Verteilung der Aufträge nach Hauptstatus im ausgewählten Monat."
             >
-              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
@@ -309,10 +309,10 @@ export default async function AdminReportsPage({
             </ReportTableSection>
 
             <ReportTableSection
-              title="Auftraege nach Zahlung"
-              description="Zahlungsstand der Auftraege im ausgewaehlten Zeitraum."
+              title="Aufträge nach Zahlung"
+              description="Zahlungsstand der Aufträge im ausgewählten Zeitraum."
             >
-              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
@@ -363,9 +363,9 @@ export default async function AdminReportsPage({
             <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
               <ReportTableSection
                 title="Top Services"
-                description="Leistungen mit dem hoechsten Netto-Umsatz im Monat."
+                description="Leistungen mit dem höchsten Netto-Umsatz im Monat."
               >
-                <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left">
                     <thead className="bg-slate-50 dark:bg-slate-950/70">
                       <tr>
@@ -373,7 +373,7 @@ export default async function AdminReportsPage({
                           Service
                         </th>
                         <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                          Auftraege
+                          Aufträge
                         </th>
                         <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Menge
@@ -407,9 +407,9 @@ export default async function AdminReportsPage({
 
               <ReportTableSection
                 title="Top Kunden"
-                description="Kunden mit dem hoechsten Brutto-Umsatz im Monat."
+                description="Kunden mit dem höchsten Brutto-Umsatz im Monat."
               >
-                <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left">
                     <thead className="bg-slate-50 dark:bg-slate-950/70">
                       <tr>
@@ -420,7 +420,7 @@ export default async function AdminReportsPage({
                           Firma
                         </th>
                         <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                          Auftraege
+                          Aufträge
                         </th>
                         <th className="p-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                           Brutto
@@ -453,14 +453,14 @@ export default async function AdminReportsPage({
 
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
             <ReportTableSection
-              title="Staff Workload"
+              title="Teamauslastung"
               description={
                 canViewAllReports
-                  ? "Auswertung je aktivem Admin oder Staff-Mitglied auf Basis zugewiesener Auftraege."
-                  : "Ihre persoenliche Monatslast auf Basis zugewiesener Auftraege."
+                  ? "Auswertung je aktivem Admin oder Staff-Mitglied auf Basis zugewiesener Aufträge."
+                  : "Ihre persönliche Monatslast auf Basis zugewiesener Aufträge."
               }
             >
-              <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-950/70">
                     <tr>
@@ -549,7 +549,7 @@ export default async function AdminReportsPage({
                       Zahlungslage
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
-                      {summary.unpaidOrders} Auftraege mit offenem Betrag
+                      {summary.unpaidOrders} Aufträge mit offenem Betrag
                     </p>
                     {canViewAllReports && (
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -566,7 +566,7 @@ export default async function AdminReportsPage({
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
                       {workloadRows.reduce((sum, row) => sum + row.openAssignedOrdersCount, 0)}{" "}
-                      offene zugewiesene Auftraege
+                      offene zugewiesene Aufträge
                     </p>
                   </div>
                 </div>
@@ -577,11 +577,11 @@ export default async function AdminReportsPage({
                       Archiv
                     </p>
                     <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
-                      {archivedOrdersCount} archivierte Auftraege im Monat
+                      {archivedOrdersCount} archivierte Aufträge im Monat
                     </p>
                     <p className="mt-1 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                      Archivierte Auftraege bleiben in Reports sichtbar, sind aber
-                      standardmaessig aus der Listenansicht ausgeblendet.
+                      Archivierte Aufträge bleiben in Auswertungen sichtbar, sind aber
+                      standardmäßig aus der Listenansicht ausgeblendet.
                     </p>
                   </div>
                 </div>

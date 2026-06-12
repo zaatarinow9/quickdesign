@@ -7,7 +7,7 @@ import { getCurrentAdminUser } from "@/lib/admin/auth";
 function getLoginErrorMessage(errorCode: string | undefined): string | null {
   switch (errorCode) {
     case "config":
-      return "Admin-Sitzungen sind aktuell nicht korrekt konfiguriert. Bitte ADMIN_SESSION_SECRET pruefen.";
+      return "Admin-Sitzungen sind aktuell nicht korrekt konfiguriert. Bitte ADMIN_SESSION_SECRET prüfen.";
     case "inactive":
       return "Dieser Benutzer ist deaktiviert.";
     case "invalid":
@@ -40,16 +40,16 @@ export default async function AdminLoginPage({
             <LogoMark
               href="/"
               size="compact"
-              frameClassName="border-white/20 bg-white shadow-[0_20px_60px_rgba(2,6,23,0.3)]"
+              frameClassName="bg-transparent"
             />
             <p className="mt-8 text-xs font-semibold tracking-[0.12em] text-sky-200">
               Admin Login
             </p>
             <h1 className="mt-4 max-w-sm text-4xl font-semibold tracking-tight">
-              Sicherer Zugriff auf Auftraege, Services und Team.
+              Sicherer Zugriff auf Aufträge, Leistungen und Team.
             </h1>
             <p className="mt-6 max-w-md text-sm leading-7 text-slate-200">
-              Verwenden Sie ausschliesslich Ihren internen Admin-Zugang. Inaktive
+              Verwenden Sie ausschließlich Ihren internen Admin-Zugang. Inaktive
               Benutzer werden automatisch blockiert.
             </p>
           </section>
@@ -64,7 +64,7 @@ export default async function AdminLoginPage({
                 <ThemeToggle />
               </div>
               <h2 className="mt-8 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-                Willkommen zurueck
+                Willkommen zurück
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">
                 Melden Sie sich mit Benutzername oder E-Mail-Adresse an.

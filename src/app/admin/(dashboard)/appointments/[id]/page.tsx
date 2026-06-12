@@ -231,7 +231,7 @@ export default async function AppointmentDetailsPage({
         href="/admin/appointments"
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-950 dark:text-slate-500 dark:hover:text-white"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zu Termine
+        <ArrowLeft className="h-3 w-3" /> Zurück zu Terminen
       </Link>
 
       {(pageParams.created ||
@@ -274,7 +274,7 @@ export default async function AppointmentDetailsPage({
           )}
           {pageParams.forbidden && (
             <div className="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">
-              Fuer diese Aktion fehlen die erforderlichen Berechtigungen.
+              Für diese Aktion fehlen die erforderlichen Berechtigungen.
             </div>
           )}
         </div>
@@ -382,7 +382,7 @@ export default async function AppointmentDetailsPage({
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <AdminSectionCard
           title="Arbeitszeit"
-          description="Sitzungen koennen direkt am Termin gestartet und gestoppt werden."
+          description="Sitzungen können direkt am Termin gestartet und gestoppt werden."
           icon={Clock3}
           actions={
             runningSession ? (

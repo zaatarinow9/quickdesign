@@ -115,7 +115,7 @@ export function OrderDocumentEmailForm({
           </p>
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
             Der Versand nutzt einen sicheren Dokumentlink. Der PDF-Download erfolgt
-            weiterhin ueber die Browser-Druckansicht.
+            weiterhin über die Browser-Druckansicht.
           </p>
         </div>
       </div>

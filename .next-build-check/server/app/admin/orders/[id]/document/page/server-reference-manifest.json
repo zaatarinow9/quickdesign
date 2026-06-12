@@ -1,0 +1,17 @@
+{
+  "node": {
+    "60be072e793a167ccf76f8b19c11a40df73dfdf64b": {
+      "workers": {
+        "app/admin/orders/[id]/document/page": {
+          "moduleId": 47573,
+          "async": false,
+          "exportedName": "sendOrderDocumentEmail",
+          "filename": "src/app/actions/order-document.ts"
+        }
+      },
+      "exportedName": "sendOrderDocumentEmail",
+      "filename": "src/app/actions/order-document.ts"
+    }
+  },
+  "edge": {}
+}

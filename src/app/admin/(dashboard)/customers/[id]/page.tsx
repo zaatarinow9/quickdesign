@@ -185,7 +185,7 @@ export default async function CustomerDetailsPage({
         href="/admin/customers"
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zu Kunden
+        <ArrowLeft className="h-3 w-3" /> Zurück zu Kunden
       </Link>
 
       {pageParams.created && (
@@ -330,7 +330,7 @@ export default async function CustomerDetailsPage({
           <div className="grid grid-cols-1 gap-4">
             <div className="border border-neutral-100 bg-neutral-50 p-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Auftraege
+                Aufträge
               </p>
               <p className="mt-3 text-3xl font-bold tracking-tighter text-neutral-950">
                 {customer._count.orders}
@@ -499,7 +499,7 @@ export default async function CustomerDetailsPage({
 
       <div className="border border-neutral-200 bg-white p-8 shadow-sm">
         <h2 className="mb-6 text-xs font-bold uppercase tracking-widest text-neutral-400">
-          Auftraege
+          Aufträge
         </h2>
 
         <div className="space-y-4">
@@ -553,7 +553,7 @@ export default async function CustomerDetailsPage({
 
           {customer.orders.length === 0 && (
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-300">
-              Fuer diesen Kunden gibt es noch keine Auftraege.
+              Für diesen Kunden gibt es noch keine Aufträge.
             </p>
           )}
         </div>

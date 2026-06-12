@@ -1,0 +1,101 @@
+{
+  "node": {
+    "00d9411aa2eff3543ffc48248d435a4542451a5b09": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "logoutAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "logoutAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40f91169c927d6b01ffdf0cdaf940a39d53a19b10c": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "loginAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "loginAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "0060cb0531f501e9e4c141f1c93a0205e2ac62be79": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "runAppointmentReminderCheck",
+          "filename": "src/app/actions/appointments.ts"
+        }
+      },
+      "exportedName": "runAppointmentReminderCheck",
+      "filename": "src/app/actions/appointments.ts"
+    },
+    "40c2bae83b9d5c30ff2301c2a4b5b8061c30e9ef92": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "updateAppointmentStatus",
+          "filename": "src/app/actions/appointments.ts"
+        }
+      },
+      "exportedName": "updateAppointmentStatus",
+      "filename": "src/app/actions/appointments.ts"
+    },
+    "40ef637cfd4631e0b78668e0a21375d06414cedf66": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "updateAppointment",
+          "filename": "src/app/actions/appointments.ts"
+        }
+      },
+      "exportedName": "updateAppointment",
+      "filename": "src/app/actions/appointments.ts"
+    },
+    "40ffb019224ce599275b17697a4a029a58848b797c": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "createAppointment",
+          "filename": "src/app/actions/appointments.ts"
+        }
+      },
+      "exportedName": "createAppointment",
+      "filename": "src/app/actions/appointments.ts"
+    },
+    "402fb6e65063005e02964a18fb8808a05f4c54b825": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "stopWorkSession",
+          "filename": "src/app/actions/work-sessions.ts"
+        }
+      },
+      "exportedName": "stopWorkSession",
+      "filename": "src/app/actions/work-sessions.ts"
+    },
+    "4090edd34a2e50aef2c8709475ac2b8629edb70ea2": {
+      "workers": {
+        "app/admin/(dashboard)/appointments/page": {
+          "moduleId": 95360,
+          "async": false,
+          "exportedName": "startWorkSession",
+          "filename": "src/app/actions/work-sessions.ts"
+        }
+      },
+      "exportedName": "startWorkSession",
+      "filename": "src/app/actions/work-sessions.ts"
+    }
+  },
+  "edge": {}
+}

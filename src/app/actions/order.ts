@@ -1290,7 +1290,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       orderId: order.id,
       adminUserId: null,
       type: "CHECKOUT_CREATED",
-      message: "Neue Bestellung wurde ueber den Checkout angelegt.",
+      message: "Neue Bestellung wurde über den Checkout angelegt.",
     });
 
     await sendCheckoutOrderConfirmationEmail({
@@ -1582,7 +1582,7 @@ export async function updateOrderStatus(formData: FormData) {
     orderId,
     adminUserId: currentUser.id,
     type: "STATUS_UPDATED",
-    message: `Status: ${order.status} -> ${status}; intern: ${order.internalStatus} -> ${internalStatus}; Prioritaet: ${order.priority} -> ${priority}`,
+    message: `Status: ${order.status} -> ${status}; intern: ${order.internalStatus} -> ${internalStatus}; Priorität: ${order.priority} -> ${priority}`,
   });
 
   revalidateOrderAdminViews(orderId);
@@ -1808,7 +1808,7 @@ export async function claimOrder(formData: FormData): Promise<void> {
     orderId,
     adminUserId: currentUser.id,
     type: "CLAIMED",
-    message: `${currentUser.name} hat den Auftrag uebernommen.`,
+    message: `${currentUser.name} hat den Auftrag übernommen.`,
   });
 
   revalidateOrderAdminViews(orderId);
@@ -1939,7 +1939,7 @@ function getPublicOrderNextStep(status: string): string {
     case "DELIVERED":
       return "Ihr Auftrag wurde zugestellt.";
     case "CANCELED":
-      return "Dieser Auftrag wurde storniert. Bei Rueckfragen helfen wir Ihnen gern weiter.";
+      return "Dieser Auftrag wurde storniert. Bei Rückfragen helfen wir Ihnen gern weiter.";
     default:
       return "Ihr Auftrag wird aktuell bearbeitet.";
   }

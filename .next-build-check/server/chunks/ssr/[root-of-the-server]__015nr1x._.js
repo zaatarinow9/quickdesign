@@ -1,0 +1,27 @@
+module.exports=[64433,a=>{a.v({className:"inter_5972bc34-module__OU16Qa__className"})},18890,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/layout/Footer.tsx <module evaluation> from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/layout/Footer.tsx <module evaluation>","default")},29174,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/layout/Footer.tsx from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/layout/Footer.tsx","default")},1514,a=>{"use strict";a.i(18890);var b=a.i(29174);a.n(b)},64814,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/layout/Header.tsx <module evaluation> from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/layout/Header.tsx <module evaluation>","default")},60079,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/layout/Header.tsx from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/layout/Header.tsx","default")},78147,a=>{"use strict";a.i(64814);var b=a.i(60079);a.n(b)},79604,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/theme/ThemeBridge.tsx <module evaluation> from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/theme/ThemeBridge.tsx <module evaluation>","default")},16987,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(11857).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/src/components/theme/ThemeBridge.tsx from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/src/components/theme/ThemeBridge.tsx","default")},21497,a=>{"use strict";a.i(79604);var b=a.i(16987);a.n(b)},27572,a=>{"use strict";var b=a.i(7997),c=a.i(5246),d=a.i(64433);let e={className:d.default.className,style:{fontFamily:"'Inter', 'Inter Fallback'",fontStyle:"normal"}};null!=d.default.variable&&(e.variable=d.default.variable);var f=a.i(1514),g=a.i(78147),h=a.i(27697),i=a.i(21497);function j(){return(0,b.jsx)("script",{dangerouslySetInnerHTML:{__html:`(() => {
+    const storageKey = ${JSON.stringify("qd-admin-theme")};
+    const normalizePreference = (value) => {
+      switch (value) {
+        case "light":
+        case "dark":
+        case "system":
+          return value;
+        default:
+          return "system";
+      }
+    };
+    const isAdminPath = (pathname) =>
+      typeof pathname === "string" && pathname.startsWith("/admin");
+    const getSystemTheme = () =>
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const preference = normalizePreference(window.localStorage.getItem(storageKey));
+    const resolvedTheme = preference === "system" ? getSystemTheme() : preference;
+    const shouldUseAdminTheme = isAdminPath(window.location.pathname);
+    const root = document.documentElement;
+    root.dataset.themePreference = preference;
+    root.dataset.themeResolved = shouldUseAdminTheme ? resolvedTheme : "light";
+    root.classList.toggle("dark", shouldUseAdminTheme && resolvedTheme === "dark");
+    root.style.colorScheme = shouldUseAdminTheme ? resolvedTheme : "light";
+  })();`}})}let k={metadataBase:new URL("https://quickdesign24.de"),title:{default:"QuickDesign",template:"%s | QuickDesign"},description:"QuickDesign begleitet Druck, Werbetechnik und Bestellungen mit klaren Online-Konfiguratoren und sauberem Checkout.",icons:{icon:"/logo.png",shortcut:"/logo.png",apple:"/logo.png"}};async function l({children:a}){let d="1"===(await (0,c.headers)()).get(h.HIDE_PUBLIC_CHROME_HEADER);return(0,b.jsxs)("html",{lang:"de",suppressHydrationWarning:!0,children:[(0,b.jsx)("head",{children:(0,b.jsx)(j,{})}),(0,b.jsxs)("body",{suppressHydrationWarning:!0,className:`${e.className} flex min-h-screen flex-col overflow-x-hidden bg-slate-50 text-slate-950`,children:[(0,b.jsx)(i.default,{}),d?null:(0,b.jsx)(g.default,{}),(0,b.jsx)("main",{className:"flex min-w-0 flex-1 flex-col",children:a}),d?null:(0,b.jsx)(f.default,{})]})]})}a.s(["default",0,l,"metadata",0,k],27572)},50645,a=>{a.n(a.i(27572))}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__015nr1x._.js.map

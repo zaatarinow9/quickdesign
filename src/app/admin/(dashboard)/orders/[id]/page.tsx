@@ -249,7 +249,7 @@ function OrderSnapshotDetails({
       {snapshot.area && (
         <div className="border border-neutral-200 bg-white p-6">
           <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-950">
-            Flaechenberechnung
+            Flächenberechnung
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-xs font-bold text-neutral-600">
@@ -266,7 +266,7 @@ function OrderSnapshotDetails({
             </div>
             <div className="text-xs font-bold text-neutral-600">
               <span className="block text-[9px] uppercase text-neutral-400">
-                Flaeche
+                Fläche
               </span>
               {snapshot.area.areaSqm.toFixed(3)} m2
             </div>
@@ -348,7 +348,7 @@ function OrderSnapshotDetails({
                     {file.originalName}
                   </span>
                   <div className="flex flex-wrap gap-3 text-[11px] text-neutral-500">
-                    <span>Groesse: {formatFileSize(file.size)}</span>
+                    <span>Größe: {formatFileSize(file.size)}</span>
                     <span>Typ: {file.contentType ?? "Unbekannt"}</span>
                     <span>
                       Upload:
@@ -600,12 +600,12 @@ export default async function OrderDetailsPage({
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="admin-legacy-skin mx-auto max-w-7xl space-y-8">
       <Link
         href="/admin/orders"
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zur Uebersicht
+        <ArrowLeft className="h-3 w-3" /> Zurück zur Übersicht
       </Link>
 
       {pageParams.created && (
@@ -625,12 +625,12 @@ export default async function OrderDetailsPage({
       )}
       {pageParams.archiveError && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Archivieren ist erst moeglich, wenn der Auftrag abgeschlossen oder storniert ist.
+          Archivieren ist erst möglich, wenn der Auftrag abgeschlossen oder storniert ist.
         </div>
       )}
       {pageParams.forbidden && (
         <div className="border border-red-100 bg-red-50 p-4 text-xs font-bold uppercase tracking-widest text-red-700">
-          Sie haben fuer diese Aktion keine Berechtigung.
+          Sie haben für diese Aktion keine Berechtigung.
         </div>
       )}
       {pageParams.sessionStarted && (
@@ -645,7 +645,7 @@ export default async function OrderDetailsPage({
       )}
       {pageParams.sessionError === "running" && (
         <div className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold uppercase tracking-widest text-amber-800">
-          Es laeuft bereits eine andere Sitzung fuer diesen Benutzer.
+          Es läuft bereits eine andere Sitzung für diesen Benutzer.
         </div>
       )}
       {isArchivedOrder && (
@@ -654,8 +654,8 @@ export default async function OrderDetailsPage({
             Archivierter Auftrag
           </p>
           <p className="mt-2 font-medium">
-            Dieser Auftrag befindet sich im Archiv und bleibt in der Admin-Oberflaeche
-            schreibgeschuetzt.
+            Dieser Auftrag befindet sich im Archiv und bleibt in der Admin-Oberfläche
+            schreibgeschützt.
           </p>
           {(order.archivedAt || order.archivedBy) && (
             <p className="mt-2 text-xs font-bold uppercase tracking-widest text-amber-700">
@@ -694,9 +694,9 @@ export default async function OrderDetailsPage({
               Dokumente
             </p>
             <p className="mt-2 text-sm text-neutral-600">
-              Rechnung, Angebot und Auftrag bleiben auch fuer archivierte Auftraege
+              Rechnung, Angebot und Auftrag bleiben auch für archivierte Aufträge
               abrufbar. "PDF herunterladen" nutzt in Phase 8B den Browser-Dialog
-              "Als PDF speichern", damit Layout und Druck moeglichst stabil bleiben.
+              "Als PDF speichern", damit Layout und Druck möglichst stabil bleiben.
             </p>
           </div>
 
@@ -711,7 +711,7 @@ export default async function OrderDetailsPage({
                     {documentLink.label}
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    Professionelle Druckansicht fuer{" "}
+                    Professionelle Druckansicht für{" "}
                     {documentLink.label.toLowerCase()}.
                   </p>
                 </div>
@@ -786,7 +786,7 @@ export default async function OrderDetailsPage({
                   href={`/admin/customers/${order.customer.id}`}
                   className="inline-flex items-center gap-2 pt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
                 >
-                  Kundenprofil oeffnen
+                  Kundenprofil öffnen
                 </Link>
               </div>
             )}
@@ -847,14 +847,14 @@ export default async function OrderDetailsPage({
                 type="submit"
                 className="w-full bg-neutral-950 p-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-neutral-800"
               >
-                Auftrag uebernehmen
+                Auftrag übernehmen
               </button>
             </form>
           )}
 
           {isArchivedOrder && (
             <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
-              Archivierte Auftraege koennen nicht neu zugewiesen oder uebernommen werden.
+              Archivierte Aufträge können nicht neu zugewiesen oder übernommen werden.
             </p>
           )}
         </div>
@@ -874,7 +874,7 @@ export default async function OrderDetailsPage({
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Prioritaet
+                Priorität
               </p>
               <p className="mt-2 text-sm font-bold text-neutral-950">
                 {order.priority}
@@ -903,8 +903,8 @@ export default async function OrderDetailsPage({
           </div>
           {!canEditOrder && (
             <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
-              Statusaenderungen sind nur fuer Super Admins oder den zugewiesenen
-              Mitarbeiter moeglich.
+              Statusänderungen sind nur für Super Admins oder den zugewiesenen
+              Mitarbeiter möglich.
             </p>
           )}
           {canArchiveCurrentOrder && (
@@ -931,7 +931,7 @@ export default async function OrderDetailsPage({
           )}
           {!isArchivedOrder && canUseArchiveWorkflow && !canArchiveCurrentOrder && (
             <p className="text-xs font-bold leading-relaxed text-neutral-500">
-              Archivierung ist verfuegbar, sobald der Auftrag abgeschlossen oder
+              Archivierung ist verfügbar, sobald der Auftrag abgeschlossen oder
               storniert wurde.
             </p>
           )}
@@ -982,7 +982,7 @@ export default async function OrderDetailsPage({
                 className="w-full border border-neutral-200 bg-neutral-50 p-4 text-xs font-bold uppercase tracking-widest outline-none focus:border-neutral-950"
               >
                 <option value="NEW">Neu</option>
-                <option value="IN_REVIEW">In Pruefung</option>
+                <option value="IN_REVIEW">In Prüfung</option>
                 <option value="IN_PRODUCTION">In Produktion</option>
                 <option value="WAITING_CUSTOMER">Wartet auf Kunde</option>
                 <option value="READY">Bereit</option>
@@ -991,7 +991,7 @@ export default async function OrderDetailsPage({
             </div>
             <div className="space-y-3">
               <label className="block text-[10px] font-bold uppercase tracking-widest">
-                Prioritaet
+                Priorität
               </label>
               <select
                 name="priority"
@@ -1027,7 +1027,7 @@ export default async function OrderDetailsPage({
           </form>
           {isArchivedOrder && (
             <p className="border border-amber-100 bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700">
-              Archivierte Auftraege koennen nicht mehr in Status oder Tracking
+              Archivierte Aufträge können nicht mehr in Status oder Tracking
               veraendert werden.
             </p>
           )}
@@ -1056,12 +1056,12 @@ export default async function OrderDetailsPage({
             </form>
           ) : isArchivedOrder ? (
             <p className="text-xs font-bold leading-relaxed text-neutral-500">
-              Archivierte Auftraege bleiben im Verlauf sichtbar, koennen aber nicht
+              Archivierte Aufträge bleiben im Verlauf sichtbar, können aber nicht
               mehr mit neuen internen Notizen erweitert werden.
             </p>
           ) : (
             <p className="text-xs font-bold leading-relaxed text-neutral-500">
-              Uebernehmen Sie den Auftrag zuerst oder lassen Sie ihn durch einen
+              Übernehmen Sie den Auftrag zuerst oder lassen Sie ihn durch einen
               Super Admin zuweisen.
             </p>
           )}
@@ -1303,7 +1303,7 @@ export default async function OrderDetailsPage({
                 name="customerNotes"
                 rows={4}
                 defaultValue={order.customerNotes ?? ""}
-                placeholder="Hinweis fuer Kunde / Angebot / Rechnung"
+                placeholder="Hinweis für Kunde / Angebot / Rechnung"
                 className="w-full resize-none border border-neutral-200 bg-neutral-50 p-4 text-sm outline-none focus:border-neutral-950"
               />
               <textarea
@@ -1323,12 +1323,12 @@ export default async function OrderDetailsPage({
             </form>
           ) : isArchivedOrder ? (
             <p className="text-sm leading-7 text-neutral-500">
-              Archivierte Auftraege sind finanziell eingefroren. Stellen Sie den
+              Archivierte Aufträge sind finanziell eingefroren. Stellen Sie den
               Auftrag erst wieder her, wenn weitere Anpassungen notwendig sind.
             </p>
           ) : (
             <p className="text-sm leading-7 text-neutral-500">
-              Diese Felder koennen nur von Super Admins und Admins mit
+              Diese Felder können nur von Super Admins und Admins mit
               Finanzfreigabe bearbeitet werden.
             </p>
           )}
@@ -1446,7 +1446,7 @@ export default async function OrderDetailsPage({
                 Terminverlauf
               </h2>
               <p className="mt-2 text-sm text-neutral-600">
-                Kommende, abgeschlossene und stornierte Termine fuer diesen Auftrag.
+                Kommende, abgeschlossene und stornierte Termine für diesen Auftrag.
               </p>
             </div>
             <Link
@@ -1474,7 +1474,7 @@ export default async function OrderDetailsPage({
                   orderNumber: order.orderNumber,
                   workSessions: appointment.workSessions,
                 }))}
-                emptyMessage="Keine kommenden Termine fuer diesen Auftrag."
+                emptyMessage="Keine kommenden Termine für diesen Auftrag."
               />
             </div>
             <div>
@@ -1493,7 +1493,7 @@ export default async function OrderDetailsPage({
                   orderNumber: order.orderNumber,
                   workSessions: appointment.workSessions,
                 }))}
-                emptyMessage="Noch keine Termin-Historie fuer diesen Auftrag."
+                emptyMessage="Noch keine Termin-Historie für diesen Auftrag."
               />
             </div>
           </div>
@@ -1506,7 +1506,7 @@ export default async function OrderDetailsPage({
                 Arbeitsverlauf
               </h2>
               <p className="mt-2 text-sm text-neutral-600">
-                Gearbeitete Zeit fuer diesen Auftrag: {formatWorkDuration(orderWorkMinutes)}.
+                Gearbeitete Zeit für diesen Auftrag: {formatWorkDuration(orderWorkMinutes)}.
               </p>
             </div>
             {(currentRunningSession?.orderId === order.id ||
@@ -1551,7 +1551,7 @@ export default async function OrderDetailsPage({
               orderNumber: order.orderNumber,
               notes: session.notes,
             }))}
-            emptyMessage="Noch keine Arbeitssitzungen fuer diesen Auftrag vorhanden."
+            emptyMessage="Noch keine Arbeitssitzungen für diesen Auftrag vorhanden."
           />
         </div>
       </div>
@@ -1589,7 +1589,7 @@ export default async function OrderDetailsPage({
 
           {order.activities.length === 0 && (
             <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-300">
-              Noch keine internen Aktivitaeten vorhanden.
+              Noch keine internen Aktivitäten vorhanden.
             </p>
           )}
         </div>

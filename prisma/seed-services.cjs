@@ -77,7 +77,7 @@ const SERVICES = [
     slug: "t-shirt-druck",
     name: "T-Shirt Druck",
     description:
-      "Individuell bedruckte T-Shirts fuer Teams, Events und Unternehmen. Waehlen Sie Groesse, Farbe und Druckseite und laden Sie Ihre Motive direkt hoch.",
+      "Individuell bedruckte T-Shirts für Teams, Events und Unternehmen. Wählen Sie Größe, Farbe und Druckseite und laden Sie Ihre Motive direkt hoch.",
     image:
       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1600&auto=format&fit=crop",
     basePrice: 14.9,
@@ -103,8 +103,8 @@ const SERVICES = [
         }),
         createUploadField({
           key: "back_design",
-          label: "Rueckenmotiv",
-          helperText: "Optional, falls auch die Rueckseite bedruckt werden soll.",
+          label: "Rückenmotiv",
+          helperText: "Optional, falls auch die Rückseite bedruckt werden soll.",
           required: false,
           allowedFileTypesText: "pdf, ai, eps, png, jpg",
           accept: ".pdf,.ai,.eps,.png,.jpg,.jpeg",
@@ -129,7 +129,7 @@ const SERVICES = [
     options: [
       createOption({
         key: "size",
-        name: "Groesse",
+        name: "Größe",
         type: "size",
         order: 10,
         pricingMode: "included",
@@ -164,8 +164,8 @@ const SERVICES = [
         pricingMode: "additive",
         values: [
           createOptionValue("Vorderseite", 0, 1),
-          createOptionValue("Rueckseite", 0, 2),
-          createOptionValue("Vorder- und Rueckseite", 8, 3),
+          createOptionValue("Rückseite", 0, 2),
+          createOptionValue("Vorder- und Rückseite", 8, 3),
         ],
       }),
     ],
@@ -467,7 +467,7 @@ const SERVICES = [
     slug: "aufkleberdruck",
     name: "Aufkleberdruck",
     description:
-      "Individuelle Aufkleber und Konturschnitte auf Rollen- oder Bogenmaterial mit Flaechenberechnung pro Quadratmeter und optionalen Materialaufschlaegen.",
+      "Individuelle Aufkleber und Konturschnitte auf Rollen- oder Bogenmaterial mit Flächenberechnung pro Quadratmeter und optionalen Materialaufschlägen.",
     image:
       "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1600&auto=format&fit=crop",
     basePrice: 50,
@@ -638,7 +638,7 @@ const SERVICES = [
     slug: "alu-dibond-schilder",
     name: "Alu-Dibond Schilder",
     description:
-      "Robuste Verbundplatten fuer Firmenbeschilderung, Leitsysteme und hochwertige Fassadenanwendungen mit Flaechenpreis und Montageoptionen.",
+      "Robuste Verbundplatten für Firmenbeschilderung, Leitsysteme und hochwertige Fassadenanwendungen mit Flächenpreis und Montageoptionen.",
     image:
       "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1600&auto=format&fit=crop",
     basePrice: 95,
@@ -833,7 +833,7 @@ const SERVICES = [
         values: [
           createOptionValue("Unbeleuchtet", 0, 1),
           createOptionValue("Frontleuchter", 0, 2),
-          createOptionValue("Rueckleuchter", 0, 3),
+          createOptionValue("Rückleuchter", 0, 3),
         ],
       }),
       createOption({
@@ -853,7 +853,7 @@ const SERVICES = [
     slug: "lochfolie-fenster",
     name: "Lochfolie fuer Fenster",
     description:
-      "Perforierte Fensterfolien fuer Schaufenster und Fahrzeugflaechen mit Sichtschutz, Werbewirkung und Flaechenberechnung pro Quadratmeter.",
+      "Perforierte Fensterfolien für Schaufenster und Fahrzeugflächen mit Sichtschutz, Werbewirkung und Flächenberechnung pro Quadratmeter.",
     image:
       "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1600&auto=format&fit=crop",
     basePrice: 65,
@@ -989,7 +989,7 @@ const SERVICES = [
         createUploadField({
           key: "content_file",
           label: "Content-Datei",
-          helperText: "Optional fuer Texte, Struktur oder Inhaltsuebergabe.",
+          helperText: "Optional für Texte, Struktur oder Inhaltsübergabe.",
           required: false,
           allowedFileTypesText: "pdf, docx, txt, zip",
           accept: ".pdf,.docx,.txt,.zip",
@@ -1201,7 +1201,7 @@ const SERVICES = [
         createUploadField({
           key: "product_images",
           label: "Produktbilder",
-          helperText: "Mehrere Bilder koennen gesammelt hochgeladen werden.",
+          helperText: "Mehrere Bilder können gesammelt hochgeladen werden.",
           required: false,
           allowedFileTypesText: "png, jpg, jpeg",
           accept: ".png,.jpg,.jpeg",

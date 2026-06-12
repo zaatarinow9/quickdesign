@@ -137,7 +137,7 @@ export function getAdminUsersSuccessMessage(
     case "updated":
       return "Benutzer wurde aktualisiert.";
     case "passwordReset":
-      return "Passwort wurde zurueckgesetzt.";
+      return "Passwort wurde zurückgesetzt.";
     case "deactivated":
       return "Benutzer wurde deaktiviert.";
     case "activated":
@@ -162,7 +162,7 @@ export function getAdminUsersErrorMessage(
     case "passwordComplexity":
       return "Das Passwort muss mindestens einen Buchstaben und eine Zahl enthalten.";
     case "passwordMismatch":
-      return "Die Passwoerter stimmen nicht ueberein.";
+      return "Die Passwörter stimmen nicht überein.";
     case "email":
       return "Bitte geben Sie eine gueltige E-Mail-Adresse ein.";
     case "duplicate":
@@ -172,7 +172,7 @@ export function getAdminUsersErrorMessage(
     case "lastSuperAdmin":
       return "Mindestens ein aktiver Super-Admin muss erhalten bleiben.";
     case "role":
-      return "Bitte waehlen Sie eine gueltige Rolle aus.";
+      return "Bitte wählen Sie eine gültige Rolle aus.";
     case "notFound":
       return "Benutzer wurde nicht gefunden.";
     default:

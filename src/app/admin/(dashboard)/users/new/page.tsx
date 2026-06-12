@@ -43,7 +43,7 @@ export default async function NewAdminUserPage({
 
       <AdminSectionCard
         title="Neuer Benutzer"
-        description="Benutzername, Rolle und Aktivstatus koennen direkt beim Anlegen festgelegt werden."
+        description="Benutzername, Rolle und Aktivstatus können direkt beim Anlegen festgelegt werden."
         icon={UserPlus}
       >
         {errorMessage && (

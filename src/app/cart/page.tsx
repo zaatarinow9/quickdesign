@@ -294,7 +294,7 @@ export default function CartPage() {
             Ihre aktuelle Auswahl
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Pruefen Sie Konfigurationen, Mengen und Uploads, bevor Sie mit dem
+            Prüfen Sie Konfigurationen, Mengen und Uploads, bevor Sie mit dem
             Checkout fortfahren.
           </p>
         </div>

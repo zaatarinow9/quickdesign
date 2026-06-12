@@ -174,7 +174,7 @@ export function buildCustomerOrderConfirmationEmail(
   const currency = input.currency?.trim().toUpperCase() || DEFAULT_ORDER_CURRENCY;
   const publicOrderCode = input.publicOrderCode?.trim() || null;
   const subjectReference = publicOrderCode || input.orderNumber;
-  const subject = `Bestaetigung Ihrer Bestellung ${subjectReference}`;
+  const subject = `Bestätigung Ihrer Bestellung ${subjectReference}`;
   const greetingName = input.customerName?.trim()
     ? `Hallo ${input.customerName.trim()}`
     : "Guten Tag";
@@ -185,12 +185,12 @@ export function buildCustomerOrderConfirmationEmail(
   const totalsTextLines = buildTotalsTextLines(input, currency);
   const trackLine = input.trackUrl?.trim()
     ? `Auftragsstatus: ${input.trackUrl.trim()}`
-    : "Den Auftragsstatus koennen Sie jederzeit auf unserer Tracking-Seite abrufen.";
+    : "Den Auftragsstatus können Sie jederzeit auf unserer Tracking-Seite abrufen.";
   const footerContact = input.contactEmail?.trim() || "info@quickdesign.de";
   const text = [
     `${greetingName},`,
     "",
-    "vielen Dank fuer Ihre Bestellung.",
+    "vielen Dank für Ihre Bestellung.",
     ...(publicOrderCode ? [`Tracking-Code: ${publicOrderCode}`] : []),
     `Bestellnummer: ${input.orderNumber}`,
     `Bestelldatum: ${dateLabel}`,
@@ -198,12 +198,12 @@ export function buildCustomerOrderConfirmationEmail(
     "Bestellte Positionen:",
     ...itemTextBlocks.flatMap((block) => [block, ""]),
     ...(totalsTextLines.length > 0
-      ? ["Zahlungsuebersicht:", ...totalsTextLines, ""]
+      ? ["Zahlungsübersicht:", ...totalsTextLines, ""]
       : []),
-    "Wir haben Ihre Bestellung erhalten und melden uns bei Rueckfragen.",
+    "Wir haben Ihre Bestellung erhalten und melden uns bei Rückfragen.",
     ...(publicOrderCode
       ? [
-          "Bitte verwenden Sie fuer Rueckfragen und Tracking Ihren Tracking-Code zusammen mit Ihrer E-Mail-Adresse.",
+          "Bitte verwenden Sie für Rückfragen und Tracking Ihren Tracking-Code zusammen mit Ihrer E-Mail-Adresse.",
         ]
       : []),
     trackLine,
@@ -222,7 +222,7 @@ export function buildCustomerOrderConfirmationEmail(
             <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">QuickDesign</div>
             <div style="margin-top:10px;font-size:28px;line-height:1.2;font-weight:700;color:#0f172a;">Bestellung eingegangen</div>
             <div style="margin-top:10px;font-size:15px;line-height:1.6;color:#475569;">
-              ${escapeHtml(greetingName)}, vielen Dank fuer Ihre Bestellung. Wir haben Ihren Auftrag erfolgreich erhalten.
+              ${escapeHtml(greetingName)}, vielen Dank für Ihre Bestellung. Wir haben Ihren Auftrag erfolgreich erhalten.
             </div>
           </td>
         </tr>
@@ -286,20 +286,20 @@ export function buildCustomerOrderConfirmationEmail(
         <tr>
           <td style="padding:0 28px 28px;">
             <div style="font-size:14px;line-height:1.7;color:#475569;">
-              Wir haben Ihre Bestellung erhalten und melden uns bei Rueckfragen.
+              Wir haben Ihre Bestellung erhalten und melden uns bei Rückfragen.
             </div>
             ${
               publicOrderCode
                 ? `<div style="margin-top:14px;font-size:14px;line-height:1.7;color:#475569;">
-                    Verwenden Sie fuer Tracking und Rueckfragen bitte den Code <strong style="color:#0f172a;">${escapeHtml(publicOrderCode)}</strong> zusammen mit Ihrer E-Mail-Adresse.
+                    Verwenden Sie für Tracking und Rückfragen bitte den Code <strong style="color:#0f172a;">${escapeHtml(publicOrderCode)}</strong> zusammen mit Ihrer E-Mail-Adresse.
                   </div>`
                 : ""
             }
             <div style="margin-top:14px;font-size:14px;line-height:1.7;color:#475569;">
               ${
                 input.trackUrl?.trim()
-                  ? `Auftragsstatus: <a href="${escapeHtml(input.trackUrl.trim())}" style="color:#0f172a;font-weight:700;text-decoration:none;">Tracking oeffnen</a>`
-                  : "Den Auftragsstatus koennen Sie jederzeit auf unserer Tracking-Seite abrufen."
+                  ? `Auftragsstatus: <a href="${escapeHtml(input.trackUrl.trim())}" style="color:#0f172a;font-weight:700;text-decoration:none;">Tracking öffnen</a>`
+                  : "Den Auftragsstatus können Sie jederzeit auf unserer Tracking-Seite abrufen."
               }
             </div>
             <div style="margin-top:24px;padding-top:18px;border-top:1px solid #e2e8f0;font-size:13px;line-height:1.7;color:#64748b;">

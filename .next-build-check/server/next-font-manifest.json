@@ -1,0 +1,91 @@
+{
+  "app": {
+    "[project]/src/app/_not-found/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/appointments/[id]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/appointments/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/customers/[id]/edit/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/customers/[id]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/customers/new/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/customers/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/orders/[id]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/orders/new/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/orders/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/reports/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/services/[id]/edit/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/services/[id]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/services/new/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/services/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/users/[id]/edit/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/users/new/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/(dashboard)/users/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/login/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/admin/orders/[id]/document/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/cart/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/checkout/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/documents/order/[id]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/services/[slug]/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/services/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ],
+    "[project]/src/app/track/page": [
+      "static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

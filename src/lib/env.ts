@@ -266,7 +266,7 @@ export function getEnvironmentReadinessWarnings(options?: {
       id: "database_url_sqlite",
       level: warningLevel,
       message:
-        "DATABASE_URL zeigt auf lokale SQLite. Fuer Admin-Authentifizierung und Benutzerverwaltung muss Supabase PostgreSQL verwendet werden.",
+        "DATABASE_URL zeigt auf lokale SQLite. Für Admin-Authentifizierung und Benutzerverwaltung muss Supabase PostgreSQL verwendet werden.",
     });
   }
 
@@ -275,7 +275,7 @@ export function getEnvironmentReadinessWarnings(options?: {
       id: "admin_session_secret_missing",
       level: warningLevel,
       message:
-        "ADMIN_SESSION_SECRET fehlt. Setzen Sie vor dem Deployment einen eigenen langen Secret-Wert fuer Admin-Sessions.",
+        "ADMIN_SESSION_SECRET fehlt. Setzen Sie vor dem Deployment einen eigenen langen Secret-Wert für Admin-Sessions.",
     });
   } else if (!hasStrongSecret(adminSessionSecret)) {
     warnings.push({
@@ -318,7 +318,7 @@ export function getEnvironmentReadinessWarnings(options?: {
       id: "admin_login_path_missing",
       level: "warning",
       message:
-        "ADMIN_LOGIN_PATH fehlt. Legen Sie fuer Produktion einen nicht offensichtlichen Admin-Login-Pfad fest.",
+        "ADMIN_LOGIN_PATH fehlt. Legen Sie für die Produktion einen nicht offensichtlichen Admin-Login-Pfad fest.",
       surface: "diagnostics",
     });
   } else if (!normalizePathValue(adminLoginPath)) {
@@ -326,7 +326,7 @@ export function getEnvironmentReadinessWarnings(options?: {
       id: "admin_login_path_invalid",
       level: "warning",
       message:
-        "ADMIN_LOGIN_PATH ist ungueltig. Verwenden Sie einen absoluten Pfad wie /zugang-q24 ohne Query oder Fragment.",
+        "ADMIN_LOGIN_PATH ist ungültig. Verwenden Sie einen absoluten Pfad wie /zugang-q24 ohne Query oder Fragment.",
       surface: "diagnostics",
     });
   }
@@ -343,7 +343,7 @@ export function getEnvironmentReadinessWarnings(options?: {
       id: "app_url_invalid",
       level: warningLevel,
       message:
-        "APP_URL bzw. NEXT_PUBLIC_APP_URL ist ungueltig. Verwenden Sie eine vollstaendige http/https-URL.",
+        "APP_URL bzw. NEXT_PUBLIC_APP_URL ist ungültig. Verwenden Sie eine vollständige http/https-URL.",
     });
   }
 
@@ -356,7 +356,7 @@ export function getEnvironmentReadinessWarnings(options?: {
     warnings.push({
       id: "smtp_missing",
       level: warningLevel,
-      message: `SMTP ist unvollstaendig konfiguriert. Es fehlen: ${missingSmtpKeys.join(", ")}.`,
+      message: `SMTP ist unvollständig konfiguriert. Es fehlen: ${missingSmtpKeys.join(", ")}.`,
     });
   } else {
     try {
@@ -366,7 +366,7 @@ export function getEnvironmentReadinessWarnings(options?: {
         id: "smtp_invalid",
         level: warningLevel,
         message:
-          "SMTP ist gesetzt, aber ungueltig. Pruefen Sie insbesondere SMTP_PORT, SMTP_SECURE und SMTP_FROM.",
+          "SMTP ist gesetzt, aber ungültig. Prüfen Sie insbesondere SMTP_PORT, SMTP_SECURE und SMTP_FROM.",
       });
     }
   }

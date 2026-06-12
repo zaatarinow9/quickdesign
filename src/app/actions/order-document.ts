@@ -83,7 +83,7 @@ export async function sendOrderDocumentEmail(
   if (!orderId || !documentType) {
     return {
       status: "error",
-      message: "Dokumenttyp oder Auftrags-ID ist ungueltig.",
+      message: "Dokumenttyp oder Auftrags-ID ist ungültig.",
     };
   }
 

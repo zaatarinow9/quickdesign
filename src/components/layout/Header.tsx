@@ -62,7 +62,7 @@ export default function Header() {
             <Link
               href="/cart"
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
-              aria-label="Warenkorb oeffnen"
+              aria-label="Warenkorb öffnen"
             >
               <ShoppingCart className="h-5 w-5" />
               {mounted && items.length > 0 ? (

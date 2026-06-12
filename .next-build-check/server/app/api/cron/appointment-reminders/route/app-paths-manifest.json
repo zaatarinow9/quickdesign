@@ -1,0 +1,3 @@
+{
+  "/api/cron/appointment-reminders/route": "app/api/cron/appointment-reminders/route.js"
+}

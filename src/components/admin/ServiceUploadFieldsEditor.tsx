@@ -291,7 +291,7 @@ function buildUploadPreview(
       enabled: false,
       fieldCount: 0,
       summaryLines: [
-        "Legacy-Fallback ueber fileLimit bleibt aktiv.",
+        "Legacy-Fallback über fileLimit bleibt aktiv.",
         `Checkout-Limit aktuell: ${MAX_SERVER_ACTION_UPLOAD_MB} MB pro Datei.`,
       ],
     };
@@ -596,7 +596,7 @@ export default function ServiceUploadFieldsEditor({
 
                   <div>
                     <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                      Maximale Dateigroesse
+                      Maximale Dateigröße
                     </label>
                     <input
                       type="number"
@@ -614,7 +614,7 @@ export default function ServiceUploadFieldsEditor({
                       className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-slate-300"
                     />
                     <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-300">
-                      Maximale Dateigroesse im Checkout:{" "}
+                      Maximale Dateigröße im Checkout:{" "}
                       {getEffectiveUploadLimitMb(
                         parseFiniteNumber(field.maxFileSizeMb),
                       )}{" "}

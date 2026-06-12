@@ -43,7 +43,7 @@ export function getInternalOrderStatusMeta(status: string): OrderStatusMeta {
   switch (status) {
     case "IN_REVIEW":
       return {
-        label: "In Pruefung",
+        label: "In Prüfung",
         badgeClassName:
           "border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/80 dark:bg-sky-950/50 dark:text-sky-200",
       };

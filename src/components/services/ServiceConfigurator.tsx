@@ -54,8 +54,8 @@ const COMMON_COLORS = [
   { name: "Marineblau", hex: "#1a2942" },
   { name: "Rot", hex: "#c91a1a" },
   { name: "Grau", hex: "#9ca3af" },
-  { name: "Koenigsblau", hex: "#1d4ed8" },
-  { name: "Waldgruen", hex: "#15803d" },
+  { name: "Königsblau", hex: "#1d4ed8" },
+  { name: "Waldgrün", hex: "#15803d" },
   { name: "Sonnengelb", hex: "#eab308" },
 ] as const;
 
@@ -155,7 +155,7 @@ function formatDisplayNumber(value: number): string {
 }
 
 function getCheckoutUploadLimitHint(): string {
-  return `Maximale Dateigroesse: ${MAX_SERVER_ACTION_UPLOAD_MB} MB`;
+  return `Maximale Dateigröße: ${MAX_SERVER_ACTION_UPLOAD_MB} MB`;
 }
 
 function getMaxFileSizeValidationMessage(
@@ -213,7 +213,7 @@ function getPricingModeLabel(mode: NormalizedServicePricingMode): string {
     case "quantity_tiers":
       return "Mengenstaffel";
     case "area":
-      return "Flaechenpreis";
+      return "Flächenpreis";
     case "option_based":
       return "Optionen mit Aufpreis";
     case "custom_quote":
@@ -465,7 +465,7 @@ export default function ServiceConfigurator({
             }
             className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm text-neutral-950 outline-none transition-all focus:border-neutral-950 disabled:cursor-not-allowed disabled:text-neutral-400"
           >
-            <option value="">Bitte waehlen...</option>
+            <option value="">Bitte wählen...</option>
             {field.values.map((value) => (
               <option key={value.id} value={value.id}>
                 {value.label}
@@ -518,7 +518,7 @@ export default function ServiceConfigurator({
             <label className="group flex cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-4 py-5 transition-all hover:bg-neutral-100">
               <Upload className="h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-950" />
               <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500 transition-colors group-hover:text-neutral-950">
-                Datei auswaehlen
+                Datei auswählen
               </span>
                 <input
                   type="file"
@@ -615,8 +615,8 @@ export default function ServiceConfigurator({
                     <Upload className="h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-950" />
                     <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500 transition-colors group-hover:text-neutral-950">
                       {field.maxFiles > 1
-                        ? `${slotLabel} auswaehlen`
-                        : "Datei auswaehlen"}
+                        ? `${slotLabel} auswählen`
+                        : "Datei auswählen"}
                     </span>
                     <input
                       type="file"
@@ -726,7 +726,7 @@ export default function ServiceConfigurator({
     });
 
     if (missing.length > 0) {
-      setValidationMessage(`Bitte waehlen Sie: ${missing.join(", ")}`);
+      setValidationMessage(`Bitte wählen Sie: ${missing.join(", ")}`);
       return;
     }
 
@@ -865,7 +865,7 @@ export default function ServiceConfigurator({
     if (config.pricing.mode === "area" && config.pricing.area) {
       textInputs.pricing_model = {
         optionName: "Preismodell",
-        value: "Flaechenpreis",
+        value: "Flächenpreis",
       };
       textInputs.pricing_width_cm = {
         optionName: config.pricing.area.widthLabel,
@@ -876,7 +876,7 @@ export default function ServiceConfigurator({
         value: `${formatDisplayNumber(priceResult.heightCm)} cm`,
       };
       textInputs.pricing_area_sqm = {
-        optionName: "Flaeche",
+        optionName: "Fläche",
         value: `${priceResult.billableAreaSqm.toFixed(3)} m2`,
       };
     }
@@ -1072,7 +1072,7 @@ export default function ServiceConfigurator({
             icon={<Palette className="h-4 w-4" />}
             eyebrow="Darstellung"
             title="Produktfarbe"
-            description="Waehlen Sie die passende Grundfarbe fuer die Vorschau."
+            description="Wählen Sie die passende Grundfarbe für die Vorschau."
           >
             <div className="flex flex-wrap gap-3">
               {COMMON_COLORS.map((color) => (
@@ -1103,7 +1103,7 @@ export default function ServiceConfigurator({
         icon={<Layers3 className="h-4 w-4" />}
         eyebrow="Preis"
         title="Preis und Modell"
-        description="Die Preislogik bleibt unveraendert, wird aber klarer dargestellt."
+        description="Die Preislogik bleibt unverändert, wird aber klarer dargestellt."
       >
         {config.pricing.mode === "custom_quote" ? (
           <div className="space-y-4">
@@ -1114,9 +1114,9 @@ export default function ServiceConfigurator({
                   Preis auf Anfrage
                 </p>
                 <p className="text-sm leading-6 text-amber-900">
-                  Fuer diese Leistung gibt es bewusst keinen automatischen
+                  Für diese Leistung gibt es bewusst keinen automatischen
                   Verkaufspreis. Konfigurieren Sie alle relevanten Angaben, damit
-                  spaeter eine saubere Anfragegrundlage vorliegt.
+                  später eine saubere Anfragegrundlage vorliegt.
                 </p>
               </div>
             </div>
@@ -1140,15 +1140,15 @@ export default function ServiceConfigurator({
                 ))}
               </select>
               <p className="text-xs leading-6 text-neutral-500">
-                Der ausgewaehlte Staffelpreis gilt pro Set. Die Mengensteuerung in
+                Der ausgewählte Staffelpreis gilt pro Set. Die Mengensteuerung in
                 der Zusammenfassung multipliziert komplette Sets.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <SummaryRow
-                label="Ausgewaehlte Staffel"
-                value={priceResult.selectedTierLabel ?? "Noch nicht gewaehlt"}
+                label="Ausgewählte Staffel"
+                value={priceResult.selectedTierLabel ?? "Noch nicht gewählt"}
               />
               <SummaryRow
                 label="Preis pro Set"
@@ -1196,11 +1196,11 @@ export default function ServiceConfigurator({
                 value={formatCurrency(config.pricing.area.pricePerSqm)}
               />
               <SummaryRow
-                label="Berechnete Flaeche"
+                label="Berechnete Fläche"
                 value={`${priceResult.areaSqm.toFixed(3)} m2`}
               />
               <SummaryRow
-                label="Abgerechnete Flaeche"
+                label="Abgerechnete Fläche"
                 value={`${priceResult.billableAreaSqm.toFixed(3)} m2`}
               />
               <SummaryRow
@@ -1230,9 +1230,9 @@ export default function ServiceConfigurator({
       {sizeFields.length > 0 && (
         <ConfigSection
           icon={<Ruler className="h-4 w-4" />}
-          eyebrow="Groesse"
-          title="Groesse und Varianten"
-          description="Pflichtfelder und Varianten bleiben unveraendert, sind aber klarer gruppiert."
+          eyebrow="Größe"
+          title="Größe und Varianten"
+          description="Pflichtfelder und Varianten bleiben unverändert, sind aber klarer gruppiert."
         >
           <div className="space-y-4">{sizeFields.map(renderField)}</div>
         </ConfigSection>
@@ -1243,7 +1243,7 @@ export default function ServiceConfigurator({
           icon={<Layers3 className="h-4 w-4" />}
           eyebrow="Optionen"
           title="Optionen und Angaben"
-          description="Waehlen Sie alle gewuenschten Varianten und erfassen Sie zusaetzliche Angaben."
+          description="Wählen Sie alle gewünschten Varianten und erfassen Sie zusätzliche Angaben."
         >
           <div className="space-y-4">{generalFields.map(renderField)}</div>
         </ConfigSection>
@@ -1267,7 +1267,7 @@ export default function ServiceConfigurator({
         icon={<FileText className="h-4 w-4" />}
         eyebrow="Hinweise"
         title="Projektanmerkungen"
-        description="Nutzen Sie dieses Feld fuer Sonderwuensche, Produktionshinweise oder Rueckfragen."
+        description="Nutzen Sie dieses Feld für Sonderwünsche, Produktionshinweise oder Rückfragen."
       >
         <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
           <label className="block text-[11px] font-bold uppercase tracking-[0.22em] text-neutral-500">
@@ -1276,7 +1276,7 @@ export default function ServiceConfigurator({
           <textarea
             value={orderNotes}
             onChange={(event) => setOrderNotes(event.target.value)}
-            placeholder="Zusaetzliche Infos..."
+            placeholder="Zusätzliche Infos..."
             rows={4}
             className="w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm text-neutral-950 outline-none transition-all focus:border-neutral-950"
           />
@@ -1290,7 +1290,7 @@ export default function ServiceConfigurator({
         description={
           isQuoteOnly
             ? "Die Leistung bleibt als Anfrageprodukt markiert. Die aktuelle Konfiguration wird nicht in den Warenkorb gelegt."
-            : "Kontrollieren Sie Menge, Gesamtpreis und alle Pflichtangaben vor dem Hinzufuegen."
+            : "Kontrollieren Sie Menge, Gesamtpreis und alle Pflichtangaben vor dem Hinzufügen."
         }
       >
         <div className="space-y-4">
@@ -1326,7 +1326,7 @@ export default function ServiceConfigurator({
                     type="button"
                     onClick={() => setQuantity(quantity + 1)}
                     className="px-4 py-2 text-neutral-400 transition-colors hover:text-neutral-950"
-                    aria-label="Menge erhoehen"
+                    aria-label="Menge erhöhen"
                   >
                     +
                   </button>
@@ -1337,7 +1337,7 @@ export default function ServiceConfigurator({
                 <SummaryRow label="Preismodell" value={pricingModeLabel} />
                 {config.pricing.mode === "quantity_tiers" && priceResult.selectedTierLabel && (
                   <SummaryRow
-                    label="Ausgewaehlte Staffel"
+                    label="Ausgewählte Staffel"
                     value={priceResult.selectedTierLabel}
                   />
                 )}
@@ -1352,7 +1352,7 @@ export default function ServiceConfigurator({
                       value={`${formatDisplayNumber(priceResult.heightCm)} cm`}
                     />
                     <SummaryRow
-                      label="Flaeche"
+                      label="Fläche"
                       value={`${priceResult.billableAreaSqm.toFixed(3)} m2`}
                     />
                   </>

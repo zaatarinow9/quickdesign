@@ -58,7 +58,7 @@ export default async function ManageService({
         className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        Zurueck zur Service-Liste
+        Zurück zur Service-Liste
       </Link>
 
       <AdminCard className="p-6 md:p-8">

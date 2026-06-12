@@ -58,7 +58,7 @@ export function getAdminLoginPath(): string {
 
     console.warn(
       rawConfiguredPath?.trim()
-        ? `ADMIN_LOGIN_PATH ist ungueltig (${rawConfiguredPath}). Fallback auf ${LEGACY_ADMIN_LOGIN_PATH}. Bitte Vercel-Umgebungsvariablen pruefen und neu deployen.`
+        ? `ADMIN_LOGIN_PATH ist ungültig (${rawConfiguredPath}). Fallback auf ${LEGACY_ADMIN_LOGIN_PATH}. Bitte Vercel-Umgebungsvariablen prüfen und neu deployen.`
         : `ADMIN_LOGIN_PATH fehlt. Fallback auf ${LEGACY_ADMIN_LOGIN_PATH}. Bitte den versteckten Admin-Pfad in Vercel setzen und neu deployen.`,
     );
   }

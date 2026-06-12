@@ -231,7 +231,7 @@ function normalizeOptionData(
   if (pricingMode === "invalid") {
     return {
       success: false,
-      error: "Der ausgewahlte Pricing-Modus ist ungueltig.",
+      error: "Der ausgewählte Pricing-Modus ist ungültig.",
     }
   }
 

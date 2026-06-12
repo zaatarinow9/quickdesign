@@ -295,7 +295,7 @@ export default async function AdminOrdersPage({
         <AdminPageHeader
           eyebrow="Auftragsverwaltung"
           title="Bestellungen und Produktion"
-          description="Filterbare Auftragsliste mit Archiv, Belegtyp, Zeitraeumen und Kundenbezug."
+          description="Filterbare Auftragsliste mit Archiv, Belegtyp, Zeiträumen und Kundenbezug."
           actions={
             hasAdminPermission(currentUser, "canCreateManualOrders") ? (
               <Link href="/admin/orders/new" className={getAdminButtonClassName("primary")}>
@@ -395,7 +395,7 @@ export default async function AdminOrdersPage({
               defaultValue={priorityFilter}
               className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             >
-              <option value="all">Alle Prioritaeten</option>
+              <option value="all">Alle Prioritäten</option>
               <option value="LOW">Niedrig</option>
               <option value="NORMAL">Normal</option>
               <option value="HIGH">Hoch</option>
@@ -408,7 +408,7 @@ export default async function AdminOrdersPage({
             >
               <option value="all">Alle internen Status</option>
               <option value="NEW">Neu</option>
-              <option value="IN_REVIEW">In Pruefung</option>
+              <option value="IN_REVIEW">In Prüfung</option>
               <option value="IN_PRODUCTION">In Produktion</option>
               <option value="WAITING_CUSTOMER">Wartet auf Kunde</option>
               <option value="READY">Bereit</option>
@@ -431,7 +431,7 @@ export default async function AdminOrdersPage({
               defaultValue={archivedFilter}
               className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-950 outline-none transition-colors focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
             >
-              <option value="active">Aktive Auftraege</option>
+              <option value="active">Aktive Aufträge</option>
               <option value="all">Aktiv + Archiv</option>
               <option value="only">Nur Archiv</option>
             </select>
@@ -442,7 +442,7 @@ export default async function AdminOrdersPage({
               Filtern
             </button>
             <Link href="/admin/orders" className={getAdminButtonClassName("secondary")}>
-              Zuruecksetzen
+              Zurücksetzen
             </Link>
           </div>
         </form>
@@ -450,7 +450,7 @@ export default async function AdminOrdersPage({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-          {orders.length} Auftraege gefunden
+          {orders.length} Aufträge gefunden
         </p>
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Archivfilter:{" "}
@@ -468,7 +468,7 @@ export default async function AdminOrdersPage({
             <AdminEmptyState
               icon={Package}
               title="Keine Bestellungen gefunden."
-              description="Passen Sie die Filter an oder pruefen Sie einen anderen Zeitraum."
+              description="Passen Sie die Filter an oder prüfen Sie einen anderen Zeitraum."
             />
           </div>
         ) : (
@@ -554,7 +554,7 @@ export default async function AdminOrdersPage({
                             {internalStatusInfo.label}
                           </span>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Prioritaet: {order.priority}
+                            Priorität: {order.priority}
                           </p>
                           {order.isArchived && (
                             <p className="inline-flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-200">
@@ -593,7 +593,7 @@ export default async function AdminOrdersPage({
                             <input type="hidden" name="orderId" value={order.id} />
                             <button type="submit" className={getAdminButtonClassName("primary")}>
                               <UserCheck className="h-4 w-4" />
-                              Uebernehmen
+                              Übernehmen
                             </button>
                           </form>
                         ) : (

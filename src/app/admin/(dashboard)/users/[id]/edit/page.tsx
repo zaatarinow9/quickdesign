@@ -123,7 +123,7 @@ export default async function EditAdminUserPage({
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
         <AdminSectionCard
           title="Profildaten"
-          description="Benutzername, Anzeigename, Rolle und Aktivstatus koennen hier aktualisiert werden."
+          description="Benutzername, Anzeigename, Rolle und Aktivstatus können hier aktualisiert werden."
           icon={UserCog}
         >
           <form action={updateProfileAction} className="space-y-8">
@@ -200,7 +200,7 @@ export default async function EditAdminUserPage({
 
         <div className="space-y-6">
           <AdminSectionCard
-            title="Passwort zuruecksetzen"
+            title="Passwort zurücksetzen"
             description="Das neue Passwort wird direkt fuer diesen Benutzer gespeichert."
             icon={KeyRound}
             className="scroll-mt-24"

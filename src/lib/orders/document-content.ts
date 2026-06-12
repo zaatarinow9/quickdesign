@@ -370,9 +370,9 @@ export function buildOrderDocumentEmailText(input: {
     `Dokumentlink: ${input.shareUrl}`,
     "",
     "Hinweis: In Phase 8B wird das Dokument noch als sicherer Link versendet.",
-    'Fuer eine PDF-Datei nutzen Sie im Browser bitte "Als PDF speichern".',
+    'Für eine PDF-Datei nutzen Sie im Browser bitte "Als PDF speichern".',
     "",
-    "Viele Gruesse",
+    "Viele Grüße",
     BRAND_FALLBACK_NAME,
   ].join("\r\n");
 }

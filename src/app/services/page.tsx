@@ -201,7 +201,7 @@ function buildPricingDisplay(service: ServiceCatalogItem): ServiceCardPricing {
       return {
         label: `ab ${formatPrice(pricePerSqm)} / m2`,
         ctaLabel: "Konfigurieren",
-        badgeLabel: "Flaechenpreis",
+        badgeLabel: "Flächenpreis",
       };
     }
   }
@@ -314,7 +314,7 @@ export default async function ServicesPage() {
           {catalogServices.length === 0 ? (
             <div className="surface-card col-span-full px-6 py-16 text-center">
               <p className="text-base font-medium text-slate-600">
-                Derzeit sind keine Leistungen verfuegbar.
+                Derzeit sind keine Leistungen verfügbar.
               </p>
             </div>
           ) : null}

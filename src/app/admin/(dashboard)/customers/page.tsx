@@ -62,7 +62,7 @@ export default async function AdminCustomersPage({
         <AdminPageHeader
           eyebrow="Kunden"
           title="Kundenprofile"
-          description="Kundenprofile durchsuchen, einsehen und fuer manuelle Auftraege nutzen."
+          description="Kundenprofile durchsuchen, einsehen und für manuelle Aufträge nutzen."
           actions={
             <>
               <Link href="/admin/orders/new" className={getAdminButtonClassName("secondary")}>

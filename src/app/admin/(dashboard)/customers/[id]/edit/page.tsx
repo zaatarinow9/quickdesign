@@ -32,7 +32,7 @@ export default async function EditCustomerPage({
         href={`/admin/customers/${customer.id}`}
         className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-950"
       >
-        <ArrowLeft className="h-3 w-3" /> Zurueck zum Profil
+        <ArrowLeft className="h-3 w-3" /> Zurück zum Profil
       </Link>
 
       <div className="border-b border-neutral-100 pb-8">

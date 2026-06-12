@@ -29,7 +29,7 @@ export default async function AdminLayout({
   const navItems: AdminNavItem[] = [
     {
       href: "/admin",
-      label: "Dashboard",
+      label: "Übersicht",
       iconName: "dashboard",
     },
     {
@@ -66,7 +66,7 @@ export default async function AdminLayout({
   if (canViewReports) {
     navItems.push({
       href: "/admin/reports",
-      label: "Reports",
+      label: "Auswertungen",
       iconName: "reports",
     });
   }
@@ -82,30 +82,30 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#dbeafe_0%,#f8fafc_35%,#f8fafc_100%)] text-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#1e293b_0%,#020617_40%,#020617_100%)] dark:text-slate-50">
       <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-slate-200/80 bg-white/88 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col dark:border-slate-800 dark:bg-slate-950/80">
-          <div className="flex h-full flex-col px-5 py-6">
-            <div className="space-y-6">
+        <aside className="hidden overflow-hidden border-r border-slate-200/80 bg-white/88 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col dark:border-slate-800 dark:bg-slate-950/80">
+          <div className="flex h-full min-h-0 flex-col px-5 py-6">
+            <div className="shrink-0 space-y-6">
               <LogoMark href="/" size="sidebar" />
 
               <div className="rounded-[28px] bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-6 text-white shadow-lg ring-1 ring-white/10">
                 <p className="text-xs font-semibold tracking-[0.12em] text-slate-300">
-                  Admin Bereich
+                  Admin-Bereich
                 </p>
                 <p className="mt-3 text-2xl font-semibold tracking-tight">
                   Interne Verwaltung
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-300">
-                  Auftraege, Services und Team in einer ruhigen und gut lesbaren
-                  Arbeitsoberflaeche.
+                  Aufträge, Leistungen und Team in einer ruhigen, gut lesbaren
+                  Arbeitsoberfläche.
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 flex-1 overflow-y-auto pr-1">
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
               <AdminSidebarNav items={navItems} />
             </div>
 
-            <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/70">
+            <div className="mt-6 shrink-0 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/70">
               <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
                 Angemeldet als
               </p>
@@ -134,7 +134,7 @@ export default async function AdminLayout({
                   <div>
                     <LogoMark href="/" size="compact" />
                     <p className="mt-4 text-xs font-semibold tracking-[0.12em] text-slate-300">
-                      Admin Bereich
+                      Admin-Bereich
                     </p>
                     <p className="mt-2 text-2xl font-semibold tracking-tight">
                       Interne Verwaltung
@@ -164,8 +164,8 @@ export default async function AdminLayout({
                       Interne Verwaltung
                     </p>
                     <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                      Klarere Status, grosszuegigere Container und konsistente
-                      Karten fuer die taegliche Pflege.
+                      Klarere Status, großzügigere Container und konsistente
+                      Karten für die tägliche Pflege.
                     </p>
                   </div>
                 </div>
@@ -178,7 +178,9 @@ export default async function AdminLayout({
             </div>
           </header>
 
-          <main className="admin-container py-6 md:py-8">{children}</main>
+          <main className="admin-container min-w-0 overflow-x-hidden py-6 md:py-8">
+            {children}
+          </main>
         </div>
       </div>
     </div>

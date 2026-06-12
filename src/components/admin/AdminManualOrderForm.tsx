@@ -221,13 +221,13 @@ export default function AdminManualOrderForm({
   if (!firstService) {
     return (
       <div className="border border-amber-200 bg-amber-50 p-6 text-sm font-bold text-amber-800">
-        Es sind keine Leistungen fuer manuelle Auftraege verfuegbar.
+        Es sind keine Leistungen für manuelle Aufträge verfügbar.
       </div>
     );
   }
 
   return (
-    <form action={action} className="space-y-8">
+    <form action={action} className="admin-legacy-skin space-y-8">
       <input type="hidden" name="payload" value={JSON.stringify(payload)} />
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.7fr)_360px]">
@@ -240,7 +240,7 @@ export default function AdminManualOrderForm({
                   Kunde
                 </h2>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Bestehenden Kunden waehlen oder direkt im Auftrag anlegen.
+                  Bestehenden Kunden wählen oder direkt im Auftrag anlegen.
                 </p>
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function AdminManualOrderForm({
             {customerMode === "existing" && customers.length > 0 ? (
               <div className="space-y-3">
                 <label className="block text-xs font-bold uppercase tracking-widest text-neutral-950">
-                  Kunde auswaehlen
+                  Kunde auswählen
                 </label>
                 <select
                   value={customerId}
@@ -415,7 +415,7 @@ export default function AdminManualOrderForm({
                     Positionen
                   </h2>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Leistungen konfigurieren und bei Bedarf intern ueberschreiben.
+                    Leistungen konfigurieren und bei Bedarf intern überschreiben.
                   </p>
                 </div>
               </div>

@@ -15,15 +15,12 @@ export default function HeroSection() {
 
       <div className="public-container relative flex min-h-[calc(100vh-5rem)] items-center py-20 sm:min-h-[42rem] sm:py-24 lg:py-28">
         <div className="max-w-3xl text-white">
-          <LogoMark
-            size="compact"
-            frameClassName="border-white/20 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.35)]"
-          />
+          <LogoMark size="compact" />
           <p className="mt-8 text-sm font-medium tracking-[0.12em] text-sky-100">
-            Druckstudio fuer Unternehmen, Teams und schnelle Produktionen
+            Druckstudio für Unternehmen, Teams und schnelle Produktionen
           </p>
           <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-7xl">
-            Druckprodukte online konfigurieren, Dateien sauber uebergeben und
+            Druckprodukte online konfigurieren, Dateien sauber übergeben und
             stressfrei bestellen.
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-8 text-slate-200 sm:text-lg">

@@ -531,7 +531,7 @@ export function buildLegacyConfigurationSnapshot(
     size: sizeValue
       ? {
           fieldKey: "size",
-          fieldLabel: source.textInputs.size?.optionName ?? "Groesse",
+          fieldLabel: source.textInputs.size?.optionName ?? "Größe",
           value: sizeValue,
         }
       : null,
@@ -888,7 +888,7 @@ export function getPricingModelLabel(
     case "quantity_tiers":
       return "Mengenstaffel";
     case "area":
-      return "Flaechenpreis";
+      return "Flächenpreis";
     case "option_based":
       return "Optionspreis";
     case "custom_quote":

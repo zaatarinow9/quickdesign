@@ -67,7 +67,7 @@ const PRICING_MODE_OPTIONS: {
   },
   {
     value: "area",
-    label: "Flaechenpreis",
+    label: "Flächenpreis",
     description: "Preis pro Quadratmeter mit Eingabe von Breite und Hoehe in Zentimetern.",
   },
   {
@@ -361,7 +361,7 @@ function buildPricingPreview(
     case "fixed":
     default:
       summaryLines.push("Der Grundpreis wird direkt als Basis verwendet.");
-      summaryLines.push("Optionale Zusatzpreise bleiben moeglich.");
+      summaryLines.push("Optionale Zusatzpreise bleiben möglich.");
       break;
   }
 
@@ -598,10 +598,10 @@ export default function ServicePricingEditor({
         <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-              Flaechenberechnung
+              Flächenberechnung
             </h3>
             <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-300">
-              Formel im Store: Flaeche m2 = (Breite cm / 100) x (Hoehe cm / 100).
+              Formel im Store: Fläche m2 = (Breite cm / 100) x (Höhe cm / 100).
             </p>
           </div>
 

@@ -19,7 +19,7 @@ export default function Footer() {
             <LogoMark href="/" size="compact" />
             <p className="max-w-md text-sm leading-7 text-slate-600">
               QuickDesign begleitet Druckprojekte von der Konfiguration bis zur
-              Bestellung mit klaren Ablaeufen, sauberen Uploads und persoenlicher
+              Bestellung mit klaren Abläufen, sauberen Uploads und persönlicher
               Betreuung.
             </p>
           </div>
@@ -89,7 +89,7 @@ export default function Footer() {
       <div className="border-t border-slate-200">
         <div className="public-container flex flex-col gap-3 py-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} QuickDesign. Alle Rechte vorbehalten.</p>
-          <p>Klarere Konfigurationen, sauberere Dateien und entspannter Checkout.</p>
+          <p>Klarere Konfigurationen, saubere Dateien und entspannter Checkout.</p>
         </div>
       </div>
     </footer>

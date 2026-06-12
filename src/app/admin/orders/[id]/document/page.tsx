@@ -71,7 +71,7 @@ export default async function OrderDocumentPage({
             href={`/admin/orders/${order.id}`}
             className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
           >
-            <ArrowLeft className="h-4 w-4" /> Zurueck zur Bestellung
+            <ArrowLeft className="h-4 w-4" /> Zurück zur Bestellung
           </Link>
           <div className="flex flex-wrap gap-2">
             {ORDER_DOCUMENT_LINKS.map((documentLink) => {
@@ -104,8 +104,8 @@ export default async function OrderDocumentPage({
 
         {browserDownloadMode ? (
           <div className="border border-neutral-200 bg-white p-4 text-sm text-neutral-700 print:hidden">
-            Fuer Phase 8B nutzt "PDF herunterladen" den Browser-Druckdialog. Waehlen
-            Sie dort bitte "Als PDF speichern", damit Vorschau und Ausgabe moeglichst
+            Für Phase 8B nutzt "PDF herunterladen" den Browser-Druckdialog. Wählen
+            Sie dort bitte "Als PDF speichern", damit Vorschau und Ausgabe möglichst
             gleich bleiben.
           </div>
         ) : null}

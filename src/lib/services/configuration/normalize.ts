@@ -428,7 +428,7 @@ function createLegacySizeField(): NormalizedServiceField {
   return {
     id: "legacy:size",
     key: "size",
-    label: "Groesse",
+    label: "Größe",
     kind: "size",
     source: "legacy",
     required: true,

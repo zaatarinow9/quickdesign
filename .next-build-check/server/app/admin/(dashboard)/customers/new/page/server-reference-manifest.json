@@ -1,0 +1,53 @@
+{
+  "node": {
+    "00d9411aa2eff3543ffc48248d435a4542451a5b09": {
+      "workers": {
+        "app/admin/(dashboard)/customers/new/page": {
+          "moduleId": 28360,
+          "async": false,
+          "exportedName": "logoutAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "logoutAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40f91169c927d6b01ffdf0cdaf940a39d53a19b10c": {
+      "workers": {
+        "app/admin/(dashboard)/customers/new/page": {
+          "moduleId": 28360,
+          "async": false,
+          "exportedName": "loginAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "loginAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40384441af038d90ffff8e9ad4417bb6a14649aad9": {
+      "workers": {
+        "app/admin/(dashboard)/customers/new/page": {
+          "moduleId": 28360,
+          "async": false,
+          "exportedName": "createCustomer",
+          "filename": "src/app/actions/customer.ts"
+        }
+      },
+      "exportedName": "createCustomer",
+      "filename": "src/app/actions/customer.ts"
+    },
+    "605352d4caa8078a0a2f316bc52d489beff40f0241": {
+      "workers": {
+        "app/admin/(dashboard)/customers/new/page": {
+          "moduleId": 28360,
+          "async": false,
+          "exportedName": "updateCustomer",
+          "filename": "src/app/actions/customer.ts"
+        }
+      },
+      "exportedName": "updateCustomer",
+      "filename": "src/app/actions/customer.ts"
+    }
+  },
+  "edge": {}
+}

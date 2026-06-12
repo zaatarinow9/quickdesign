@@ -207,7 +207,7 @@ export default function CheckoutPage() {
           href="/services"
           className="text-sm font-medium text-slate-700 underline underline-offset-4"
         >
-          Zurueck zu den Leistungen
+          Zurück zu den Leistungen
         </Link>
       </div>
     );
@@ -248,7 +248,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error("Checkout submit failed:", error);
       setErrorMessage(
-        "Die Bestellung konnte nicht gesendet werden. Bitte pruefen Sie Ihre Verbindung und versuchen Sie es erneut.",
+        "Die Bestellung konnte nicht gesendet werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
       );
     } finally {
       setLoading(false);
@@ -266,8 +266,8 @@ export default function CheckoutPage() {
             Bestellung erfolgreich
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
-            Vielen Dank. Wir haben Ihren Auftrag erhalten und kuemmern uns jetzt
-            um die weitere Bearbeitung. Fuer das Tracking verwenden Sie bitte den
+            Vielen Dank. Wir haben Ihren Auftrag erhalten und kümmern uns jetzt
+            um die weitere Bearbeitung. Für das Tracking verwenden Sie bitte den
             Code unten zusammen mit Ihrer E-Mail-Adresse.
           </p>
           {publicOrderCode ? (
@@ -317,7 +317,7 @@ export default function CheckoutPage() {
                 className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-950"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Zurueck zum Warenkorb
+                Zurück zum Warenkorb
               </Link>
               <p className="section-eyebrow mt-8">Checkout</p>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
@@ -325,7 +325,7 @@ export default function CheckoutPage() {
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">
                 Ihre Auswahl aus dem Konfigurator wird mit allen Konfigurations-
-                und Upload-Daten uebernommen. Im letzten Schritt fehlen nur noch
+                und Upload-Daten übernommen. Im letzten Schritt fehlen nur noch
                 Ihre Kontaktdaten.
               </p>
             </div>
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-3">
                     <label className="block text-sm font-medium text-slate-700">
-                      Vollstaendiger Name
+                      Vollständiger Name
                     </label>
                     <input
                       name="name"
@@ -373,7 +373,7 @@ export default function CheckoutPage() {
                           Simulierte Zahlung
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Aktiv fuer die aktuelle Bestellstrecke
+                          Aktiv für die aktuelle Bestellstrecke
                         </p>
                       </div>
                     </div>
@@ -382,8 +382,8 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <p className="mt-4 text-sm leading-7 text-slate-500">
-                    Uploads ueber {MAX_SERVER_ACTION_UPLOAD_MB} MB werden aus
-                    Sicherheitsgruenden vor dem Absenden blockiert.
+                    Uploads über {MAX_SERVER_ACTION_UPLOAD_MB} MB werden aus
+                    Sicherheitsgründen vor dem Absenden blockiert.
                   </p>
                 </div>
               </div>

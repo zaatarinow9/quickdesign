@@ -1,0 +1,77 @@
+{
+  "node": {
+    "00d9411aa2eff3543ffc48248d435a4542451a5b09": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "logoutAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "logoutAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40f91169c927d6b01ffdf0cdaf940a39d53a19b10c": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "loginAdmin",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "exportedName": "loginAdmin",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "4044f9bc778e4bed2f2d050de13eb248655394b8b3": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "toggleServiceVisibility",
+          "filename": "src/app/actions/service.ts"
+        }
+      },
+      "exportedName": "toggleServiceVisibility",
+      "filename": "src/app/actions/service.ts"
+    },
+    "4050610c177d09a09c900da851fedd0937614898c9": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "createService",
+          "filename": "src/app/actions/service.ts"
+        }
+      },
+      "exportedName": "createService",
+      "filename": "src/app/actions/service.ts"
+    },
+    "40d193c0c76b740a86c126948be83903c59b25f0c8": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "duplicateService",
+          "filename": "src/app/actions/service.ts"
+        }
+      },
+      "exportedName": "duplicateService",
+      "filename": "src/app/actions/service.ts"
+    },
+    "60293ceca131e6a93a646afb4daa9b29503cc6fce2": {
+      "workers": {
+        "app/admin/(dashboard)/services/page": {
+          "moduleId": 72546,
+          "async": false,
+          "exportedName": "updateService",
+          "filename": "src/app/actions/service.ts"
+        }
+      },
+      "exportedName": "updateService",
+      "filename": "src/app/actions/service.ts"
+    }
+  },
+  "edge": {}
+}
