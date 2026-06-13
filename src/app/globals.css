@@ -100,6 +100,18 @@
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
+  .public-pill {
+    @apply inline-flex max-w-full items-center justify-center gap-2 whitespace-nowrap rounded-full leading-none;
+  }
+
+  .public-detail-row {
+    @apply flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4;
+  }
+
+  .public-control-row {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+
   .admin-container {
     @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8;
   }

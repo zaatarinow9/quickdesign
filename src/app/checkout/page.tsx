@@ -377,7 +377,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     </div>
-                    <span className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
+                    <span className="public-pill bg-slate-950 px-3.5 py-1.5 text-xs font-medium text-white">
                       Aktiv
                     </span>
                   </div>
@@ -413,7 +413,7 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div
                   key={item.cartItemId}
-                  className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                  className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center"
                 >
                   <div className="h-16 w-16 shrink-0 rounded-2xl bg-white p-2">
                     <img
@@ -422,15 +422,15 @@ export default function CheckoutPage() {
                       alt={item.name}
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-950">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="text-sm font-semibold text-slate-950">
                       {item.name}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <span className="public-pill bg-white px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
                       Menge: {item.quantity}
-                    </p>
+                    </span>
                   </div>
-                  <p className="text-sm font-semibold text-slate-950">
+                  <p className="text-sm font-semibold text-slate-950 sm:text-right">
                     {formatCurrency(normalizeDisplayPrice(item.totalPrice))}
                   </p>
                 </div>

@@ -301,7 +301,7 @@ export default function TrackOrderPage() {
                   </h2>
                 </div>
                 {activeEmail ? (
-                  <p className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
+                  <p className="public-pill bg-slate-100 px-4 py-2 text-sm text-slate-600">
                     {activeEmail}
                   </p>
                 ) : null}
@@ -317,14 +317,14 @@ export default function TrackOrderPage() {
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-3">
-                            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-500 ring-1 ring-slate-200">
+                            <span className="public-pill bg-white px-3 py-1 text-xs font-medium text-slate-500 ring-1 ring-slate-200">
                               {getLookupLabel(order.publicOrderCode)}
                             </span>
                             <span className="text-lg font-semibold text-slate-950">
                               {order.publicOrderCode}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm leading-6 text-slate-500">
                             <span>
                               Auftrag vom {format(new Date(order.createdAt), "dd.MM.yyyy")}
                             </span>

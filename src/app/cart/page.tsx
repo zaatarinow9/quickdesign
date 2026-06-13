@@ -9,6 +9,7 @@ import {
   getSnapshotOrBuildLegacy,
   type ServiceConfigurationSnapshot,
 } from "@/lib/services/configuration/snapshot";
+import QuantityStepper from "@/components/ui/QuantityStepper";
 
 const FabricTextureDef = () => (
   <defs>
@@ -161,9 +162,9 @@ function CartItemPreview({ item }: { item: CartItem }) {
 
 function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot }) {
   return (
-    <div className="space-y-1 mb-4">
+    <div className="mb-4 space-y-2">
       {snapshot.design && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm leading-6 text-neutral-600">
           <span className="font-medium text-neutral-900">Modell:</span>{" "}
           {snapshot.design.model}
           {snapshot.color && (
@@ -178,27 +179,27 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
         </p>
       )}
 
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm leading-6 text-neutral-600">
         <span className="font-medium text-neutral-900">Preismodell:</span>{" "}
         {getPricingModelLabel(snapshot.pricingModel)}
       </p>
 
       {snapshot.size && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm leading-6 text-neutral-600">
           <span className="font-medium text-neutral-900">{snapshot.size.fieldLabel}:</span>{" "}
           {snapshot.size.value}
         </p>
       )}
 
       {snapshot.selectedPricingTier && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm leading-6 text-neutral-600">
           <span className="font-medium text-neutral-900">Mengenstaffel:</span>{" "}
           {snapshot.selectedPricingTier.label}
         </p>
       )}
 
       {snapshot.area && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm leading-6 text-neutral-600">
           <span className="font-medium text-neutral-900">Fläche:</span>{" "}
           {snapshot.area.widthCm.toFixed(1)} x {snapshot.area.heightCm.toFixed(1)} cm
           {" "}({snapshot.area.areaSqm.toFixed(3)} m2)
@@ -208,7 +209,7 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
       {snapshot.selectedOptions.map((option) => (
         <p
           key={`${option.fieldKey}-${option.valueLabel}`}
-          className="text-sm text-neutral-600"
+          className="text-sm leading-6 text-neutral-600"
         >
           <span className="font-medium text-neutral-900">{option.fieldLabel}:</span>{" "}
           {option.valueLabel}
@@ -221,7 +222,7 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
       {snapshot.textFields.map((field) => (
         <p
           key={field.fieldKey}
-          className="text-sm text-neutral-600"
+          className="text-sm leading-6 text-neutral-600"
         >
           <span className="font-medium text-neutral-900">{field.fieldLabel}:</span>{" "}
           {field.value}
@@ -232,7 +233,7 @@ function SnapshotDetails({ snapshot }: { snapshot: ServiceConfigurationSnapshot 
         field.files.map((file, index) => (
           <p
             key={`${field.fieldKey}-${index}`}
-            className="text-sm text-neutral-600"
+            className="text-sm leading-6 text-neutral-600"
           >
             <span className="font-medium text-neutral-900">{field.fieldLabel}:</span>{" "}
             {file.fileName}
@@ -329,34 +330,34 @@ export default function CartPage() {
 
                       <SnapshotDetails snapshot={snapshot} />
 
-                      <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50">
-                          <button
-                            onClick={() =>
+                      <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Menge
+                          </p>
+                          <QuantityStepper
+                            value={item.quantity}
+                            onDecrement={() =>
                               updateQuantity(
                                 item.cartItemId,
                                 Math.max(1, item.quantity - 1),
                               )
                             }
-                            className="px-4 py-2 text-slate-500 transition-colors hover:text-slate-950"
-                          >
-                            -
-                          </button>
-                          <span className="px-4 py-2 text-sm font-semibold text-slate-950">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
+                            onIncrement={() =>
                               updateQuantity(item.cartItemId, item.quantity + 1)
                             }
-                            className="px-4 py-2 text-slate-500 transition-colors hover:text-slate-950"
-                          >
-                            +
-                          </button>
+                            decrementLabel="Menge verringern"
+                            incrementLabel="Menge erhöhen"
+                            tone="slate"
+                            compact
+                          />
                         </div>
-                        <span className="text-2xl font-semibold text-slate-950">
-                          {formatCurrency(item.totalPrice)}
-                        </span>
+                        <div className="space-y-1 sm:text-right">
+                          <p className="text-sm text-slate-500">Positionspreis</p>
+                          <span className="text-2xl font-semibold text-slate-950">
+                            {formatCurrency(item.totalPrice)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

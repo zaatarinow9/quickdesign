@@ -39,12 +39,14 @@ import {
   getServerActionUploadLimitMessage,
   isUploadLimitCapped,
 } from "@/lib/storage/upload-limits";
+import { cn } from "@/lib/utils";
 import type {
   NormalizedServiceConfig,
   NormalizedServiceField,
   NormalizedServicePricingMode,
   NormalizedUploadField,
 } from "@/lib/services/configuration/types";
+import QuantityStepper from "@/components/ui/QuantityStepper";
 
 const COMMON_COLORS = [
   { name: "Weiß", hex: "#FFFFFF" },
@@ -402,15 +404,34 @@ function SummaryList({
       {entries.map((entry) => (
         <div
           key={`${entry.label}-${entry.value}`}
-          className="flex items-start justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
+          className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
         >
-          <span className="text-sm text-neutral-500">{entry.label}</span>
-          <span className="text-right text-sm font-medium text-neutral-950">
+          <span className="min-w-0 text-sm text-neutral-500">{entry.label}</span>
+          <span className="max-w-full text-sm font-medium text-neutral-950 sm:max-w-[65%] sm:text-right">
             {entry.value}
           </span>
         </div>
       ))}
     </div>
+  );
+}
+
+function StatusPill({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "public-pill self-start px-3 py-1 text-xs font-medium",
+        className,
+      )}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -845,9 +866,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
         >
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <label className="text-sm font-semibold text-neutral-950">
                 {field.label}
@@ -859,9 +880,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               ) : null}
             </div>
             {field.required ? (
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-600">
+              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
                 Pflichtfeld
-              </span>
+              </StatusPill>
             ) : null}
           </div>
 
@@ -921,9 +942,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
         >
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <label className="text-sm font-semibold text-neutral-950">
                 {field.label}
@@ -935,9 +956,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               ) : null}
             </div>
             {field.required ? (
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-600">
+              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
                 Pflichtfeld
-              </span>
+              </StatusPill>
             ) : null}
           </div>
 
@@ -969,9 +990,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
         >
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <label className="text-sm font-semibold text-neutral-950">
                 {field.label}
@@ -983,9 +1004,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               ) : null}
             </div>
             {field.required ? (
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-600">
+              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
                 Pflichtfeld
-              </span>
+              </StatusPill>
             ) : null}
           </div>
 
@@ -1015,9 +1036,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <div
         key={field.id}
-        className="rounded-[24px] border border-neutral-200 bg-white p-5"
+        className="rounded-[24px] border border-neutral-200 bg-white p-5 sm:p-6"
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="text-sm font-semibold text-neutral-950">
               {field.label}
@@ -1032,9 +1053,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             </p>
           </div>
           {field.required ? (
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+            <StatusPill className="bg-neutral-100 text-neutral-600">
               Pflichtfeld
-            </span>
+            </StatusPill>
           ) : null}
         </div>
 
@@ -1087,7 +1108,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <div
         key={field.id}
-        className="rounded-[24px] border border-neutral-200 bg-white p-5"
+        className="rounded-[24px] border border-neutral-200 bg-white p-5 sm:p-6"
       >
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1096,9 +1117,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 {field.label}
               </h3>
               {field.required ? (
-                <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+                <StatusPill className="bg-neutral-100 text-neutral-600">
                   Pflichtfeld
-                </span>
+                </StatusPill>
               ) : null}
             </div>
             {field.helperText ? (
@@ -1115,11 +1136,11 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </p>
             ) : null}
           </div>
-          <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-600">
+          <StatusPill className="border border-neutral-200 bg-neutral-50 text-neutral-600">
             {selectedFilesCount > 0
               ? `${selectedFilesCount} ausgewählt`
               : "Keine Datei ausgewählt"}
-          </span>
+          </StatusPill>
         </div>
 
         <div className="space-y-4">
@@ -1534,7 +1555,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
           <div className="space-y-4">
             {config.designSettings.showCanvas ? (
-              <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+              <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <Palette className="h-4 w-4 text-neutral-500" />
                   <div>
@@ -1605,7 +1626,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <div className="flex items-start gap-3">
                 <Layers3 className="mt-0.5 h-4 w-4 text-neutral-500" />
                 <div className="space-y-4">
@@ -1692,38 +1713,32 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                     </div>
                   ) : null}
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-neutral-950">
-                      {config.pricing.mode === "quantity_tiers"
-                        ? "Anzahl Sets"
-                        : "Menge"}
-                    </label>
-                    <div className="inline-flex items-center overflow-hidden rounded-full border border-neutral-200 bg-white">
-                      <button
-                        type="button"
-                        onClick={() => {
+                  <div className="rounded-[24px] border border-neutral-200 bg-white p-4 sm:p-5">
+                    <div className="public-control-row">
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-neutral-950">
+                          {config.pricing.mode === "quantity_tiers"
+                            ? "Anzahl Sets"
+                            : "Menge"}
+                        </label>
+                        <p className="text-sm leading-6 text-neutral-500">
+                          Die aktuelle Stückzahl wirkt sich direkt auf Ihren Gesamtpreis aus.
+                        </p>
+                      </div>
+                      <QuantityStepper
+                        value={quantity}
+                        onDecrement={() => {
                           clearValidationMessage();
                           setQuantity(Math.max(1, quantity - 1));
                         }}
-                        className="px-4 py-3 text-neutral-500 transition-colors hover:text-neutral-950"
-                        aria-label="Menge verringern"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[64px] px-4 py-3 text-center text-sm font-semibold text-neutral-950">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
+                        onIncrement={() => {
                           clearValidationMessage();
                           setQuantity(quantity + 1);
                         }}
-                        className="px-4 py-3 text-neutral-500 transition-colors hover:text-neutral-950"
-                        aria-label="Menge erhöhen"
-                      >
-                        +
-                      </button>
+                        decrementLabel="Menge verringern"
+                        incrementLabel="Menge erhöhen"
+                        tone="neutral"
+                      />
                     </div>
                   </div>
 
@@ -1818,26 +1833,26 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <h3 className="text-sm font-semibold text-neutral-950">Produkt</h3>
               <p className="mt-3 text-sm text-neutral-600">{service.name}</p>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <h3 className="text-sm font-semibold text-neutral-950">
                 Menge / Staffel
               </h3>
               <div className="mt-3 space-y-3">
-                <div className="flex items-center justify-between gap-4 text-sm">
+                <div className="public-detail-row text-sm">
                   <span className="text-neutral-500">
                     {config.pricing.mode === "quantity_tiers" ? "Anzahl Sets" : "Menge"}
                   </span>
-                  <span className="font-medium text-neutral-950">{quantity}</span>
+                  <span className="font-medium text-neutral-950 sm:text-right">{quantity}</span>
                 </div>
                 {selectedTier ? (
-                  <div className="flex items-center justify-between gap-4 text-sm">
+                  <div className="public-detail-row text-sm">
                     <span className="text-neutral-500">Staffel</span>
-                    <span className="font-medium text-neutral-950">
+                    <span className="font-medium text-neutral-950 sm:text-right">
                       {selectedTier.label}
                     </span>
                   </div>
@@ -1845,7 +1860,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <h3 className="text-sm font-semibold text-neutral-950">Optionen</h3>
               <div className="mt-3">
                 <SummaryList
@@ -1857,7 +1872,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <h3 className="text-sm font-semibold text-neutral-950">Dateien</h3>
               <div className="mt-3">
                 <SummaryList
@@ -1871,7 +1886,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
               <h3 className="text-sm font-semibold text-neutral-950">Hinweise</h3>
               <textarea
                 value={orderNotes}
@@ -1885,7 +1900,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               />
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-950 p-5 text-white">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-950 p-5 text-white sm:p-6">
               <p className="text-sm text-neutral-300">Gesamtpreis</p>
               <p className="mt-2 text-3xl font-semibold">
                 {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
@@ -2017,7 +2032,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
           <div className="space-y-6 p-6 md:p-8">
             <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2 text-xs font-medium text-neutral-700">
+                <div className="public-pill inline-flex items-center gap-2 bg-neutral-100 px-4 py-2 text-xs font-medium text-neutral-700">
                   <Layers3 className="h-4 w-4" />
                   Schritt für Schritt konfigurieren
                 </div>
@@ -2079,7 +2094,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
 
         <aside className="space-y-4 xl:sticky xl:top-28">
           <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-neutral-950">
                   Ihre Auswahl
@@ -2088,20 +2103,21 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                   Live-Zusammenfassung Ihrer aktuellen Konfiguration.
                 </p>
               </div>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+              <StatusPill
+                className={cn(
+                  "shrink-0 self-start px-3.5 py-1.5 text-xs sm:self-auto",
                   configurationMissing.length === 0 && uploadMissing.length === 0
                     ? "bg-emerald-50 text-emerald-700"
-                    : "bg-amber-50 text-amber-700"
-                }`}
+                    : "bg-amber-50 text-amber-700",
+                )}
               >
                 {configurationMissing.length === 0 && uploadMissing.length === 0
                   ? "Vollständig"
                   : "Noch nicht vollständig"}
-              </span>
+              </StatusPill>
             </div>
 
-            <div className="mt-5 flex items-center gap-4 rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+            <div className="mt-5 flex items-start gap-4 rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:items-center">
               <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white">
                 <img
                   src={service.image}
@@ -2129,10 +2145,10 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 {priceEntries.map((entry) => (
                   <div
                     key={`${entry.label}-${entry.value}`}
-                    className="flex items-start justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
+                    className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
                   >
-                    <span className="text-sm text-neutral-500">{entry.label}</span>
-                    <span className="text-right text-sm font-medium text-neutral-950">
+                    <span className="min-w-0 text-sm text-neutral-500">{entry.label}</span>
+                    <span className="max-w-full text-sm font-medium text-neutral-950 sm:max-w-[65%] sm:text-right">
                       {entry.value}
                     </span>
                   </div>

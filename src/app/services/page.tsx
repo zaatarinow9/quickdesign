@@ -287,7 +287,7 @@ export default async function ServicesPage() {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-                  <span className="absolute left-5 top-5 rounded-full bg-white/92 px-4 py-2 text-xs font-semibold text-slate-900 shadow-lg">
+                  <span className="public-pill absolute left-5 top-5 bg-white/92 px-4 py-2 text-xs font-semibold text-slate-900 shadow-lg">
                     {pricing.badgeLabel}
                   </span>
                 </div>
