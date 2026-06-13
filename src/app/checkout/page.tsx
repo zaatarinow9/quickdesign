@@ -266,9 +266,8 @@ export default function CheckoutPage() {
             Bestellung erfolgreich
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
-            Vielen Dank. Wir haben Ihren Auftrag erhalten und kümmern uns jetzt
-            um die weitere Bearbeitung. Für das Tracking verwenden Sie bitte den
-            Code unten zusammen mit Ihrer E-Mail-Adresse.
+            Vielen Dank. Für das Tracking verwenden Sie den Code unten zusammen
+            mit Ihrer E-Mail-Adresse.
           </p>
           {publicOrderCode ? (
             <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 px-6 py-5">
@@ -324,9 +323,8 @@ export default function CheckoutPage() {
                 Bestellung abschließen
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">
-                Ihre Auswahl aus dem Konfigurator wird mit allen Konfigurations-
-                und Upload-Daten übernommen. Im letzten Schritt fehlen nur noch
-                Ihre Kontaktdaten.
+                Ihre Auswahl wird übernommen. Es fehlen nur noch Ihre
+                Kontaktdaten.
               </p>
             </div>
 
@@ -373,7 +371,7 @@ export default function CheckoutPage() {
                           Simulierte Zahlung
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Aktiv für die aktuelle Bestellstrecke
+                          Aktive Zahlungsstrecke
                         </p>
                       </div>
                     </div>
@@ -382,8 +380,8 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <p className="mt-4 text-sm leading-7 text-slate-500">
-                    Uploads über {MAX_SERVER_ACTION_UPLOAD_MB} MB werden aus
-                    Sicherheitsgründen vor dem Absenden blockiert.
+                    Uploads über {MAX_SERVER_ACTION_UPLOAD_MB} MB werden vor dem
+                    Absenden blockiert.
                   </p>
                 </div>
               </div>

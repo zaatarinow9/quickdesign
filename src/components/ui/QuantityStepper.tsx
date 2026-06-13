@@ -41,13 +41,15 @@ export default function QuantityStepper({
   valueClassName,
 }: QuantityStepperProps) {
   const toneStyles = TONE_STYLES[tone];
-  const controlSize = compact ? "min-h-10 min-w-10 px-3.5" : "min-h-11 min-w-11 px-4";
-  const valueSize = compact ? "min-h-10 min-w-[3.25rem] px-3.5" : "min-h-11 min-w-[4rem] px-4";
+  const controlSize = compact ? "h-10 w-10 text-base" : "h-11 w-11 text-lg";
+  const valueSize = compact
+    ? "h-10 min-w-[3.5rem] px-3"
+    : "h-11 min-w-[4rem] px-4";
 
   return (
     <div
       className={cn(
-        "inline-flex items-center self-start overflow-hidden rounded-full border shadow-sm",
+        "inline-flex shrink-0 items-center self-start overflow-hidden rounded-full border shadow-sm",
         toneStyles.root,
         className,
       )}
@@ -57,7 +59,7 @@ export default function QuantityStepper({
         onClick={onDecrement}
         aria-label={decrementLabel}
         className={cn(
-          "flex items-center justify-center text-lg font-medium leading-none transition-colors",
+          "flex shrink-0 items-center justify-center font-medium leading-none transition-colors",
           controlSize,
           toneStyles.button,
         )}
@@ -66,7 +68,7 @@ export default function QuantityStepper({
       </button>
       <span
         className={cn(
-          "flex items-center justify-center border-x text-center text-sm font-semibold",
+          "flex items-center justify-center border-x px-3 text-center text-sm font-semibold tabular-nums",
           toneStyles.divider,
           toneStyles.value,
           valueSize,
@@ -80,7 +82,7 @@ export default function QuantityStepper({
         onClick={onIncrement}
         aria-label={incrementLabel}
         className={cn(
-          "flex items-center justify-center text-lg font-medium leading-none transition-colors",
+          "flex shrink-0 items-center justify-center font-medium leading-none transition-colors",
           controlSize,
           toneStyles.button,
         )}

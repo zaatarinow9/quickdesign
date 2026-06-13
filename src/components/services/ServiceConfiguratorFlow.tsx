@@ -10,7 +10,6 @@ import {
   ChevronRight,
   FileText,
   ImageIcon,
-  Info,
   Layers3,
   Palette,
   ShoppingCart,
@@ -64,7 +63,7 @@ type FlowStepId = "configuration" | "uploads" | "review" | "order";
 type FlowStep = {
   id: FlowStepId;
   label: string;
-  description: string;
+  description?: string;
 };
 
 type ServiceSummary = {
@@ -268,15 +267,13 @@ function buildSteps(hasUploadStep: boolean): FlowStep[] {
   return [
     {
       id: "configuration",
-      label: "Konfiguration",
-      description: "Produkt und Preis einstellen",
+      label: "Konfigurieren",
     },
     ...(hasUploadStep
       ? [
           {
             id: "uploads" as const,
             label: "Dateien",
-            description: "Produktionsdaten hochladen",
           },
         ]
       : []),
@@ -288,7 +285,6 @@ function buildSteps(hasUploadStep: boolean): FlowStep[] {
     {
       id: "order",
       label: "Bestellung",
-      description: "Warenkorb und Checkout",
     },
   ];
 }
@@ -307,7 +303,10 @@ function Stepper({
   isComplete: (stepId: FlowStepId) => boolean;
 }) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
+    <div
+      className="flex gap-2.5 overflow-x-auto pb-1 md:grid md:overflow-visible md:pb-0"
+      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+    >
       {steps.map((step, index) => {
         const active = step.id === currentStep;
         const complete = isComplete(step.id);
@@ -322,7 +321,7 @@ function Stepper({
               }
             }}
             disabled={!canSelect(step.id)}
-            className={`min-w-[220px] rounded-[24px] border px-4 py-4 text-left transition-all md:min-w-0 ${
+            className={`min-w-[172px] rounded-[22px] border px-4 py-3 text-left transition-all md:min-w-0 ${
               active
                 ? "border-neutral-950 bg-neutral-950 text-white shadow-lg"
                 : complete
@@ -344,13 +343,6 @@ function Stepper({
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{step.label}</p>
-                <p
-                  className={`mt-1 text-xs leading-5 ${
-                    active ? "text-neutral-300" : "text-neutral-500"
-                  }`}
-                >
-                  {step.description}
-                </p>
               </div>
             </div>
           </button>
@@ -370,14 +362,14 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm md:p-8">
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-neutral-950">
+    <section className="rounded-[28px] border border-neutral-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <h2 className="text-xl font-semibold text-neutral-950 md:text-2xl">
             {title}
           </h2>
           {description ? (
-            <p className="max-w-3xl text-sm leading-7 text-neutral-600">
+            <p className="max-w-3xl text-sm leading-6 text-neutral-600">
               {description}
             </p>
           ) : null}
@@ -400,11 +392,11 @@ function SummaryList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {entries.map((entry) => (
         <div
           key={`${entry.label}-${entry.value}`}
-          className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
+          className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5"
         >
           <span className="min-w-0 text-sm text-neutral-500">{entry.label}</span>
           <span className="max-w-full text-sm font-medium text-neutral-950 sm:max-w-[65%] sm:text-right">
@@ -432,6 +424,88 @@ function StatusPill({
     >
       {children}
     </span>
+  );
+}
+
+function getCompactUploadFieldStatusText(field: NormalizedUploadField): string {
+  const details: string[] = [];
+  const effectiveUploadLimitMb = getEffectiveUploadLimitMb(field.maxFileSizeMb);
+
+  if (field.allowedFileTypesText) {
+    details.push(`Formate: ${field.allowedFileTypesText}`);
+  }
+
+  details.push(
+    field.maxFiles === 1 ? "Max. 1 Datei" : `Max. ${field.maxFiles} Dateien`,
+  );
+  details.push(`Max. ${effectiveUploadLimitMb} MB`);
+
+  return details.join(" · ");
+}
+
+function getCompactCheckoutUploadHint(): string {
+  return `Max. ${MAX_SERVER_ACTION_UPLOAD_MB} MB im Checkout`;
+}
+
+function FieldHeader({
+  label,
+  helperText,
+  required,
+}: {
+  label: string;
+  helperText?: string | null;
+  required?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-neutral-950">{label}</p>
+        {required ? (
+          <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
+            Pflichtfeld
+          </StatusPill>
+        ) : null}
+      </div>
+      {helperText ? (
+        <p className="text-xs leading-5 text-neutral-500">{helperText}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function MissingFieldsNotice({
+  items,
+  className,
+}: {
+  items: string[];
+  className?: string;
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  const showCount = items.length > 3;
+  const summary = showCount ? `${items.length} Angaben` : items.join(", ");
+
+  return (
+    <div
+      className={cn(
+        "rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3.5",
+        className,
+      )}
+    >
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill className="bg-white text-amber-700 ring-1 ring-amber-200">
+            Noch offen
+          </StatusPill>
+          <p className="text-sm font-medium text-amber-950">{summary}</p>
+        </div>
+        {showCount ? (
+          <p className="text-xs leading-5 text-amber-900">{items.join(", ")}</p>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -647,7 +721,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
 
     if (selectedTier) {
       entries.push({
-        label: "Staffel",
+        label: "Mengenstaffel",
         value: `${selectedTier.label} · ${formatCurrency(selectedTier.price)}`,
       });
     }
@@ -671,7 +745,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
         value: formatCurrency(priceResult.optionPriceImpact),
       },
       {
-        label: "Gesamtpreis",
+        label: "Total",
         value: formatCurrency(priceResult.total),
       },
     );
@@ -688,6 +762,16 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     quantity,
     selectedTier,
   ]);
+
+  const missingFields = useMemo(
+    () => [...configurationMissing, ...uploadMissing],
+    [configurationMissing, uploadMissing],
+  );
+  const trimmedOrderNotes = orderNotes.trim();
+  const hasOptionSelections = selectedOptionEntries.length > 0;
+  const hasUploadSelections = selectedUploadEntries.length > 0;
+  const hasNotes = trimmedOrderNotes.length > 0;
+  const isComplete = missingFields.length === 0;
 
   function clearValidationMessage() {
     if (validationMessage) {
@@ -866,27 +950,17 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5"
         >
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <label className="text-sm font-semibold text-neutral-950">
-                {field.label}
-              </label>
-              {field.helperText ? (
-                <p className="mt-1 text-sm leading-6 text-neutral-500">
-                  {field.helperText}
-                </p>
-              ) : null}
-            </div>
-            {field.required ? (
-              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
-                Pflichtfeld
-              </StatusPill>
-            ) : null}
+          <div className="mb-3">
+            <FieldHeader
+              label={field.label}
+              helperText={field.helperText}
+              required={field.required}
+            />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {field.values.map((value) => {
               const active = selectedValues[field.id] === value.id;
 
@@ -901,7 +975,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                       [field.id]: value.id,
                     }));
                   }}
-                  className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+                  className={`rounded-2xl border px-4 py-3.5 text-left transition-all ${
                     active
                       ? "border-neutral-950 bg-white shadow-sm"
                       : "border-neutral-200 bg-white hover:border-neutral-400"
@@ -914,16 +988,12 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                       </p>
                       {value.price > 0 ? (
                         <p className="mt-1 text-xs text-neutral-500">
-                          Aufpreis {formatCurrency(value.price)}
+                          +{formatCurrency(value.price)}
                         </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-neutral-500">
-                          Ohne Aufpreis
-                        </p>
-                      )}
+                      ) : null}
                     </div>
                     <span
-                      className={`mt-0.5 h-4 w-4 rounded-full border ${
+                      className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${
                         active
                           ? "border-neutral-950 bg-neutral-950"
                           : "border-neutral-300 bg-white"
@@ -942,24 +1012,14 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5"
         >
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <label className="text-sm font-semibold text-neutral-950">
-                {field.label}
-              </label>
-              {field.helperText ? (
-                <p className="mt-1 text-sm leading-6 text-neutral-500">
-                  {field.helperText}
-                </p>
-              ) : null}
-            </div>
-            {field.required ? (
-              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
-                Pflichtfeld
-              </StatusPill>
-            ) : null}
+          <div className="mb-3">
+            <FieldHeader
+              label={field.label}
+              helperText={field.helperText}
+              required={field.required}
+            />
           </div>
 
           <select
@@ -972,7 +1032,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 [field.id]: event.target.value,
               }));
             }}
-            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950 disabled:cursor-not-allowed disabled:text-neutral-400"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950 disabled:cursor-not-allowed disabled:text-neutral-400"
           >
             <option value="">Bitte wählen</option>
             {field.values.map((value) => (
@@ -990,24 +1050,14 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
       return (
         <div
           key={field.id}
-          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6"
+          className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5"
         >
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <label className="text-sm font-semibold text-neutral-950">
-                {field.label}
-              </label>
-              {field.helperText ? (
-                <p className="mt-1 text-sm leading-6 text-neutral-500">
-                  {field.helperText}
-                </p>
-              ) : null}
-            </div>
-            {field.required ? (
-              <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
-                Pflichtfeld
-              </StatusPill>
-            ) : null}
+          <div className="mb-3">
+            <FieldHeader
+              label={field.label}
+              helperText={field.helperText}
+              required={field.required}
+            />
           </div>
 
           <input
@@ -1021,7 +1071,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               }));
             }}
             placeholder={field.placeholder || field.label}
-            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
           />
         </div>
       );
@@ -1036,7 +1086,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <div
         key={field.id}
-        className="rounded-[24px] border border-neutral-200 bg-white p-5 sm:p-6"
+        className="rounded-[24px] border border-neutral-200 bg-white p-4 sm:p-5"
       >
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -1049,7 +1099,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </p>
             ) : null}
             <p className="mt-2 text-xs text-neutral-500">
-              {getCheckoutUploadLimitHint()}
+              {getCompactCheckoutUploadHint()}
             </p>
           </div>
           {field.required ? (
@@ -1060,7 +1110,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
         </div>
 
         {!currentFile ? (
-          <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:bg-white">
+          <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:bg-white">
             <Upload className="h-4 w-4" />
             Datei auswählen
             <input
@@ -1072,7 +1122,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
           </label>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-neutral-950">
                   {currentFile.name}
@@ -1091,9 +1141,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                     return next;
                   });
                 }}
-                className="rounded-full border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+                className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
               >
-                Datei entfernen
+                Entfernen
               </button>
             </div>
           </div>
@@ -1108,7 +1158,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <div
         key={field.id}
-        className="rounded-[24px] border border-neutral-200 bg-white p-5 sm:p-6"
+        className="rounded-[24px] border border-neutral-200 bg-white p-4 sm:p-5"
       >
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1128,11 +1178,11 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </p>
             ) : null}
             <p className="mt-2 text-xs text-neutral-500">
-              {getUploadFieldStatusText(field)}
+              {getCompactUploadFieldStatusText(field)}
             </p>
             {isUploadLimitCapped(field.maxFileSizeMb) ? (
               <p className="mt-2 text-xs font-medium text-amber-700">
-                Aktuelles Upload-Limit im Checkout: {MAX_SERVER_ACTION_UPLOAD_MB} MB
+                {getCompactCheckoutUploadHint()}
               </p>
             ) : null}
           </div>
@@ -1152,7 +1202,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             return (
               <div key={`${field.id}-${slotIndex}`} className="space-y-3">
                 {!currentFile ? (
-                  <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:bg-white">
+                  <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:bg-white">
                     <Upload className="h-4 w-4" />
                     {field.maxFiles > 1 ? `${slotLabel} auswählen` : "Datei auswählen"}
                     <input
@@ -1166,7 +1216,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                   </label>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3.5">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-neutral-950">
                           {currentFile.name}
@@ -1178,9 +1228,9 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                       <button
                         type="button"
                         onClick={() => removeConfiguredUpload(field.id, slotIndex)}
-                        className="rounded-full border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+                        className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
                       >
-                        Datei entfernen
+                        Entfernen
                       </button>
                     </div>
 
@@ -1199,8 +1249,8 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                               event.target.value,
                             )
                           }
-                          placeholder="Zum Beispiel Vorderseite final"
-                          className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+                          placeholder="z. B. Vorderseite"
+                          className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
                         />
                       </div>
                     ) : null}
@@ -1550,22 +1600,17 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <SectionCard
         title="Produkt konfigurieren"
-        description="Wählen Sie alle produktrelevanten Angaben Schritt für Schritt aus. Die Felder kommen direkt aus der Service-Konfiguration im Admin-Bereich."
+        description="Wählen Sie die gewünschten Optionen."
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
           <div className="space-y-4">
             {config.designSettings.showCanvas ? (
-              <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+              <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
                 <div className="mb-4 flex items-center gap-3">
                   <Palette className="h-4 w-4 text-neutral-500" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-950">
-                      Produktansicht
-                    </h3>
-                    <p className="text-sm leading-6 text-neutral-500">
-                      Diese Angaben werden für die Produktion benötigt.
-                    </p>
-                  </div>
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    Produktansicht
+                  </h3>
                 </div>
 
                 <TshirtDesigner
@@ -1618,153 +1663,139 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             {orderedConfigurationFields.length > 0 ? (
               orderedConfigurationFields.map(renderConfigurationField)
             ) : (
-              <div className="rounded-[24px] border border-dashed border-neutral-300 bg-neutral-50 px-5 py-6 text-sm leading-7 text-neutral-500">
-                Für dieses Produkt sind keine zusätzlichen Konfigurationsfelder
-                hinterlegt. Sie können direkt mit Menge und Preis fortfahren.
+              <div className="rounded-[24px] border border-dashed border-neutral-300 bg-neutral-50 px-5 py-5 text-sm leading-6 text-neutral-500">
+                Keine weiteren Optionen.
               </div>
             )}
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
-              <div className="flex items-start gap-3">
-                <Layers3 className="mt-0.5 h-4 w-4 text-neutral-500" />
-                <div className="space-y-4">
-                  <div>
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Layers3 className="h-4 w-4 text-neutral-500" />
                     <h3 className="text-sm font-semibold text-neutral-950">
                       Preis und Menge
                     </h3>
-                    <p className="mt-1 text-sm leading-6 text-neutral-500">
-                      Der Preis aktualisiert sich live während Ihrer Auswahl.
-                    </p>
                   </div>
-
-                  {config.pricing.mode === "custom_quote" ? (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-900">
-                      Diese Leistung wird individuell kalkuliert. Die
-                      Konfiguration bleibt erhalten, es wird aber kein
-                      automatischer Preis berechnet.
-                    </div>
+                  {!isQuoteOnly ? (
+                    <StatusPill className="border border-neutral-200 bg-white text-neutral-600">
+                      Live-Preis
+                    </StatusPill>
                   ) : null}
+                </div>
 
-                  {config.pricing.mode === "quantity_tiers" ? (
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-neutral-950">
-                        Mengenstaffel
-                      </label>
-                      <select
-                        value={selectedQuantityTierId}
-                        onChange={(event) => {
-                          clearValidationMessage();
-                          setSelectedQuantityTierId(event.target.value);
-                        }}
-                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
-                      >
-                        {config.pricing.quantityTiers.map((tier) => (
-                          <option key={tier.id} value={tier.id}>
-                            {tier.label} ({formatCurrency(tier.price)})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
+                {config.pricing.mode === "custom_quote" ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Preis auf Anfrage
+                  </div>
+                ) : null}
 
-                  {config.pricing.mode === "area" && config.pricing.area ? (
-                    <div className="grid gap-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-neutral-950">
-                            {config.pricing.area.widthLabel}
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={widthCm}
-                            onChange={(event) => {
-                              clearValidationMessage();
-                              setWidthCm(event.target.value);
-                            }}
-                            placeholder="0"
-                            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-neutral-950">
-                            {config.pricing.area.heightLabel}
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={heightCm}
-                            onChange={(event) => {
-                              clearValidationMessage();
-                              setHeightCm(event.target.value);
-                            }}
-                            placeholder="0"
-                            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        Abgerechnete Fläche: {priceResult.billableAreaSqm.toFixed(3)} m²
-                      </p>
-                    </div>
-                  ) : null}
+                {config.pricing.mode === "quantity_tiers" ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-neutral-950">
+                      Mengenstaffel
+                    </label>
+                    <select
+                      value={selectedQuantityTierId}
+                      onChange={(event) => {
+                        clearValidationMessage();
+                        setSelectedQuantityTierId(event.target.value);
+                      }}
+                      className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+                    >
+                      {config.pricing.quantityTiers.map((tier) => (
+                        <option key={tier.id} value={tier.id}>
+                          {tier.label} ({formatCurrency(tier.price)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
 
-                  <div className="rounded-[24px] border border-neutral-200 bg-white p-4 sm:p-5">
-                    <div className="public-control-row">
-                      <div className="space-y-1">
+                {config.pricing.mode === "area" && config.pricing.area ? (
+                  <div className="grid gap-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
                         <label className="text-sm font-medium text-neutral-950">
-                          {config.pricing.mode === "quantity_tiers"
-                            ? "Anzahl Sets"
-                            : "Menge"}
+                          {config.pricing.area.widthLabel}
                         </label>
-                        <p className="text-sm leading-6 text-neutral-500">
-                          Die aktuelle Stückzahl wirkt sich direkt auf Ihren Gesamtpreis aus.
-                        </p>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={widthCm}
+                          onChange={(event) => {
+                            clearValidationMessage();
+                            setWidthCm(event.target.value);
+                          }}
+                          placeholder="0"
+                          className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+                        />
                       </div>
-                      <QuantityStepper
-                        value={quantity}
-                        onDecrement={() => {
-                          clearValidationMessage();
-                          setQuantity(Math.max(1, quantity - 1));
-                        }}
-                        onIncrement={() => {
-                          clearValidationMessage();
-                          setQuantity(quantity + 1);
-                        }}
-                        decrementLabel="Menge verringern"
-                        incrementLabel="Menge erhöhen"
-                        tone="neutral"
-                      />
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-neutral-950">
+                          {config.pricing.area.heightLabel}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={heightCm}
+                          onChange={(event) => {
+                            clearValidationMessage();
+                            setHeightCm(event.target.value);
+                          }}
+                          placeholder="0"
+                          className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4">
-                    <p className="text-sm text-neutral-500">Aktueller Preis</p>
-                    <p className="mt-2 text-3xl font-semibold text-neutral-950">
-                      {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
+                    <p className="text-xs text-neutral-500">
+                      Fläche: {priceResult.billableAreaSqm.toFixed(3)} m²
                     </p>
                   </div>
+                ) : null}
+
+                <div className="rounded-[24px] border border-neutral-200 bg-white p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="text-sm font-medium text-neutral-950">
+                      {config.pricing.mode === "quantity_tiers"
+                        ? "Anzahl Sets"
+                        : "Menge"}
+                    </label>
+                    <QuantityStepper
+                      value={quantity}
+                      onDecrement={() => {
+                        clearValidationMessage();
+                        setQuantity(Math.max(1, quantity - 1));
+                      }}
+                      onIncrement={() => {
+                        clearValidationMessage();
+                        setQuantity(quantity + 1);
+                      }}
+                      decrementLabel="Menge verringern"
+                      incrementLabel="Menge erhöhen"
+                      tone="neutral"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4">
+                  <p className="text-xs font-medium text-neutral-500">Preis</p>
+                  <p className="mt-1 text-3xl font-semibold text-neutral-950">
+                    {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {configurationMissing.length > 0 ? (
-              <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
-                Noch nicht vollständig: {configurationMissing.join(", ")}
-              </div>
-            ) : null}
+            <MissingFieldsNotice items={configurationMissing} />
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm leading-7 text-neutral-500">
-            Nur relevante Felder werden angezeigt. Pflichtangaben sind klar
-            markiert.
-          </p>
+        <div className="flex justify-end border-t border-neutral-200 pt-5">
           <button
             type="button"
             onClick={goToNextStepFromConfiguration}
@@ -1782,7 +1813,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
     return (
       <SectionCard
         title="Dateien hochladen"
-        description="Laden Sie alle erforderlichen Produktionsdateien sauber und getrennt nach Feld hoch."
+        description="Produktionsdateien hochladen."
       >
         <div className="space-y-4">
           {fileFields.map(renderOptionUploadField)}
@@ -1790,16 +1821,12 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
         </div>
 
         {fileFields.length === 0 && config.uploadSettings.fields.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-neutral-300 bg-neutral-50 px-5 py-6 text-sm leading-7 text-neutral-500">
-            Für dieses Produkt sind keine Upload-Felder erforderlich.
+          <div className="rounded-[24px] border border-dashed border-neutral-300 bg-neutral-50 px-5 py-5 text-sm leading-6 text-neutral-500">
+            Keine Uploads erforderlich.
           </div>
         ) : null}
 
-        {uploadMissing.length > 0 ? (
-          <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
-            Noch nicht vollständig: {uploadMissing.join(", ")}
-          </div>
-        ) : null}
+        <MissingFieldsNotice items={uploadMissing} />
 
         <div className="flex flex-col gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <button
@@ -1828,21 +1855,21 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
 
     return (
       <SectionCard
-        title="Auswahl prüfen"
-        description="Prüfen Sie Ihre Konfiguration, ergänzen Sie bei Bedarf Hinweise und legen Sie den Artikel dann in den Warenkorb."
+        title="Übersicht"
+        description="Auswahl prüfen und in den Warenkorb legen."
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-neutral-950">Produkt</h3>
-              <p className="mt-3 text-sm text-neutral-600">{service.name}</p>
+              <p className="mt-2 text-sm text-neutral-600">{service.name}</p>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-neutral-950">
-                Menge / Staffel
+                Preis und Menge
               </h3>
-              <div className="mt-3 space-y-3">
+              <div className="mt-3 space-y-2.5">
                 <div className="public-detail-row text-sm">
                   <span className="text-neutral-500">
                     {config.pricing.mode === "quantity_tiers" ? "Anzahl Sets" : "Menge"}
@@ -1851,7 +1878,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 </div>
                 {selectedTier ? (
                   <div className="public-detail-row text-sm">
-                    <span className="text-neutral-500">Staffel</span>
+                    <span className="text-neutral-500">Mengenstaffel</span>
                     <span className="font-medium text-neutral-950 sm:text-right">
                       {selectedTier.label}
                     </span>
@@ -1860,33 +1887,33 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-neutral-950">Optionen</h3>
               <div className="mt-3">
                 <SummaryList
                   entries={selectedOptionEntries}
-                  emptyLabel="Keine zusätzlichen Optionen ausgewählt."
+                  emptyLabel="Keine Auswahl."
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-neutral-950">Dateien</h3>
               <div className="mt-3">
                 <SummaryList
                   entries={selectedUploadEntries}
                   emptyLabel={
                     hasUploadStep
-                      ? "Noch keine Datei ausgewählt."
-                      : "Für dieses Produkt sind keine Dateien erforderlich."
+                      ? "Keine Datei."
+                      : "Keine Dateien erforderlich."
                   }
                 />
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-neutral-950">Hinweise</h3>
               <textarea
                 value={orderNotes}
@@ -1894,14 +1921,14 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                   clearValidationMessage();
                   setOrderNotes(event.target.value);
                 }}
-                rows={5}
-                placeholder="Zusätzliche Produktionshinweise oder Rückfragen"
-                className="mt-3 w-full resize-none rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
+                rows={4}
+                placeholder="Hinweise für die Produktion"
+                className="mt-3 w-full resize-none rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 text-sm text-neutral-950 outline-none transition-colors focus:border-neutral-950"
               />
             </div>
 
-            <div className="rounded-[24px] border border-neutral-200 bg-neutral-950 p-5 text-white sm:p-6">
-              <p className="text-sm text-neutral-300">Gesamtpreis</p>
+            <div className="rounded-[24px] border border-neutral-200 bg-neutral-950 p-4 text-white sm:p-5">
+              <p className="text-sm text-neutral-300">Preis</p>
               <p className="mt-2 text-3xl font-semibold">
                 {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
               </p>
@@ -1909,16 +1936,11 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
           </div>
         </div>
 
-        {reviewMissing.length > 0 ? (
-          <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
-            Noch nicht vollständig: {reviewMissing.join(", ")}
-          </div>
-        ) : null}
+        <MissingFieldsNotice items={reviewMissing} />
 
         {isQuoteOnly ? (
-          <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-7 text-neutral-600">
-            Für diese Leistung ist aktuell kein automatischer Warenkorb- oder
-            Checkout-Abschluss hinterlegt.
+          <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm leading-6 text-neutral-600">
+            Dieses Produkt wird auf Anfrage kalkuliert.
           </div>
         ) : null}
 
@@ -1950,32 +1972,30 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
   function renderOrderStep() {
     return (
       <SectionCard
-        title="Bestellung vorbereiten"
-        description="Der Artikel wurde dem Warenkorb hinzugefügt. Sie können jetzt zur Kasse gehen oder den Warenkorb noch einmal prüfen."
+        title="Weiter"
+        description="Der Artikel liegt jetzt im Warenkorb."
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
-          <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-6">
+          <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-700" />
               <div>
                 <h3 className="text-lg font-semibold text-emerald-950">
-                  Artikel erfolgreich hinzugefügt
+                  Artikel hinzugefügt
                 </h3>
-                <p className="mt-2 text-sm leading-7 text-emerald-900">
-                  Ihre Konfiguration, Auswahlfelder, Hinweise und Upload-Metadaten
-                  wurden für den Warenkorb übernommen.
+                <p className="mt-2 text-sm leading-6 text-emerald-900">
+                  Konfiguration, Hinweise und Uploads wurden übernommen.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-6">
+          <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
             <h3 className="text-sm font-semibold text-neutral-950">
               Nächster Schritt
             </h3>
-            <p className="mt-2 text-sm leading-7 text-neutral-600">
-              Im Warenkorb prüfen Sie die Position. Im Checkout ergänzen Sie nur
-              noch Ihre Kundendaten und schließen die Bestellung ab.
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              Im Warenkorb prüfen, dann zur Kasse gehen.
             </p>
           </div>
         </div>
@@ -2034,7 +2054,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               <div className="space-y-3">
                 <div className="public-pill inline-flex items-center gap-2 bg-neutral-100 px-4 py-2 text-xs font-medium text-neutral-700">
                   <Layers3 className="h-4 w-4" />
-                  Schritt für Schritt konfigurieren
+                  Konfigurator
                 </div>
                 <div>
                   <h1 className="text-3xl font-semibold text-neutral-950 md:text-4xl">
@@ -2095,25 +2115,18 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
         <aside className="space-y-4 xl:sticky xl:top-28">
           <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-950">
-                  Ihre Auswahl
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-neutral-500">
-                  Live-Zusammenfassung Ihrer aktuellen Konfiguration.
-                </p>
-              </div>
+              <h2 className="text-lg font-semibold text-neutral-950">
+                Ihre Auswahl
+              </h2>
               <StatusPill
                 className={cn(
                   "shrink-0 self-start px-3.5 py-1.5 text-xs sm:self-auto",
-                  configurationMissing.length === 0 && uploadMissing.length === 0
+                  isComplete
                     ? "bg-emerald-50 text-emerald-700"
                     : "bg-amber-50 text-amber-700",
                 )}
               >
-                {configurationMissing.length === 0 && uploadMissing.length === 0
-                  ? "Vollständig"
-                  : "Noch nicht vollständig"}
+                {isComplete ? "Bereit" : "Noch offen"}
               </StatusPill>
             </div>
 
@@ -2133,10 +2146,10 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
               </div>
             </div>
 
-            <div className="mt-5 space-y-4">
-              <div>
-                <p className="text-sm font-medium text-neutral-950">Preis</p>
-                <p className="mt-2 text-3xl font-semibold text-neutral-950">
+            <div className="mt-5 space-y-3">
+              <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-4">
+                <p className="text-xs font-medium text-neutral-500">Preis</p>
+                <p className="mt-1 text-3xl font-semibold text-neutral-950">
                   {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
                 </p>
               </div>
@@ -2145,7 +2158,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 {priceEntries.map((entry) => (
                   <div
                     key={`${entry.label}-${entry.value}`}
-                    className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3"
+                    className="public-detail-row rounded-2xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5"
                   >
                     <span className="min-w-0 text-sm text-neutral-500">{entry.label}</span>
                     <span className="max-w-full text-sm font-medium text-neutral-950 sm:max-w-[65%] sm:text-right">
@@ -2157,72 +2170,53 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             </div>
           </section>
 
-          <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-neutral-500" />
-              <h2 className="text-lg font-semibold text-neutral-950">
-                Details
-              </h2>
-            </div>
-
-            <div className="mt-5 space-y-5">
-              <div>
-                <p className="text-sm font-medium text-neutral-950">Optionen</p>
-                <div className="mt-3">
-                  <SummaryList
-                    entries={selectedOptionEntries}
-                    emptyLabel="Noch keine Auswahl."
-                  />
-                </div>
+          {(hasOptionSelections || hasUploadSelections || hasNotes) && (
+            <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <FileText className="h-4 w-4 text-neutral-500" />
+                <h2 className="text-lg font-semibold text-neutral-950">
+                  Details
+                </h2>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-neutral-950">Dateien</p>
-                <div className="mt-3">
-                  <SummaryList
-                    entries={selectedUploadEntries}
-                    emptyLabel={
-                      hasUploadStep
-                        ? "Noch keine Datei ausgewählt."
-                        : "Keine Dateien erforderlich."
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-neutral-950">Hinweise</p>
-                <p className="mt-2 text-sm leading-7 text-neutral-500">
-                  {orderNotes.trim() || "Noch keine Hinweise hinterlegt."}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {(configurationMissing.length > 0 || uploadMissing.length > 0) && (
-            <section className="rounded-[28px] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-              <div className="flex items-start gap-3">
-                <Info className="mt-0.5 h-4 w-4 text-amber-700" />
-                <div>
-                  <h2 className="text-sm font-semibold text-amber-950">
-                    Noch nicht vollständig
-                  </h2>
-                  <p className="mt-2 text-sm leading-7 text-amber-900">
-                    Bitte prüfen Sie die Pflichtfelder, bevor Sie den Artikel in
-                    den Warenkorb legen.
-                  </p>
-                  <div className="mt-3 space-y-1 text-sm text-amber-900">
-                    {configurationMissing.map((item) => (
-                      <p key={`config-${item}`}>{item}</p>
-                    ))}
-                    {uploadMissing.map((item) => (
-                      <p key={`upload-${item}`}>{item}</p>
-                    ))}
+              <div className="mt-5 space-y-5">
+                {hasOptionSelections ? (
+                  <div>
+                    <p className="text-sm font-medium text-neutral-950">Optionen</p>
+                    <div className="mt-3">
+                      <SummaryList
+                        entries={selectedOptionEntries}
+                        emptyLabel="Noch keine Auswahl."
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : null}
+
+                {hasUploadSelections ? (
+                  <div>
+                    <p className="text-sm font-medium text-neutral-950">Dateien</p>
+                    <div className="mt-3">
+                      <SummaryList
+                        entries={selectedUploadEntries}
+                        emptyLabel="Keine Datei."
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {hasNotes ? (
+                  <div>
+                    <p className="text-sm font-medium text-neutral-950">Hinweise</p>
+                    <p className="mt-2 text-sm leading-6 text-neutral-500">
+                      {trimmedOrderNotes}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </section>
           )}
+
+          <MissingFieldsNotice items={missingFields} className="shadow-sm" />
         </aside>
       </div>
     </div>

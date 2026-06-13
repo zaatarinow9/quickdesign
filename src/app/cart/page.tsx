@@ -274,7 +274,7 @@ export default function CartPage() {
           Ihr Warenkorb ist leer
         </h1>
         <p className="mb-8 max-w-md text-sm leading-7 text-slate-500">
-          Entdecken Sie unsere hochwertigen Druckleistungen.
+          Wählen Sie zuerst ein Produkt.
         </p>
         <Link
           href="/services"
@@ -295,8 +295,7 @@ export default function CartPage() {
             Ihre aktuelle Auswahl
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Prüfen Sie Konfigurationen, Mengen und Uploads, bevor Sie mit dem
-            Checkout fortfahren.
+            Prüfen Sie Menge, Auswahl und Preis.
           </p>
         </div>
 
