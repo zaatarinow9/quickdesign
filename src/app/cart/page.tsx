@@ -269,7 +269,7 @@ export default function CartPage() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center bg-slate-50 px-6 text-center">
         <ShoppingBag className="mb-8 h-24 w-24 text-slate-300" />
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mb-4 text-3xl font-semibold text-slate-950">
           Ihr Warenkorb ist leer
         </h1>
         <p className="mb-8 max-w-md text-sm leading-7 text-slate-500">
@@ -290,7 +290,7 @@ export default function CartPage() {
       <div className="public-container">
         <div className="max-w-2xl">
           <p className="section-eyebrow">Warenkorb</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
+          <h1 className="mt-4 text-4xl font-semibold leading-tight text-slate-950">
             Ihre aktuelle Auswahl
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
@@ -354,7 +354,7 @@ export default function CartPage() {
                             +
                           </button>
                         </div>
-                        <span className="text-2xl font-semibold tracking-tight text-slate-950">
+                        <span className="text-2xl font-semibold text-slate-950">
                           {formatCurrency(item.totalPrice)}
                         </span>
                       </div>
@@ -387,7 +387,7 @@ export default function CartPage() {
               <span className="text-sm font-medium text-slate-950">
                 Gesamtsumme
               </span>
-              <span className="text-3xl font-semibold tracking-tight text-slate-950">
+              <span className="text-3xl font-semibold text-slate-950">
                 {formatCurrency(cartTotal)}
               </span>
             </div>

@@ -108,7 +108,7 @@ export default function TrackOrderPage() {
 
     if (!order) {
       setSelectedOrder(null);
-      setLookupError("Bitte pruefen Sie Ihre Eingaben.");
+      setLookupError("Bitte prüfen Sie Ihre Eingaben.");
       setLookupLoading(false);
       return;
     }
@@ -154,7 +154,7 @@ export default function TrackOrderPage() {
     });
 
     if (!order) {
-      setEmailError("Bitte pruefen Sie Ihre Eingaben.");
+      setEmailError("Bitte prüfen Sie Ihre Eingaben.");
       setDetailsLoadingCode(null);
       return;
     }
@@ -170,10 +170,8 @@ export default function TrackOrderPage() {
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg">
             <PackageSearch className="h-10 w-10" />
           </div>
-          <p className="mt-6 text-sm font-medium tracking-[0.12em] text-slate-500">
-            Kundenportal
-          </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+          <p className="section-eyebrow mt-6">Kundenportal</p>
+          <h1 className="mt-4 text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
             Auftrag verfolgen
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
@@ -298,7 +296,7 @@ export default function TrackOrderPage() {
                   <p className="text-sm font-medium text-slate-500">
                     Auftragsübersicht
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">
                     Ihre letzten Aufträge
                   </h2>
                 </div>
@@ -376,7 +374,7 @@ export default function TrackOrderPage() {
               <div className="flex flex-col gap-6 border-b border-slate-200 pb-8 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="section-eyebrow">Auftragsdetails</p>
-                  <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                  <h2 className="mt-3 text-3xl font-semibold text-slate-950">
                     {selectedOrder.publicOrderCode}
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
@@ -415,7 +413,7 @@ export default function TrackOrderPage() {
               <div className="mt-8 grid gap-4 md:grid-cols-2">
                 <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 sm:p-6">
                   <p className="text-sm font-medium text-slate-500">Gesamtbetrag</p>
-                  <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                  <p className="mt-3 text-3xl font-semibold text-slate-950">
                     {formatCurrency(selectedOrder.totalAmount)}
                   </p>
                 </div>
@@ -501,7 +499,7 @@ export default function TrackOrderPage() {
 
                       {item.fileNames.length > 0 ? (
                         <div className="mt-4">
-                          <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+                          <p className="text-sm font-medium text-slate-500">
                             Druckdaten erhalten
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">

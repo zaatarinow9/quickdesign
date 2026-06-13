@@ -69,7 +69,7 @@ export default async function OrderDocumentPage({
         <div className="flex flex-col gap-3 print:hidden md:flex-row md:items-center md:justify-between">
           <Link
             href={`/admin/orders/${order.id}`}
-            className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-neutral-950"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-950"
           >
             <ArrowLeft className="h-4 w-4" /> Zurück zur Bestellung
           </Link>
@@ -82,7 +82,7 @@ export default async function OrderDocumentPage({
                 <Link
                   key={documentLink.type}
                   href={href}
-                  className={`inline-flex items-center gap-2 px-4 py-3 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                  className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-neutral-950 text-white"
                       : "border border-neutral-200 bg-white text-neutral-600 hover:text-neutral-950"
@@ -94,7 +94,7 @@ export default async function OrderDocumentPage({
             })}
             <Link
               href={buildOrderDocumentDownloadHref(order.id, documentQueryType)}
-              className="inline-flex items-center justify-center gap-2 border border-neutral-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+              className="inline-flex items-center justify-center gap-2 border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
             >
               <Download className="h-4 w-4" /> PDF herunterladen
             </Link>

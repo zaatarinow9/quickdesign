@@ -37,15 +37,10 @@ export default async function AdminLoginPage({
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
         <div className="grid w-full overflow-hidden rounded-[36px] border border-white/80 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-[0_30px_80px_rgba(2,6,23,0.45)] lg:grid-cols-[1.05fr_0.95fr]">
           <section className="hidden bg-[radial-gradient(circle_at_top_left,#1d4ed8_0%,#0f172a_55%,#020617_100%)] p-10 text-white lg:block">
-            <LogoMark
-              href="/"
-              size="compact"
-              frameClassName="bg-transparent"
-            />
-            <p className="mt-8 text-xs font-semibold tracking-[0.12em] text-sky-200">
+            <p className="text-sm font-medium text-sky-200">
               Admin Login
             </p>
-            <h1 className="mt-4 max-w-sm text-4xl font-semibold tracking-tight">
+            <h1 className="mt-4 max-w-sm text-4xl font-semibold leading-tight">
               Sicherer Zugriff auf Aufträge, Leistungen und Team.
             </h1>
             <p className="mt-6 max-w-md text-sm leading-7 text-slate-200">
@@ -58,12 +53,12 @@ export default async function AdminLoginPage({
             <div className="mx-auto max-w-md">
               <div className="flex items-center justify-between gap-4">
                 <LogoMark href="/" size="compact" className="lg:hidden" />
-                <p className="hidden text-xs font-semibold tracking-[0.12em] text-slate-400 dark:text-slate-500 sm:block">
+                <p className="hidden text-sm font-medium text-slate-400 dark:text-slate-500 sm:block">
                   Admin Login
                 </p>
                 <ThemeToggle />
               </div>
-              <h2 className="mt-8 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+              <h2 className="mt-8 text-3xl font-semibold text-slate-950 dark:text-slate-50">
                 Willkommen zurück
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">

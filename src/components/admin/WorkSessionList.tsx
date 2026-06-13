@@ -68,7 +68,7 @@ export function WorkSessionList({
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/80">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   Dauer
                 </p>
                 <p className="mt-2 font-semibold text-slate-950 dark:text-slate-50">
@@ -81,7 +81,7 @@ export function WorkSessionList({
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {session.stoppedAt
                     ? `Gestoppt: ${formatAppointmentDateTime(session.stoppedAt)}`
-                    : "Laeuft seit jetzt"}
+                    : "Läuft gerade"}
                 </p>
               </div>
             </div>

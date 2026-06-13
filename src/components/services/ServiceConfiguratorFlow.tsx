@@ -371,7 +371,7 @@ function SectionCard({
     <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm md:p-8">
       <div className="space-y-6">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
+          <h2 className="text-2xl font-semibold text-neutral-950">
             {title}
           </h2>
           {description ? (
@@ -1729,7 +1729,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
 
                   <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-sm text-neutral-500">Aktueller Preis</p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight text-neutral-950">
+                    <p className="mt-2 text-3xl font-semibold text-neutral-950">
                       {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
                     </p>
                   </div>
@@ -1887,7 +1887,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
 
             <div className="rounded-[24px] border border-neutral-200 bg-neutral-950 p-5 text-white">
               <p className="text-sm text-neutral-300">Gesamtpreis</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight">
+              <p className="mt-2 text-3xl font-semibold">
                 {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
               </p>
             </div>
@@ -2022,7 +2022,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                   Schritt für Schritt konfigurieren
                 </div>
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-neutral-950 md:text-4xl">
+                  <h1 className="text-3xl font-semibold text-neutral-950 md:text-4xl">
                     {service.name}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-600">
@@ -2035,7 +2035,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
                 <p className="text-xs font-medium text-neutral-500">
                   Startpreis
                 </p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
+                <p className="mt-2 text-2xl font-semibold text-neutral-950">
                   {getLeadPriceLabel(service, config)}
                 </p>
               </div>
@@ -2120,7 +2120,7 @@ export default function ServiceConfiguratorFlow({ service, config }: Props) {
             <div className="mt-5 space-y-4">
               <div>
                 <p className="text-sm font-medium text-neutral-950">Preis</p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight text-neutral-950">
+                <p className="mt-2 text-3xl font-semibold text-neutral-950">
                   {isQuoteOnly ? "Preis auf Anfrage" : formatCurrency(priceResult.total)}
                 </p>
               </div>

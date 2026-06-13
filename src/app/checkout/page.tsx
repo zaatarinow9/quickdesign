@@ -262,7 +262,7 @@ export default function CheckoutPage() {
           <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg">
             <CheckCircle2 className="h-10 w-10" />
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
+          <h1 className="text-4xl font-semibold text-slate-950">
             Bestellung erfolgreich
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-600">
@@ -320,8 +320,8 @@ export default function CheckoutPage() {
                 Zurück zum Warenkorb
               </Link>
               <p className="section-eyebrow mt-8">Checkout</p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-                Bestellung abschliessen
+              <h1 className="mt-4 text-4xl font-semibold leading-tight text-slate-950">
+                Bestellung abschließen
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">
                 Ihre Auswahl aus dem Konfigurator wird mit allen Konfigurations-
@@ -399,7 +399,7 @@ export default function CheckoutPage() {
                     Bestellung wird gespeichert
                   </>
                 ) : (
-                  "Bestellung abschliessen"
+                  "Bestellung abschließen"
                 )}
               </button>
             </form>
@@ -438,7 +438,7 @@ export default function CheckoutPage() {
             </div>
             <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
               <span className="text-sm font-medium text-slate-500">Gesamt</span>
-              <span className="text-3xl font-semibold tracking-tight text-slate-950">
+              <span className="text-3xl font-semibold text-slate-950">
                 {formatCurrency(cartTotal)}
               </span>
             </div>

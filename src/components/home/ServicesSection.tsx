@@ -18,9 +18,9 @@ export default async function ServicesSection() {
       <div className="public-container">
         <div className="flex flex-col gap-6 border-b border-slate-200 pb-10 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="section-eyebrow">Ausgewaehlte Leistungen</p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
-              Saubere Konfiguratoren fuer die Leistungen, die am haeufigsten
+            <p className="section-eyebrow">Ausgewählte Leistungen</p>
+            <h2 className="mt-4 text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+              Saubere Konfiguratoren für die Leistungen, die am häufigsten
               angefragt werden.
             </h2>
           </div>
@@ -51,7 +51,7 @@ export default async function ServicesSection() {
 
               <div className="space-y-4 p-6">
                 <div>
-                  <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
+                  <h3 className="text-2xl font-semibold text-slate-950">
                     {service.name}
                   </h3>
                   <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">

@@ -88,10 +88,10 @@ export default async function AdminLayout({
               <LogoMark href="/" size="sidebar" />
 
               <div className="rounded-[28px] bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-6 text-white shadow-lg ring-1 ring-white/10">
-                <p className="text-xs font-semibold tracking-[0.12em] text-slate-300">
+                <p className="text-sm font-medium text-slate-300">
                   Admin-Bereich
                 </p>
-                <p className="mt-3 text-2xl font-semibold tracking-tight">
+                <p className="mt-3 text-2xl font-semibold">
                   Interne Verwaltung
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-300">
@@ -106,7 +106,7 @@ export default async function AdminLayout({
             </div>
 
             <div className="mt-6 shrink-0 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/70">
-              <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                 Angemeldet als
               </p>
               <p className="mt-3 text-base font-semibold text-slate-950 dark:text-slate-50">
@@ -132,11 +132,10 @@ export default async function AdminLayout({
               <div className="rounded-[28px] bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-5 text-white ring-1 ring-white/10">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <LogoMark href="/" size="compact" />
-                    <p className="mt-4 text-xs font-semibold tracking-[0.12em] text-slate-300">
+                    <p className="text-sm font-medium text-slate-300">
                       Admin-Bereich
                     </p>
-                    <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    <p className="mt-2 text-2xl font-semibold">
                       Interne Verwaltung
                     </p>
                   </div>
@@ -160,7 +159,7 @@ export default async function AdminLayout({
                 <div className="flex items-start gap-4">
                   <LogoMark href="/" size="compact" className="hidden xl:inline-flex" />
                   <div>
-                    <p className="text-xs font-semibold tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       Interne Verwaltung
                     </p>
                     <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import LogoMark from "@/components/layout/LogoMark";
 
 export default function HeroSection() {
   return (
@@ -15,11 +14,10 @@ export default function HeroSection() {
 
       <div className="public-container relative flex min-h-[calc(100vh-5rem)] items-center py-20 sm:min-h-[42rem] sm:py-24 lg:py-28">
         <div className="max-w-3xl text-white">
-          <LogoMark size="compact" />
-          <p className="mt-8 text-sm font-medium tracking-[0.12em] text-sky-100">
+          <p className="text-sm font-medium leading-6 text-sky-100 sm:text-base">
             Druckstudio für Unternehmen, Teams und schnelle Produktionen
           </p>
-          <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-7xl">
+          <h1 className="mt-4 text-4xl font-semibold leading-tight sm:text-5xl lg:text-7xl">
             Druckprodukte online konfigurieren, Dateien sauber übergeben und
             stressfrei bestellen.
           </h1>

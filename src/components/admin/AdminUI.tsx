@@ -119,11 +119,11 @@ export function AdminPageHeader({
     >
       <div className="space-y-3">
         {eyebrow && (
-          <p className="text-xs font-semibold tracking-[0.12em] text-sky-600 dark:text-sky-300">
+          <p className="text-sm font-medium text-sky-600 dark:text-sky-300">
             {eyebrow}
           </p>
         )}
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-4xl">
+        <h1 className="text-3xl font-semibold text-slate-950 dark:text-slate-50 md:text-4xl">
           {title}
         </h1>
         {description && (
@@ -163,7 +163,7 @@ export function AdminSectionCard({
             </div>
           )}
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
               {title}
             </h2>
             {description && (
@@ -207,10 +207,10 @@ export function AdminStatCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium tracking-[0.08em] text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             {label}
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+          <p className="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">
             {value}
           </p>
         </div>
@@ -286,7 +286,7 @@ export function AdminEmptyState({
           <Icon className="h-6 w-6" />
         </div>
       )}
-      <h3 className="mt-5 text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+      <h3 className="mt-5 text-lg font-semibold text-slate-950 dark:text-slate-50">
         {title}
       </h3>
       {description && (

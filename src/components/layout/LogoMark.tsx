@@ -15,24 +15,24 @@ const SIZE_STYLES: Record<
   }
 > = {
   header: {
-    frame: "h-10 w-[156px] sm:h-11 sm:w-[170px]",
+    frame: "h-8 w-[132px] sm:h-9 sm:w-[148px]",
     image: "object-contain object-left",
-    sizes: "170px",
+    sizes: "148px",
   },
   compact: {
-    frame: "h-9 w-[138px]",
+    frame: "h-8 w-[128px] sm:h-9 sm:w-[140px]",
     image: "object-contain object-left",
-    sizes: "138px",
+    sizes: "140px",
   },
   sidebar: {
-    frame: "h-10 w-[168px] sm:h-11 sm:w-[180px]",
+    frame: "h-9 w-[148px] sm:h-10 sm:w-[164px]",
     image: "object-contain object-left",
-    sizes: "180px",
+    sizes: "164px",
   },
   document: {
-    frame: "h-12 w-[190px]",
+    frame: "h-10 w-[168px]",
     image: "object-contain object-left",
-    sizes: "190px",
+    sizes: "168px",
   },
 };
 
@@ -58,7 +58,7 @@ export default function LogoMark({
   const frame = (
     <span
       className={cn(
-        "relative inline-flex items-center justify-start overflow-hidden rounded-2xl",
+        "relative inline-flex items-center justify-start overflow-hidden",
         SIZE_STYLES[size].frame,
         frameClassName,
       )}

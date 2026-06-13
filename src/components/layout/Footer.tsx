@@ -61,7 +61,7 @@ export default function Footer() {
                   href="/checkout"
                   className="transition-colors hover:text-slate-950"
                 >
-                  Checkout
+                  Bestellung abschließen
                 </Link>
               </li>
               <li>

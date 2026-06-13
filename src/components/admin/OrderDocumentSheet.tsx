@@ -96,14 +96,14 @@ export function OrderDocumentSheet({
                   />
                 </div>
               ) : (
-                <div className="border border-neutral-950 px-4 py-3 text-sm font-bold uppercase tracking-[0.35em] text-neutral-950">
+                <div className="border border-neutral-950 px-4 py-3 text-sm font-semibold text-neutral-950">
                   {branding.logoFallbackText}
                 </div>
               )}
             </div>
 
             <div className="space-y-1 text-sm leading-6 text-neutral-700">
-              <p className="text-xl font-bold uppercase tracking-tight text-neutral-950">
+              <p className="text-xl font-bold text-neutral-950">
                 {branding.companyName}
               </p>
               {branding.addressLines.map((line) => (
@@ -117,17 +117,17 @@ export function OrderDocumentSheet({
 
           <div className="space-y-5 md:text-right">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 {documentDetails.definition.label}
               </p>
-              <h1 className="mt-3 text-4xl font-bold uppercase tracking-tight text-neutral-950">
+              <h1 className="mt-3 text-4xl font-bold text-neutral-950">
                 {documentDetails.definition.label}
               </h1>
             </div>
 
             <div className="grid gap-3 text-sm text-neutral-700 md:justify-items-end">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                <p className="text-[11px] font-semibold text-neutral-500">
                   {documentDetails.definition.numberLabel}
                 </p>
                 <p className="mt-1 font-semibold text-neutral-950">
@@ -135,7 +135,7 @@ export function OrderDocumentSheet({
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                <p className="text-[11px] font-semibold text-neutral-500">
                   Datum
                 </p>
                 <p className="mt-1 font-semibold text-neutral-950">
@@ -144,8 +144,8 @@ export function OrderDocumentSheet({
               </div>
               {documentDetails.dueDate && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                    Faellig am
+                  <p className="text-[11px] font-semibold text-neutral-500">
+                    Fällig am
                   </p>
                   <p className="mt-1 font-semibold text-neutral-950">
                     {documentDetails.dueDate}
@@ -160,7 +160,7 @@ export function OrderDocumentSheet({
       <section className="order-document-block grid gap-7 border-b border-neutral-200 py-8 md:grid-cols-[minmax(0,1fr)_290px]">
         <div className="space-y-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400">
+            <p className="text-[11px] font-semibold text-neutral-500">
               Kunde
             </p>
             <div className="mt-3 space-y-1 text-sm leading-6 text-neutral-700">
@@ -190,13 +190,13 @@ export function OrderDocumentSheet({
 
         <div className="order-document-metadata grid gap-4 border border-neutral-300 bg-neutral-50 p-5 text-sm">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <p className="text-[11px] font-semibold text-neutral-500">
               Bestellnummer
             </p>
             <p className="mt-1 font-semibold text-neutral-950">#{order.orderNumber}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <p className="text-[11px] font-semibold text-neutral-500">
               Zahlungsstatus
             </p>
             <p className="mt-1 font-semibold text-neutral-950">
@@ -205,7 +205,7 @@ export function OrderDocumentSheet({
           </div>
           {viewer === "admin" && order.paymentMethod && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 Zahlungsmethode
               </p>
               <p className="mt-1 font-semibold text-neutral-950">
@@ -215,7 +215,7 @@ export function OrderDocumentSheet({
           )}
           {viewer === "admin" && order.assignedTo && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 Bearbeitet von
               </p>
               <p className="mt-1 font-semibold text-neutral-950">
@@ -225,7 +225,7 @@ export function OrderDocumentSheet({
           )}
           {viewer === "admin" && order.isArchived && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 Archivstatus
               </p>
               <p className="mt-1 font-semibold text-neutral-950">Archiviert</p>
@@ -237,7 +237,7 @@ export function OrderDocumentSheet({
       <section className="order-document-block border-b border-neutral-200 py-8">
         <table className="order-document-table min-w-full table-fixed border-collapse text-left">
           <thead>
-            <tr className="border-b border-neutral-300 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            <tr className="border-b border-neutral-300 text-[11px] font-semibold text-neutral-500">
               <th className="w-[7%] py-3 pr-3">Pos.</th>
               <th className="w-[21%] py-3 pr-3">Leistung</th>
               <th className="w-[34%] py-3 pr-3">Beschreibung</th>
@@ -299,7 +299,7 @@ export function OrderDocumentSheet({
         <div className="space-y-6">
           {order.customerNotes && (
             <div className="order-document-block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 Kundenhinweis
               </p>
               <p className="mt-3 text-sm leading-7 text-neutral-700">
@@ -310,7 +310,7 @@ export function OrderDocumentSheet({
 
           {viewer === "admin" && order.paymentNotes && (
             <div className="order-document-block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-400">
+              <p className="text-[11px] font-semibold text-neutral-500">
                 Zahlungsnotiz
               </p>
               <p className="mt-3 text-sm leading-7 text-neutral-700">
@@ -323,8 +323,8 @@ export function OrderDocumentSheet({
           !(viewer === "admin" && order.paymentNotes) && (
             <p className="text-sm leading-7 text-neutral-500">
               {viewer === "admin"
-                ? 'Dieses Dokument ist fuer Vorschau, Druck und "Als PDF speichern" optimiert.'
-                : "Dieses Dokument wurde digital fuer die sichere Weitergabe bereitgestellt."}
+                ? 'Dieses Dokument ist für Vorschau, Druck und "Als PDF speichern" optimiert.'
+                : "Dieses Dokument wurde digital für die sichere Weitergabe bereitgestellt."}
             </p>
           )}
         </div>
@@ -371,7 +371,7 @@ export function OrderDocumentSheet({
             </span>
           </div>
           <div className="flex items-center justify-between gap-4 text-base">
-            <span className="font-bold uppercase tracking-widest text-neutral-950">
+            <span className="font-bold text-neutral-950">
               Gesamt brutto
             </span>
             <span className="text-xl font-bold text-neutral-950">
@@ -397,7 +397,7 @@ export function OrderDocumentSheet({
       <footer className="border-t border-neutral-300 pt-8 text-xs leading-6 text-neutral-500">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <p className="font-bold uppercase tracking-[0.3em] text-neutral-400">
+            <p className="font-semibold text-neutral-500">
               Kontakt
             </p>
             <p className="mt-2 font-semibold text-neutral-700">
@@ -411,7 +411,7 @@ export function OrderDocumentSheet({
             ))}
           </div>
           <div className="md:text-right">
-            <p className="font-bold uppercase tracking-[0.3em] text-neutral-400">
+            <p className="font-semibold text-neutral-500">
               Rechtliche Angaben
             </p>
             <div className="mt-2 space-y-0.5">
@@ -424,7 +424,7 @@ export function OrderDocumentSheet({
 
         {viewer === "admin" ? (
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-dashed border-neutral-200 pt-4 print:hidden">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            <span className="text-[11px] font-semibold text-neutral-500">
               Admin-Dokument
             </span>
             <Link
@@ -434,7 +434,7 @@ export function OrderDocumentSheet({
               /admin/orders/{order.id}
             </Link>
             {currentAdminName ? (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              <span className="text-[11px] font-semibold text-neutral-500">
                 Bearbeiter: {currentAdminName}
               </span>
             ) : null}

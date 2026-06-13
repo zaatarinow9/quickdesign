@@ -199,7 +199,7 @@ function buildPricingDisplay(service: ServiceCatalogItem): ServiceCardPricing {
 
     if (typeof pricePerSqm === "number" && pricePerSqm > 0) {
       return {
-        label: `ab ${formatPrice(pricePerSqm)} / m2`,
+        label: `ab ${formatPrice(pricePerSqm)} / m²`,
         ctaLabel: "Konfigurieren",
         badgeLabel: "Flächenpreis",
       };
@@ -261,12 +261,12 @@ export default async function ServicesPage() {
       <div className="public-container">
         <div className="mx-auto max-w-3xl text-center">
           <p className="section-eyebrow">Leistungen</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
             Druck, Werbetechnik und Konfiguratoren mit klarer Struktur.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
             Konfigurieren Sie Standardleistungen direkt online oder sammeln Sie
-            erst alle Anforderungen fuer individuell kalkulierte Projekte.
+            erst alle Anforderungen für individuell kalkulierte Projekte.
           </p>
         </div>
 
@@ -296,7 +296,7 @@ export default async function ServicesPage() {
                   <p className="text-sm font-semibold text-slate-500">
                     {pricing.label}
                   </p>
-                  <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+                  <h2 className="text-2xl font-semibold text-slate-950">
                     {service.name}
                   </h2>
                   <p className="line-clamp-3 text-sm leading-7 text-slate-600">
