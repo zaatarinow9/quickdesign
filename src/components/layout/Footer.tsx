@@ -1,7 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
-import Parallax from "@/components/motion/Parallax";
+import FooterWordmark from "@/components/layout/FooterWordmark";
 import { services } from "@/content/services";
 import { navigation, printly, site } from "@/content/site";
 
@@ -126,13 +126,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div aria-hidden className="pointer-events-none select-none overflow-hidden">
-        <Parallax offset={40}>
-          <p className="translate-y-[18%] whitespace-nowrap text-center font-[family-name:var(--font-display)] text-[23vw] font-semibold leading-none tracking-[-0.06em] text-paper/[0.05]">
-            QuickDesign
-          </p>
-        </Parallax>
-      </div>
+      <FooterWordmark />
     </footer>
   );
 }
