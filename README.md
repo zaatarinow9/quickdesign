@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuickDesign – Unternehmenswebsite
 
-## Getting Started
+Offizielle Website von **QuickDesign** (Grafikdesign, Druck, Werbetechnik).
+Online-Bestellungen von Druckprodukten laufen ausschließlich über die separate Plattform
+**[QuickPrintly](https://quickprintly.de/)** – diese Website enthält bewusst keinen Shop.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router, alle Seiten statisch vorgerendert) · React 19 · TypeScript
+- Tailwind CSS 4 – Designsystem in `src/app/globals.css` (`@theme`)
+- [Motion](https://motion.dev) für Animationen, [Lenis](https://lenis.darkroom.engineering) für Smooth Scrolling
+- Kein Datenbank-Backend. Das Kontaktformular versendet E-Mails per SMTP (Server Action).
+
+## Entwicklung
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm run build && npm start
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Inhalte pflegen
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Alle Texte und Daten liegen in `src/content/`:
 
-## Learn More
+| Datei | Inhalt |
+|---|---|
+| `site.ts` | Firmendaten, Kontakt, Navigation, QuickPrintly-Link, Social Media, Impressumsangaben |
+| `services.ts` | Leistungen (erzeugt `/leistungen` und `/leistungen/[slug]`) |
+| `projects.ts` | Portfolio – **derzeit nur Platzhalter** (siehe unten) |
+| `process.ts`, `values.ts` | Arbeitsweise und Werte |
 
-To learn more about Next.js, take a look at the following resources:
+### Vor dem Livegang ausfüllen
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Impressum / Datenschutz:** `site.legal` in `src/content/site.ts` mit echten Angaben ersetzen und beide Seiten rechtlich prüfen lassen.
+2. **Projekte:** In `src/content/projects.ts` echte Referenzen eintragen, Fotos unter `public/projekte/` ablegen, `image` setzen und `placeholder: false`. Platzhalter sind auf der Website sichtbar markiert.
+3. **Social Media / WhatsApp:** Profil-URLs in `site.social` ergänzen; `site.whatsapp.enabled` nur aktivieren, wenn die Nummer per WhatsApp erreichbar ist.
+4. **Akzentfarbe:** Das Logo ist schwarz-weiß; der Akzent (`--color-accent` in `globals.css`) kann bei Bedarf an eine Markenfarbe angepasst werden.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Umgebungsvariablen (Vercel)
 
-## Deploy on Vercel
+Nur für das Kontaktformular nötig – siehe `.env.example`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, optional `CONTACT_RECIPIENT`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ohne SMTP-Konfiguration zeigt das Formular einen Hinweis mit E-Mail-Adresse und Telefonnummer.
+
+## Barrierefreiheit & Performance
+
+- `prefers-reduced-motion` wird respektiert (Motion `reducedMotion="user"`, kein Lenis, keine Marquees/Parallax).
+- Schriften werden über `next/font` lokal ausgeliefert, keine externen Bilder oder Tracker.
+- Logo als SVG (`src/components/brand/logo-paths.ts`, automatisch aus `public/logo.png` vektorisiert).
+
+## Migration vom alten Shop
+
+Der frühere Online-Shop (Produktkonfiguratoren, Warenkorb, Checkout, Sendungsverfolgung, Admin-Bereich
+mit Aufträgen, Kunden, Terminen, Zeiterfassung und Rechnungen sowie Prisma/Supabase) wurde aus diesem
+Projekt entfernt. Der vollständige alte Code bleibt in der Git-Historie erhalten (Commit `dd70c2b` auf `main`).
+
+- **Die Datenbank wurde nicht verändert.** Es wurden keine Migrationen und keine Löschungen ausgeführt.
+- Vor einem eventuellen Löschen des Supabase-Projekts bitte ein Backup bzw. einen Datenexport anlegen.
+- Nicht mehr benötigte Vercel-Variablen (`DATABASE_URL`, `ADMIN_*`, `CRON_SECRET`, `ORDER_DOCUMENT_SHARE_SECRET`, `APP_URL`) können entfernt werden, sobald die neue Version live ist; einen ggf. eingerichteten Cron-Job für `/api/cron/appointment-reminders` ebenfalls.
+- Alte URLs werden umgeleitet: `/services/*` → `/leistungen`, `/cart` & `/checkout` → QuickPrintly, `/track` → `/kontakt`, `/admin/*` → `/`.

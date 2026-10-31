@@ -1,96 +1,137 @@
-"use client";
-
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import LogoMark from "@/components/layout/LogoMark";
+import { Logo } from "@/components/brand/Logo";
+import Parallax from "@/components/motion/Parallax";
+import { services } from "@/content/services";
+import { navigation, printly, site } from "@/content/site";
+
+const SOCIAL_LABELS: Record<keyof typeof site.social, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  tiktok: "TikTok",
+};
 
 export default function Footer() {
-  const pathname = usePathname();
-
-  if (pathname.startsWith("/admin")) {
-    return null;
-  }
+  const socials = (Object.keys(site.social) as (keyof typeof site.social)[]).filter((key) => site.social[key]);
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto w-full border-t border-slate-200 bg-white">
-      <div className="public-container py-14 sm:py-16">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
-          <div className="space-y-5">
-            <LogoMark href="/" size="compact" />
-            <p className="max-w-md text-sm leading-7 text-slate-600">
-              QuickDesign begleitet Druckprojekte von der Konfiguration bis zur
-              Bestellung mit klaren Abläufen, sauberen Uploads und persönlicher
-              Betreuung.
+    <footer className="grain relative isolate overflow-hidden bg-ink text-paper">
+      <div className="container-x pt-20 sm:pt-28">
+        <div className="grid gap-14 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <Logo withTagline className="w-[220px] sm:w-[260px]" />
+            <p className="mt-8 max-w-sm text-paper/60">
+              Gestaltung, Druck und Werbetechnik aus einer Hand – für Unternehmen, die gesehen werden wollen.
             </p>
+            <a
+              href={printly.url}
+              target="_blank"
+              rel="noopener"
+              className="group mt-10 inline-flex items-center gap-4 rounded-2xl bg-paper/[0.04] p-4 pr-6 ring-1 ring-paper/10 transition-colors hover:bg-paper/[0.08]"
+            >
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-ink">
+                <ArrowUpRight className="h-5 w-5 transition-transform duration-500 group-hover:rotate-45" />
+              </span>
+              <span>
+                <span className="eyebrow block text-paper/50">{printly.name}</span>
+                <span className="mt-1 block font-medium">{printly.cta}</span>
+              </span>
+              <span className="sr-only">(öffnet in neuem Tab)</span>
+            </a>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-slate-950">Schnellzugriff</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
+          <nav aria-label="Footer – Seiten" className="lg:col-span-2">
+            <h2 className="eyebrow text-paper/40">Seiten</h2>
+            <ul className="mt-6 space-y-3">
               <li>
-                <Link href="/" className="transition-colors hover:text-slate-950">
-                  Startseite
+                <Link href="/" className="link-underline text-paper/80 hover:text-paper">
+                  Start
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/services"
-                  className="transition-colors hover:text-slate-950"
-                >
-                  Leistungen
-                </Link>
-              </li>
-              <li>
-                <Link href="/track" className="transition-colors hover:text-slate-950">
-                  Bestellung verfolgen
-                </Link>
-              </li>
+              {navigation.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="link-underline text-paper/80 hover:text-paper">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          <div>
-            <h3 className="text-sm font-semibold text-slate-950">Bestellung</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li>
-                <Link href="/cart" className="transition-colors hover:text-slate-950">
-                  Warenkorb
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/checkout"
-                  className="transition-colors hover:text-slate-950"
-                >
-                  Bestellung abschließen
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/track"
-                  className="transition-colors hover:text-slate-950"
-                >
-                  Auftrag verfolgen
-                </Link>
-              </li>
+          <nav aria-label="Footer – Leistungen" className="lg:col-span-2">
+            <h2 className="eyebrow text-paper/40">Leistungen</h2>
+            <ul className="mt-6 space-y-3">
+              {services.map((service) => (
+                <li key={service.slug}>
+                  <Link href={`/leistungen/${service.slug}`} className="link-underline text-paper/80 hover:text-paper">
+                    {service.short}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          <div>
-            <h3 className="text-sm font-semibold text-slate-950">Kontakt</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li>info@quickdesign24.de</li>
-              <li>+49 1577 2785677</li>
-              <li>Mo bis Fr, 09:00 bis 18:00</li>
+          <div className="lg:col-span-3">
+            <h2 className="eyebrow text-paper/40">Kontakt</h2>
+            <ul className="mt-6 space-y-3 text-paper/80">
+              <li>
+                <a href={`mailto:${site.contact.email}`} className="link-underline hover:text-paper">
+                  {site.contact.email}
+                </a>
+              </li>
+              <li>
+                <a href={site.contact.phoneHref} className="link-underline hover:text-paper">
+                  {site.contact.phone}
+                </a>
+              </li>
+              <li className="text-paper/50">{site.contact.hours}</li>
             </ul>
+            {socials.length > 0 ? (
+              <ul className="mt-8 flex flex-wrap gap-2">
+                {socials.map((key) => (
+                  <li key={key}>
+                    <a
+                      href={site.social[key]}
+                      target="_blank"
+                      rel="noopener"
+                      className="inline-flex h-10 items-center rounded-full px-4 text-sm ring-1 ring-paper/15 transition-colors hover:bg-paper hover:text-ink"
+                    >
+                      {SOCIAL_LABELS[key]}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
+        </div>
+
+        <div className="mt-20 flex flex-col gap-4 border-t border-paper/10 py-6 text-sm text-paper/45 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {year} {site.name}. {site.tagline}.
+          </p>
+          <ul className="flex gap-6">
+            <li>
+              <Link href="/impressum" className="hover:text-paper">
+                Impressum
+              </Link>
+            </li>
+            <li>
+              <Link href="/datenschutz" className="hover:text-paper">
+                Datenschutz
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <div className="border-t border-slate-200">
-        <div className="public-container flex flex-col gap-3 py-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} QuickDesign. Alle Rechte vorbehalten.</p>
-          <p>Klarere Konfigurationen, saubere Dateien und entspannter Checkout.</p>
-        </div>
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden">
+        <Parallax offset={40}>
+          <p className="translate-y-[18%] whitespace-nowrap text-center font-[family-name:var(--font-display)] text-[23vw] font-semibold leading-none tracking-[-0.06em] text-paper/[0.05]">
+            QuickDesign
+          </p>
+        </Parallax>
       </div>
     </footer>
   );

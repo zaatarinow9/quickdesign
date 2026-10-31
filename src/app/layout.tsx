@@ -1,51 +1,64 @@
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist_Mono, Inter, Outfit } from "next/font/google";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
-import { HIDE_PUBLIC_CHROME_HEADER } from "@/lib/admin/admin-routes";
-import ThemeBridge from "@/components/theme/ThemeBridge";
-import ThemeScript from "@/components/theme/ThemeScript";
+import MotionProvider from "@/components/motion/MotionProvider";
+import { site } from "@/content/site";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap", weight: ["400", "500", "600"] });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap", weight: ["400"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://quickdesign24.de"),
+  metadataBase: new URL(site.url),
   title: {
-    default: "QuickDesign",
-    template: "%s | QuickDesign",
+    default: `${site.name} – Design, Druck & Werbetechnik`,
+    template: `%s | ${site.name}`,
   },
-  description:
-    "QuickDesign begleitet Druck, Werbetechnik und Bestellungen mit klaren Online-Konfiguratoren und sauberem Checkout.",
-  icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+  description: site.description,
+  applicationName: site.name,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    siteName: site.name,
+    url: site.url,
+    title: `${site.name} – Design, Druck & Werbetechnik`,
+    description: site.description,
   },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const requestHeaders = await headers();
-  const hidePublicChrome = requestHeaders.get(HIDE_PUBLIC_CHROME_HEADER) === "1";
+export const viewport: Viewport = {
+  themeColor: "#0b0b0c",
+  colorScheme: "light",
+};
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: site.name,
+  slogan: site.tagline,
+  url: site.url,
+  logo: `${site.url}/logo.png`,
+  email: site.contact.email,
+  telephone: site.contact.phone,
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="de" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
-      <body
-        suppressHydrationWarning
-        className={`${inter.className} flex min-h-screen flex-col overflow-x-hidden bg-slate-50 text-slate-950`}
-      >
-        <ThemeBridge />
-        {hidePublicChrome ? null : <Header />}
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
-        {hidePublicChrome ? null : <Footer />}
+    <html lang="de" className={`${inter.variable} ${outfit.variable} ${mono.variable}`}>
+      <body className="min-h-screen">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <MotionProvider>
+          <Header />
+          <main id="inhalt" className="relative">
+            {children}
+          </main>
+          <Footer />
+        </MotionProvider>
       </body>
     </html>
   );
