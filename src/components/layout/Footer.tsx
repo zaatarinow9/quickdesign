@@ -1,7 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
-import FooterWordmark from "@/components/layout/FooterWordmark";
 import { services } from "@/content/services";
 import { navigation, printly, site } from "@/content/site";
 
@@ -107,7 +106,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-20 flex flex-col gap-4 border-t border-paper/10 py-6 text-sm text-paper/45 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-20 flex flex-col gap-4 border-t border-paper/10 py-6 text-sm text-paper/45 sm:flex-row sm:items-center sm:justify-between md:pr-20">
           <p>
             © {year} {site.name}. {site.tagline}.
           </p>
@@ -126,7 +125,6 @@ export default function Footer() {
         </div>
       </div>
 
-      <FooterWordmark />
     </footer>
   );
 }
