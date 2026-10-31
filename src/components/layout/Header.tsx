@@ -280,13 +280,17 @@ export default function Header() {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"
-            data-lenis-prevent
             initial={{ clipPath: "circle(0% at calc(100% - 3rem) 2.5rem)" }}
             animate={{ clipPath: "circle(150% at calc(100% - 3rem) 2.5rem)" }}
             exit={{ clipPath: "circle(0% at calc(100% - 3rem) 2.5rem)" }}
             transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-            className="grain fixed inset-0 z-40 flex flex-col overflow-y-auto bg-ink px-6 pb-8 pt-28 text-paper lg:hidden"
+            className="grain fixed inset-0 z-40 bg-ink text-paper lg:hidden"
           >
+            {/* Separate scroll container: iOS Safari does not scroll elements that carry a clip-path. */}
+            <div
+              data-lenis-prevent
+              className="absolute inset-0 flex flex-col overflow-y-auto overscroll-contain px-6 pb-10 pt-28 [-webkit-overflow-scrolling:touch] [touch-action:pan-y]"
+            >
             <nav aria-label="Mobile Navigation" className="flex-1">
               <ul className="space-y-1">
                 {navigation.map((item, i) => (
@@ -380,6 +384,7 @@ export default function Header() {
                 <a href={site.contact.phoneHref}>{site.contact.phone}</a>
               </div>
             </motion.div>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
