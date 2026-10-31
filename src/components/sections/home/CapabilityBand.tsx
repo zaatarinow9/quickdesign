@@ -26,7 +26,7 @@ export default function CapabilityBand() {
           </span>
         ))}
         itemClassName="px-6 font-[family-name:var(--font-display)] text-[clamp(2.5rem,7vw,6.5rem)] font-medium leading-none tracking-[-0.04em] sm:px-10"
-        separator={<LogoMark className="w-8 shrink-0 text-accent sm:w-12" title="" />}
+        separator={<LogoMark className="w-8 shrink-0 text-paper sm:w-12" title="" />}
       />
       <Marquee
         reverse

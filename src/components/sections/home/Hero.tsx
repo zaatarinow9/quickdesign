@@ -12,10 +12,13 @@ import {
 } from "motion/react";
 import { useRef } from "react";
 import { MARK_VIEWBOX } from "@/components/brand/Logo";
-import { LOGO_ARCS, LOGO_CORE, LOGO_SEGMENTS } from "@/components/brand/logo-paths";
+import { BRAND_COLORS, LOGO_ARCS, LOGO_CORE, LOGO_SEGMENTS } from "@/components/brand/logo-paths";
 
-/** Ring pieces (segments + thin arcs) in one monochrome set, ordered around the circle. */
-const RING_PATHS = [...LOGO_SEGMENTS.map((segment) => segment.d), ...LOGO_ARCS].sort((a, b) => angle(a) - angle(b));
+/** Ring pieces (coloured segments + thin arcs) in one set, ordered around the circle. */
+const RING_PATHS: { d: string; fill: string }[] = [
+  ...LOGO_SEGMENTS.map((segment) => ({ d: segment.d, fill: BRAND_COLORS[segment.color] })),
+  ...LOGO_ARCS.map((d) => ({ d, fill: "currentColor" })),
+].sort((a, b) => angle(a.d) - angle(b.d));
 
 function angle(d: string) {
   const [x, y] = (d.match(/-?\d+\.?\d*/g) ?? ["0", "0"]).map(Number);
@@ -47,11 +50,11 @@ function HeroMark({ rotate }: { rotate: MotionValue<number> }) {
       {/* Segmented ring — assembles, then turns with scroll */}
       <motion.div className="absolute inset-0" style={{ rotate }}>
         <svg viewBox={MARK_VIEWBOX} className="h-full w-full" aria-hidden>
-          {RING_PATHS.map((d, i) => (
+          {RING_PATHS.map((piece, i) => (
             <motion.path
-              key={d.slice(0, 24)}
-              d={d}
-              fill="currentColor"
+              key={piece.d.slice(0, 24)}
+              d={piece.d}
+              fill={piece.fill}
               style={{ transformBox: "fill-box", transformOrigin: "center" }}
               initial={{ opacity: 0, scale: 0.4, rotate: -35 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
