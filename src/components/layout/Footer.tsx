@@ -45,11 +45,6 @@ export default function Footer() {
           <nav aria-label="Footer – Seiten" className="lg:col-span-2">
             <h2 className="eyebrow text-paper/40">Seiten</h2>
             <ul className="mt-6 space-y-3">
-              <li>
-                <Link href="/" className="link-underline text-paper/80 hover:text-paper">
-                  Start
-                </Link>
-              </li>
               {navigation.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="link-underline text-paper/80 hover:text-paper">
@@ -87,6 +82,11 @@ export default function Footer() {
                 </a>
               </li>
               <li className="text-paper/50">{site.contact.hours}</li>
+              <li className="pt-2 text-paper/50">
+                {site.legal.street}
+                <br />
+                {site.legal.postalCode} {site.legal.city}
+              </li>
             </ul>
             {socials.length > 0 ? (
               <ul className="mt-8 flex flex-wrap gap-2">

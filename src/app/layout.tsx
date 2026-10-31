@@ -40,13 +40,21 @@ export const viewport: Viewport = {
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "LocalBusiness",
   name: site.name,
   slogan: site.tagline,
   url: site.url,
   logo: `${site.url}/brand/quickdesign-logo.svg`,
   email: site.contact.email,
   telephone: site.contact.phone,
+  image: `${site.url}/opengraph-image`,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: site.legal.street,
+    postalCode: site.legal.postalCode,
+    addressLocality: site.legal.city,
+    addressCountry: "DE",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

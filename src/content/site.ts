@@ -30,17 +30,17 @@ export const site = {
     linkedin: "",
     tiktok: "",
   },
-  /**
-   * PLATZHALTER – Pflichtangaben für Impressum. Bitte vor dem Livegang ersetzen.
-   */
+  /** Legal details for the Impressum (provided by the owner). */
   legal: {
-    companyName: "[Platzhalter: Firmenname / Rechtsform]",
-    owner: "[Platzhalter: Inhaber bzw. Vertretungsberechtigte Person]",
-    street: "[Platzhalter: Straße und Hausnummer]",
-    city: "[Platzhalter: PLZ und Ort]",
+    companyName: "Quick Design",
+    owner: "Ahmad Abu Samir",
+    street: "Richard-Wagner-Straße",
+    postalCode: "66111",
+    city: "Saarbrücken",
     country: "Deutschland",
-    vatId: "[Platzhalter: USt-IdNr.]",
-    register: "[Platzhalter: Registergericht und -nummer, falls vorhanden]",
+    /** Optional – leave empty if not applicable. */
+    vatId: "",
+    register: "",
   },
 } as const;
 
@@ -52,6 +52,7 @@ export const printly = {
 } as const;
 
 export const navigation = [
+  { href: "/", label: "Startseite" },
   { href: "/leistungen", label: "Leistungen" },
   { href: "/projekte", label: "Projekte" },
   { href: "/ueber-uns", label: "Über uns" },

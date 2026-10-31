@@ -11,10 +11,17 @@ import { projects } from "@/content/projects";
 
 const FEATURED = projects.slice(0, 5);
 
-function Card({ index }: { index: number }) {
+function Card({ index, pinned }: { index: number; pinned: boolean }) {
   const project = FEATURED[index];
   return (
-    <Link href="/projekte" className="group block w-[78vw] shrink-0 sm:w-[60vw] lg:w-[44vw] xl:w-[38vw]">
+    <Link
+      href="/projekte"
+      className={
+        pinned
+          ? "group block w-[min(44vw,calc((100svh-30rem)*4/3))] shrink-0 xl:w-[min(38vw,calc((100svh-30rem)*4/3))]"
+          : "group block w-[78vw] shrink-0 sm:w-[60vw] lg:w-[44vw] xl:w-[38vw]"
+      }
+    >
       <ProjectVisual project={project} className="aspect-[4/3] rounded-[1.75rem]" />
       <div className="mt-5 flex items-start justify-between gap-6">
         <div>
@@ -39,7 +46,7 @@ export default function SelectedWork() {
   const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+    const media = window.matchMedia("(min-width: 1024px) and (min-height: 720px) and (pointer: fine)");
     const measure = () => {
       const enabled = media.matches && !reduce;
       setPinned(enabled);
@@ -71,7 +78,7 @@ export default function SelectedWork() {
       className="grain relative bg-ink text-paper"
       style={pinned ? { height: `calc(100vh + ${distance}px)` } : undefined}
     >
-      <div className={pinned ? "sticky top-0 flex h-screen flex-col justify-center overflow-hidden" : "py-24 sm:py-32"}>
+      <div className={pinned ? "sticky top-0 flex h-screen flex-col justify-center overflow-hidden pb-8 pt-28" : "py-24 sm:py-32"}>
         <div className="container-x flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <SectionLabel index="02" className="text-paper/55">
@@ -86,18 +93,22 @@ export default function SelectedWork() {
           </Link>
         </div>
 
-        <div className={pinned ? "mt-12" : "mt-12 overflow-x-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"}>
+        <div className={pinned ? "mt-10" : "mt-12 overflow-x-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"}>
           <motion.div
             ref={trackRef}
             style={pinned ? { x } : undefined}
             className="flex w-max gap-6 px-[var(--gutter)] sm:gap-10"
           >
             {FEATURED.map((project, i) => (
-              <Card key={project.slug} index={i} />
+              <Card key={project.slug} index={i} pinned={pinned} />
             ))}
             <Link
               href="/projekte"
-              className="group flex w-[60vw] shrink-0 flex-col items-center justify-center gap-6 rounded-[1.75rem] border border-dashed border-paper/20 sm:w-[36vw] lg:w-[26vw]"
+              className={
+                pinned
+                  ? "group flex h-[min(33vw,calc(100svh-30rem))] w-[min(26vw,calc((100svh-30rem)*0.75))] shrink-0 flex-col items-center justify-center gap-6 self-start rounded-[1.75rem] border border-dashed border-paper/20"
+                  : "group flex aspect-[3/4] w-[60vw] shrink-0 flex-col items-center justify-center gap-6 self-start rounded-[1.75rem] border border-dashed border-paper/20 sm:w-[36vw] lg:w-[26vw]"
+              }
             >
               <span className="grid h-24 w-24 place-items-center rounded-full bg-accent text-paper transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[-45deg]">
                 <ArrowRight className="h-7 w-7" />
@@ -108,7 +119,7 @@ export default function SelectedWork() {
         </div>
 
         {pinned ? (
-          <div className="container-x mt-12">
+          <div className="container-x mt-8">
             <div className="h-px w-full bg-paper/10">
               <motion.div style={{ scaleX: progress }} className="bg-brand-gradient h-px origin-left" />
             </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LegalPage, { Placeholder } from "@/components/ui/LegalPage";
+import LegalPage from "@/components/ui/LegalPage";
 import { printly, site } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -10,15 +10,12 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalPage title="Datenschutz­erklärung">
-      <p className="rounded-2xl bg-accent/10 p-5 text-base text-ink">
-        Hinweis: Diese Datenschutzerklärung ist eine Vorlage, die den technischen Stand dieser Website beschreibt.
-        Sie ersetzt keine Rechtsberatung und muss vor der Veröffentlichung geprüft und vervollständigt werden.
-      </p>
       <div>
         <h2>1. Verantwortlicher</h2>
         <p>
-          <Placeholder>{site.legal.companyName}</Placeholder>, <Placeholder>{site.legal.street}</Placeholder>,{" "}
-          <Placeholder>{site.legal.city}</Placeholder>
+          {site.legal.companyName}, Inhaber {site.legal.owner}
+          <br />
+          {site.legal.street}, {site.legal.postalCode} {site.legal.city}
           <br />
           E-Mail: <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a> · Telefon: {site.contact.phone}
         </p>
@@ -28,8 +25,8 @@ export default function PrivacyPage() {
         <p>
           Diese Website wird bei Vercel Inc. gehostet. Beim Aufruf der Seiten verarbeitet der Hoster technisch
           notwendige Daten (z. B. IP-Adresse, Zeitpunkt, aufgerufene Seite, Browsertyp) in Server-Logfiles, um die
-          Website sicher und stabil bereitzustellen (Art. 6 Abs. 1 lit. f DSGVO).{" "}
-          <Placeholder>[Auftragsverarbeitungsvertrag und Drittlandübermittlung prüfen]</Placeholder>
+          Website sicher und stabil bereitzustellen (Art. 6 Abs. 1 lit. f DSGVO). Dabei kann eine Übermittlung in
+          die USA erfolgen.
         </p>
       </div>
       <div>
@@ -47,8 +44,7 @@ export default function PrivacyPage() {
           Angaben (Name, Kontaktdaten, Nachricht sowie optional Firma und Telefonnummer) ausschließlich zur
           Bearbeitung Ihrer Anfrage (Art. 6 Abs. 1 lit. b und f DSGVO). Die Formulardaten werden per E-Mail an uns
           übermittelt und nicht in einer Datenbank gespeichert. Wir löschen die Daten, sobald sie für die
-          Bearbeitung nicht mehr erforderlich sind und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.{" "}
-          <Placeholder>[E-Mail-Anbieter ergänzen]</Placeholder>
+          Bearbeitung nicht mehr erforderlich sind und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
         </p>
       </div>
       <div>

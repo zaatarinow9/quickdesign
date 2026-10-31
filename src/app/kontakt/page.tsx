@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock, Mail, MessageCircle, Phone } from "lucide-react";
+import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import ContactForm from "@/components/contact/ContactForm";
 import FAQ from "@/components/sections/FAQ";
@@ -57,6 +57,21 @@ export default function ContactPage() {
                   </Reveal>
                 </li>
               ))}
+              <li>
+                <Reveal delay={0.2}>
+                  <div className="flex items-center gap-5 rounded-2xl p-5 ring-1 ring-ink/10">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-paper-2">
+                      <MapPin className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className="eyebrow block text-stone">Standort</span>
+                      <span className="mt-1 block text-lg">
+                        {site.legal.street}, {site.legal.postalCode} {site.legal.city}
+                      </span>
+                    </span>
+                  </div>
+                </Reveal>
+              </li>
               <li>
                 <Reveal delay={0.24}>
                   <div className="flex items-center gap-5 rounded-2xl p-5 ring-1 ring-ink/10">
