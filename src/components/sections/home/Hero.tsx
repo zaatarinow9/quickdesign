@@ -12,7 +12,15 @@ import {
 } from "motion/react";
 import { useRef } from "react";
 import { MARK_VIEWBOX } from "@/components/brand/Logo";
-import { BRAND_COLORS, LOGO_ARCS, LOGO_CORE, LOGO_SEGMENTS } from "@/components/brand/logo-paths";
+import { LOGO_ARCS, LOGO_CORE, LOGO_SEGMENTS } from "@/components/brand/logo-paths";
+
+/** Ring pieces (segments + thin arcs) in one monochrome set, ordered around the circle. */
+const RING_PATHS = [...LOGO_SEGMENTS.map((segment) => segment.d), ...LOGO_ARCS].sort((a, b) => angle(a) - angle(b));
+
+function angle(d: string) {
+  const [x, y] = (d.match(/-?\d+\.?\d*/g) ?? ["0", "0"]).map(Number);
+  return Math.atan2(y - 1000, x - 421);
+}
 import SplitText from "@/components/motion/SplitText";
 import Button from "@/components/ui/Button";
 import CropMarks from "@/components/ui/CropMarks";
@@ -39,25 +47,15 @@ function HeroMark({ rotate }: { rotate: MotionValue<number> }) {
       {/* Segmented ring — assembles, then turns with scroll */}
       <motion.div className="absolute inset-0" style={{ rotate }}>
         <svg viewBox={MARK_VIEWBOX} className="h-full w-full" aria-hidden>
-          {LOGO_SEGMENTS.map((segment, i) => (
-            <motion.path
-              key={segment.d.slice(0, 24)}
-              d={segment.d}
-              fill={BRAND_COLORS[segment.color]}
-              style={{ transformBox: "fill-box", transformOrigin: "center" }}
-              initial={{ opacity: 0, scale: 0.4, rotate: -35 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1.3, delay: 0.35 + i * 0.08, ease: EASE }}
-            />
-          ))}
-          {LOGO_ARCS.map((d, i) => (
+          {RING_PATHS.map((d, i) => (
             <motion.path
               key={d.slice(0, 24)}
               d={d}
               fill="currentColor"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1.2, delay: 0.9 + i * 0.1 }}
+              style={{ transformBox: "fill-box", transformOrigin: "center" }}
+              initial={{ opacity: 0, scale: 0.4, rotate: -35 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 1.3, delay: 0.35 + i * 0.07, ease: EASE }}
             />
           ))}
         </svg>
