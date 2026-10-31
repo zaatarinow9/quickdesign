@@ -62,7 +62,7 @@ export default function Header() {
     <>
       <a
         href="#inhalt"
-        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-accent px-5 py-3 text-sm font-medium text-ink focus:translate-y-0"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-accent px-5 py-3 text-sm font-medium text-paper focus:translate-y-0"
       >
         Zum Inhalt springen
       </a>
@@ -75,14 +75,14 @@ export default function Header() {
       >
         <div
           className={cn(
-            "mx-auto flex h-14 max-w-[1440px] items-center justify-between rounded-full pl-5 pr-2 text-paper transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-16 sm:pl-6",
+            "mx-auto flex h-16 max-w-[1440px] items-center justify-between rounded-full pl-6 pr-2.5 text-paper transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-[4.5rem] sm:pl-9 sm:pr-3",
             scrolled || open
               ? "bg-ink/75 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-paper/10 backdrop-blur-xl"
               : "bg-transparent",
           )}
         >
-          <Link href="/" onClick={() => setOpen(false)} aria-label={`${site.name} – Startseite`} className="relative z-10 shrink-0">
-            <Logo className="w-[132px] sm:w-[150px]" />
+          <Link href="/" onClick={() => setOpen(false)} aria-label={`${site.name} – Startseite`} className="relative z-10 shrink-0 py-2 pr-4">
+            <Logo className="w-[124px] py-1 sm:w-[144px]" />
           </Link>
 
           <nav aria-label="Hauptnavigation" className="hidden lg:block">
@@ -120,7 +120,7 @@ export default function Header() {
             </a>
             <Link
               href="/kontakt"
-              className="group hidden h-11 items-center rounded-full bg-accent px-5 text-[0.95rem] font-medium text-ink transition-colors hover:bg-paper sm:flex"
+              className="group hidden h-11 items-center rounded-full bg-accent px-5 text-[0.95rem] font-medium text-paper transition-colors hover:bg-paper hover:text-ink sm:flex"
             >
               <RollText>Projekt anfragen</RollText>
             </Link>
@@ -204,7 +204,7 @@ export default function Header() {
                 className="flex items-center justify-between rounded-2xl bg-paper/5 px-5 py-4 ring-1 ring-paper/10"
               >
                 <span>
-                  <span className="block text-xs uppercase tracking-[0.16em] text-paper/50">{printly.name}</span>
+                  <span className="block text-xs text-paper/50">{printly.name}</span>
                   <span className="mt-1 block font-medium">{printly.cta}</span>
                 </span>
                 <ArrowUpRight className="h-5 w-5 text-accent" />

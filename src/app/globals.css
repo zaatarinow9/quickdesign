@@ -3,9 +3,9 @@
 /*
  * QuickDesign design system
  * ─────────────────────────
- * The official logo is pure black on white, so the system is built on
- * "ink & paper": a deep ink black, a warm paper white and a single signal
- * accent used sparingly for emphasis. Change --accent to re-tint the site.
+ * The system is built on
+ * "ink & paper": a deep ink black and a warm paper white, accented by the
+ * two strongest logo colours – magenta (primary) and cyan (secondary).
  */
 @theme {
   --color-ink: #0b0b0c;
@@ -17,8 +17,10 @@
   --color-stone: #8b8880;
   --color-stone-dark: #5e5b55;
   --color-stone-light: #b5b2aa;
-  --color-accent: #ff4f1f;
-  --color-accent-soft: #ff7a52;
+  /* Brand colours from the official logo (QuickDesignLogo-01.svg) */
+  --color-accent: #df1986; /* magenta – primary accent */
+  --color-accent-2: #2fa7df; /* cyan – secondary accent */
+  --color-brand-yellow: #f6eb21; /* used only inside the logo / CMYK motif */
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-outfit), var(--font-inter), ui-sans-serif, sans-serif;
@@ -76,7 +78,7 @@
 
   ::selection {
     background: var(--color-accent);
-    color: var(--color-ink);
+    color: #fff;
   }
 
   :focus-visible {
@@ -107,10 +109,22 @@
   }
 
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  /* Magenta → cyan, the two signature colours of the logo. */
+  .text-brand-gradient {
+    background-image: linear-gradient(100deg, var(--color-accent) 10%, var(--color-accent-2) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-brand-gradient {
+    background-image: linear-gradient(100deg, var(--color-accent), var(--color-accent-2));
   }
 
   .display-xl {

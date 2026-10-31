@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 type Variant = "accent" | "ink" | "paper" | "outline-light" | "outline-dark";
 
 const VARIANTS: Record<Variant, string> = {
-  accent: "bg-accent text-ink",
+  accent: "bg-accent text-paper",
   ink: "bg-ink text-paper",
   paper: "bg-paper text-ink",
   "outline-light": "border border-paper/25 bg-ink/40 text-paper backdrop-blur-md hover:border-paper/60",

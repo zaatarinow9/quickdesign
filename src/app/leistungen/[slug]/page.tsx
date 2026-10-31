@@ -152,7 +152,7 @@ export default async function ServiceDetailPage({ params }: Props) {
                     Standardprodukte direkt online bestellen – auf {printly.displayUrl}.
                   </p>
                 </div>
-                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-accent text-ink transition-transform duration-700 group-hover:rotate-45">
+                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-accent text-paper transition-transform duration-700 group-hover:rotate-45">
                   <ArrowUpRight className="h-6 w-6" />
                 </span>
                 <span className="sr-only">(öffnet in neuem Tab)</span>
@@ -170,7 +170,7 @@ export default async function ServiceDetailPage({ params }: Props) {
               {next.title}
             </span>
           </span>
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-paper text-ink transition-all duration-700 group-hover:bg-accent sm:h-24 sm:w-24">
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-paper text-ink transition-all duration-700 group-hover:bg-accent group-hover:text-paper sm:h-24 sm:w-24">
             <ArrowRight className="h-6 w-6 transition-transform duration-700 group-hover:translate-x-1" />
           </span>
         </Link>

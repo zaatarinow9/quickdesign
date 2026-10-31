@@ -35,7 +35,7 @@ function Field({
         className="absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-ink transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-focus-within:scale-x-100"
       />
       {error ? (
-        <p id={`${id}-error`} className="mt-2 text-sm text-[#c2360f]">
+        <p id={`${id}-error`} className="mt-2 text-sm text-[#c81e3a]">
           {error}
         </p>
       ) : null}
@@ -63,7 +63,7 @@ export default function ContactForm() {
           initial={{ scale: 0, rotate: -90 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
-          className="grid h-16 w-16 place-items-center rounded-full bg-accent text-ink"
+          className="grid h-16 w-16 place-items-center rounded-full bg-accent text-paper"
         >
           <Check className="h-7 w-7" />
         </motion.span>
@@ -174,7 +174,7 @@ export default function ContactForm() {
           </span>
         </label>
         {errors.consent ? (
-          <p id="consent-error" className="mt-2 text-sm text-[#c2360f]">
+          <p id="consent-error" className="mt-2 text-sm text-[#c81e3a]">
             {errors.consent}
           </p>
         ) : null}
@@ -187,7 +187,7 @@ export default function ContactForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             role="alert"
-            className="rounded-2xl bg-[#c2360f]/10 px-5 py-4 text-sm text-[#8f2709]"
+            className="rounded-2xl bg-[#c81e3a]/10 px-5 py-4 text-sm text-[#9b1530]"
           >
             {state.message}
           </motion.p>

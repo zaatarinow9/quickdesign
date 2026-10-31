@@ -9,7 +9,7 @@ export default function AboutTeaser() {
   return (
     <section aria-label="Über QuickDesign" className="relative bg-paper py-24 sm:py-36">
       <div className="container-x">
-        <SectionLabel index="05" className="text-stone-dark">
+        <SectionLabel index="06" className="text-stone-dark">
           Über uns
         </SectionLabel>
         <ScrollWords
@@ -25,7 +25,7 @@ export default function AboutTeaser() {
               <p className="mt-4 leading-relaxed text-stone-dark">{value.text}</p>
               <span
                 aria-hidden
-                className="absolute bottom-0 left-0 h-1 w-full origin-left scale-x-0 bg-accent transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100"
+                className="absolute bottom-0 left-0 h-1 w-full bg-brand-gradient origin-left scale-x-0 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100"
               />
             </Reveal>
           ))}

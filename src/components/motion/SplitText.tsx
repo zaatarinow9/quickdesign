@@ -49,14 +49,14 @@ export default function SplitText({
       <span className="sr-only">{fullText}</span>
       <motion.span aria-hidden initial="hidden" {...trigger} className="block">
         {normalized.map((line, lineIdx) => (
-          <span key={lineIdx} className={cn("block", lineClassName, line.className)}>
+          <span key={lineIdx} className={cn("block", lineClassName)}>
             {line.text.split(" ").map((word, idx, arr) => {
               const i = wordIndex++;
               return (
                 <Fragment key={idx}>
                   <span className="inline-block overflow-hidden pb-[0.08em] align-bottom -mb-[0.08em]">
                     <motion.span
-                      className="inline-block will-change-transform"
+                      className={cn("inline-block will-change-transform", line.className)}
                       variants={{
                         hidden: reduce ? { opacity: 0 } : { y: "110%", rotate: 4 },
                         show: reduce ? { opacity: 1 } : { y: "0%", rotate: 0 },

@@ -99,7 +99,7 @@ export default function SelectedWork() {
               href="/projekte"
               className="group flex w-[60vw] shrink-0 flex-col items-center justify-center gap-6 rounded-[1.75rem] border border-dashed border-paper/20 sm:w-[36vw] lg:w-[26vw]"
             >
-              <span className="grid h-24 w-24 place-items-center rounded-full bg-accent text-ink transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[-45deg]">
+              <span className="grid h-24 w-24 place-items-center rounded-full bg-accent text-paper transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[-45deg]">
                 <ArrowRight className="h-7 w-7" />
               </span>
               <span className="font-[family-name:var(--font-display)] text-2xl">Alle Projekte</span>
@@ -110,7 +110,7 @@ export default function SelectedWork() {
         {pinned ? (
           <div className="container-x mt-12">
             <div className="h-px w-full bg-paper/10">
-              <motion.div style={{ scaleX: progress }} className="h-px origin-left bg-accent" />
+              <motion.div style={{ scaleX: progress }} className="bg-brand-gradient h-px origin-left" />
             </div>
           </div>
         ) : null}

@@ -1,6 +1,8 @@
 import { ArrowUpRight, Clock, Mail, MessageCircle, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import ContactForm from "@/components/contact/ContactForm";
+import FAQ from "@/components/sections/FAQ";
+import FaqJsonLd from "@/components/sections/FaqJsonLd";
 import Reveal from "@/components/motion/Reveal";
 import PageHero from "@/components/ui/PageHero";
 import SectionLabel from "@/components/ui/SectionLabel";
@@ -44,7 +46,7 @@ export default function ContactPage() {
                       {...(channel.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {})}
                       className="group flex items-center gap-5 rounded-2xl bg-paper-2 p-5 transition-colors duration-500 hover:bg-ink hover:text-paper"
                     >
-                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-paper text-ink transition-colors duration-500 group-hover:bg-accent">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-paper text-ink transition-colors duration-500 group-hover:bg-accent group-hover:text-paper">
                         <channel.icon className="h-5 w-5" />
                       </span>
                       <span className="min-w-0">
@@ -82,7 +84,7 @@ export default function ContactPage() {
                   <span className="font-[family-name:var(--font-display)] text-2xl leading-tight">
                     Direkt online bestellen auf {printly.displayUrl}
                   </span>
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent text-ink transition-transform duration-700 group-hover:rotate-45">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent text-paper transition-transform duration-700 group-hover:rotate-45">
                     <ArrowUpRight className="h-5 w-5" />
                   </span>
                 </span>
@@ -101,6 +103,8 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+      <FAQ index="03" className="bg-paper-2" />
+      <FaqJsonLd />
     </>
   );
 }

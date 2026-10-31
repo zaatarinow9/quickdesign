@@ -17,7 +17,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="grain relative isolate overflow-hidden bg-ink text-paper">
+    <footer className="grain relative isolate overflow-hidden bg-ink pb-20 text-paper md:pb-0">
       <div className="container-x pt-20 sm:pt-28">
         <div className="grid gap-14 lg:grid-cols-12">
           <div className="lg:col-span-5">
@@ -31,7 +31,7 @@ export default function Footer() {
               rel="noopener"
               className="group mt-10 inline-flex items-center gap-4 rounded-2xl bg-paper/[0.04] p-4 pr-6 ring-1 ring-paper/10 transition-colors hover:bg-paper/[0.08]"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-ink">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-paper">
                 <ArrowUpRight className="h-5 w-5 transition-transform duration-500 group-hover:rotate-45" />
               </span>
               <span>

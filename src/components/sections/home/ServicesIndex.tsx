@@ -77,7 +77,7 @@ export default function ServicesIndex() {
                 <span className="hidden text-sm leading-relaxed text-stone-dark transition-colors duration-500 group-hover:text-paper/60 lg:block">
                   {service.claim}
                 </span>
-                <span className="grid h-11 w-11 place-items-center rounded-full border border-ink/15 transition-all duration-500 group-hover:rotate-45 group-hover:border-accent group-hover:bg-accent group-hover:text-ink sm:h-14 sm:w-14">
+                <span className="grid h-11 w-11 place-items-center rounded-full border border-ink/15 transition-all duration-500 group-hover:rotate-45 group-hover:border-accent group-hover:bg-accent group-hover:text-paper sm:h-14 sm:w-14">
                   <ArrowUpRight className="h-5 w-5" />
                 </span>
               </Link>

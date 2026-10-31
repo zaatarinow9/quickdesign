@@ -16,7 +16,7 @@ export default function ServiceCard({ service, index }: { service: Service; inde
         </div>
         <span className="absolute left-5 top-5 font-mono text-xs text-paper/50">{String(index + 1).padStart(2, "0")}</span>
         {service.availableOnline ? (
-          <span className="absolute right-5 top-5 rounded-full bg-paper/10 px-3 py-1 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-paper/75 ring-1 ring-paper/15">
+          <span className="absolute right-5 top-5 rounded-full bg-paper/10 px-3 py-1 text-xs font-medium text-paper/75 ring-1 ring-paper/15">
             Auch online
           </span>
         ) : null}

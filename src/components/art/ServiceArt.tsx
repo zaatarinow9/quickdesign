@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
  */
 
 const A = "var(--color-accent)";
+const B = "var(--color-accent-2)";
 
 function Frame({ children, className, label }: { children: React.ReactNode; className?: string; label: string }) {
   return (
@@ -68,13 +69,13 @@ function DesignArt() {
           [190, 110],
           [270, 190],
           [300, 60],
-        ].map(([cx, cy]) => (
-          <circle key={cx} cx={cx} cy={cy} r={4} fill={A} stroke="none" />
+        ].map(([cx, cy], i) => (
+          <circle key={cx} cx={cx} cy={cy} r={4} fill={i % 2 ? B : A} stroke="none" />
         ))}
       </g>
       <g className={cn(transition, "group-hover:translate-x-2")}>
         <rect x={262} y={214} width={22} height={22} fill="currentColor" stroke="none" />
-        <rect x={290} y={214} width={22} height={22} strokeOpacity={0.6} />
+        <rect x={290} y={214} width={22} height={22} fill={B} stroke="none" />
         <rect x={318} y={214} width={22} height={22} fill={A} stroke="none" />
       </g>
       <text x={72} y={84} fill="currentColor" stroke="none" fontSize={30} fontWeight={500} style={{ fontFamily: "var(--font-display)" }}>
@@ -131,6 +132,7 @@ function SignageArt() {
         <path d="M140 135h20" strokeWidth={2.25} />
         <path d="M188 126h86" strokeWidth={4} />
         <path d="M188 146h56" stroke={A} strokeWidth={4} />
+        <path d="M250 146h24" stroke={B} strokeWidth={4} />
       </g>
       <path d="M90 214h220" strokeOpacity={0.25} strokeDasharray="2 5" />
     </Frame>
@@ -150,7 +152,7 @@ function VehicleArt() {
         />
         <path d="M262 108l40 50h-52v-50z" strokeOpacity={0.6} />
         <path d="M52 190c80-6 150-40 230-26 30 5 56 18 74 30" stroke={A} strokeWidth={6} strokeLinecap="butt" />
-        <path d="M52 176c80-6 150-38 228-24" stroke={A} strokeWidth={1.5} strokeOpacity={0.7} />
+        <path d="M52 176c80-6 150-38 228-24" stroke={B} strokeWidth={2} />
         <circle cx={92} cy={130} r={16} strokeWidth={2} />
         <path d="M84 130h16" strokeWidth={2} />
         <path d="M120 124h84M120 138h52" strokeWidth={3} />
@@ -220,6 +222,7 @@ function LargeFormatArt() {
         </text>
         <path d="M200 112h110M200 128h80" strokeWidth={4} />
         <path d="M200 150h60" stroke={A} strokeWidth={4} />
+        <path d="M266 150h44" stroke={B} strokeWidth={4} />
         <path d="M90 168h220" strokeOpacity={0.3} />
       </g>
       <path d="M20 270H380" strokeOpacity={0.35} />
@@ -241,7 +244,8 @@ function TextileArt() {
         <rect x={150} y={108} width={100} height={100} strokeDasharray="4 5" strokeOpacity={0.5} />
         <circle cx={200} cy={150} r={24} strokeWidth={2.5} />
         <path d="M189 150h22" strokeWidth={2.5} />
-        <path d="M168 190h64" stroke={A} strokeWidth={4} />
+        <path d="M168 190h40" stroke={A} strokeWidth={4} />
+        <path d="M212 190h20" stroke={B} strokeWidth={4} />
       </g>
       <Crop x={150} y={108} w={100} h={100} o={8} />
     </Frame>
@@ -259,7 +263,7 @@ function PromoArt() {
         <path d="M132 130h16" strokeWidth={2.25} />
       </g>
       <g className={cn(transition, "group-hover:translate-x-2 group-hover:-translate-y-2")}>
-        <rect x={214} y={84} width={96} height={56} rx={14} fill={A} fillOpacity={0.9} stroke="none" />
+        <rect x={214} y={84} width={96} height={56} rx={14} fill={B} stroke="none" />
         <rect x={207} y={77} width={110} height={70} rx={20} strokeDasharray="3 5" strokeOpacity={0.55} />
         <path d="M232 106h56M232 120h34" stroke="var(--color-ink)" strokeWidth={3} />
       </g>

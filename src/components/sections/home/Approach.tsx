@@ -36,7 +36,7 @@ export default function Approach({ index = "03" }: { index?: string }) {
 
         <ol ref={ref} className="relative lg:col-span-6 lg:col-start-7">
           <div aria-hidden className="absolute bottom-0 left-[1.15rem] top-0 w-px bg-ink/10 sm:left-[1.4rem]">
-            <motion.div style={{ scaleY }} className="h-full w-px origin-top bg-accent" />
+            <motion.div style={{ scaleY }} className="h-full w-px origin-top bg-gradient-to-b from-accent to-accent-2" />
           </div>
           {STEPS.map((step, i) => (
             <li key={step.title} className="relative pb-16 pl-16 last:pb-0 sm:pl-24">

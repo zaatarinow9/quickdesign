@@ -46,7 +46,7 @@ function MockupScreen({ step }: { step: number }) {
               <span className={`h-5 w-5 shrink-0 rounded-md sm:h-7 sm:w-7 ${selected ? "bg-accent" : "bg-ink/10"}`} />
               <span className="truncate text-[0.6rem] font-medium sm:text-xs">{item.product}</span>
               {selected ? (
-                <motion.span layoutId="mock-check" className="ml-auto grid h-4 w-4 place-items-center rounded-full bg-accent text-ink sm:h-5 sm:w-5">
+                <motion.span layoutId="mock-check" className="ml-auto grid h-4 w-4 place-items-center rounded-full bg-accent text-paper sm:h-5 sm:w-5">
                   <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </motion.span>
               ) : null}
@@ -105,7 +105,7 @@ function MockupScreen({ step }: { step: number }) {
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 1.4, delay: 0.7, ease: [0.76, 0, 0.24, 1] }}
-                  className="block h-full origin-left rounded-full bg-accent"
+                  className="bg-brand-gradient block h-full origin-left rounded-full"
                 />
               </span>
             </div>
@@ -118,7 +118,7 @@ function MockupScreen({ step }: { step: number }) {
             initial={{ scale: 0.6 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 14, delay: 0.5 }}
-            className="grid h-5 w-5 place-items-center rounded-full bg-accent text-ink sm:h-7 sm:w-7"
+            className="grid h-5 w-5 place-items-center rounded-full bg-accent text-paper sm:h-7 sm:w-7"
           >
             <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           </motion.span>
@@ -200,7 +200,7 @@ function BrowserMockup() {
           </div>
         </motion.div>
       </motion.div>
-      <p className="mt-4 text-center font-mono text-[0.68rem] uppercase tracking-[0.14em] text-paper/35">
+      <p className="mt-4 text-center text-xs font-medium text-paper/35">
         Schematische Darstellung
       </p>
     </div>
@@ -217,7 +217,7 @@ export default function PrintlyShowcase({ index = "04" }: { index?: string }) {
     >
       <div
         aria-hidden
-        className="absolute left-1/2 top-1/2 -z-10 h-[70vmax] w-[70vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,79,31,0.16)_0%,transparent_55%)]"
+        className="absolute left-1/2 top-1/2 -z-10 h-[70vmax] w-[70vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_35%_40%,rgba(223,25,134,0.16)_0%,transparent_45%),radial-gradient(circle_at_70%_65%,rgba(47,167,223,0.14)_0%,transparent_45%)]"
       />
       <div className="container-x grid items-center gap-16 lg:grid-cols-12">
         <div className="lg:col-span-5">
@@ -238,7 +238,7 @@ export default function PrintlyShowcase({ index = "04" }: { index?: string }) {
             <ul className="mt-8 space-y-3 text-paper/80">
               {["Produkt auswählen", "Optionen festlegen", "Online bestellen"].map((item, i) => (
                 <li key={item} className="flex items-center gap-4">
-                  <span className="font-mono text-xs text-accent">0{i + 1}</span>
+                  <span className="font-mono text-xs text-accent-2">0{i + 1}</span>
                   <span className="h-px w-6 bg-paper/20" />
                   {item}
                 </li>

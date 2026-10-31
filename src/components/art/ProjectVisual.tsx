@@ -28,7 +28,7 @@ export default function ProjectVisual({ project, className, sizes = "(min-width:
         </>
       )}
       {project.placeholder ? (
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-paper/10 px-3 py-1.5 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-paper/80 ring-1 ring-paper/15 backdrop-blur-md">
+        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-paper/10 px-3 py-1.5 text-xs font-medium text-paper/80 ring-1 ring-paper/15 backdrop-blur-md">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           Platzhalter · Projektfoto folgt
         </span>
