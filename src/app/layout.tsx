@@ -1,10 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Outfit } from "next/font/google";
-import Footer from "@/components/layout/Footer";
-import Header from "@/components/layout/Header";
-import QuickContact from "@/components/layout/QuickContact";
-import ScrollProgress from "@/components/layout/ScrollProgress";
-import MotionProvider from "@/components/motion/MotionProvider";
 import { site } from "@/content/site";
 import "./globals.css";
 
@@ -62,15 +57,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="de" className={`${inter.variable} ${outfit.variable} ${mono.variable}`}>
       <body className="min-h-screen">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-        <MotionProvider>
-          <ScrollProgress />
-          <Header />
-          <main id="inhalt" className="relative">
-            {children}
-          </main>
-          <Footer />
-          <QuickContact />
-        </MotionProvider>
+        {children}
       </body>
     </html>
   );

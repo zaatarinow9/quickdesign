@@ -4,7 +4,7 @@ import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { startTransition, useActionState, useState } from "react";
-import { sendContactRequest, type ContactFormState } from "@/app/kontakt/actions";
+import { sendContactRequest, type ContactFormState } from "@/app/(site)/kontakt/actions";
 import { services } from "@/content/services";
 import { cn } from "@/lib/utils";
 

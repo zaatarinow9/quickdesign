@@ -74,3 +74,48 @@ export function getSmtpEnvironmentConfig(): SmtpEnvironmentConfig {
 
   return { host, port, secure, user, pass, from, envelopeFrom };
 }
+
+/* ------------------------------------------------------------------ */
+/* Verwaltung / Datenbank                                              */
+/* ------------------------------------------------------------------ */
+
+function required(name: string): string {
+  const value = readEnvValue(name);
+  if (!value) throw new Error(`Fehlende Umgebungsvariable: ${name}`);
+  return value;
+}
+
+export const env = {
+  get supabaseUrl() {
+    return required("NEXT_PUBLIC_SUPABASE_URL");
+  },
+  get supabasePublishableKey() {
+    return required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+  },
+  get supabaseSecretKey() {
+    return required("SUPABASE_SECRET_KEY");
+  },
+  /** True, wenn die Datenbank konfiguriert ist (sonst arbeitet die Website ohne Speicherung weiter). */
+  get databaseConfigured() {
+    return Boolean(readEnvValue("NEXT_PUBLIC_SUPABASE_URL") && readEnvValue("SUPABASE_SECRET_KEY"));
+  },
+  /** Inhaber: kommagetrennte E-Mail-Adressen mit vollem Zugriff auf /admin */
+  get adminEmails(): string[] {
+    return readEnvValue("ADMIN_EMAILS")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+  },
+  get siteUrl() {
+    return (readEnvValue("NEXT_PUBLIC_SITE_URL") || "https://quickdesign24.de").replace(/\/$/, "");
+  },
+  get ipHashSalt() {
+    const salt = readEnvValue("IP_HASH_SALT");
+    if (salt) return salt;
+    // Ohne eigenes Salz: aus dem geheimen Server-Schlüssel abgeleitet (nie ein öffentlich bekannter Wert)
+    return `derived:${readEnvValue("SUPABASE_SECRET_KEY")}`;
+  },
+  get cronSecret() {
+    return readEnvValue("CRON_SECRET");
+  },
+};

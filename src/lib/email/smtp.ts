@@ -8,18 +8,29 @@ import {
   getSmtpEnvironmentConfig,
   type SmtpEnvironmentConfig,
 } from "@/lib/env";
-import { normalizeEmailAddress } from "@/lib/email/address";
+import { extractEmailAddress, normalizeEmailAddress } from "@/lib/email/address";
 
 type SmtpSocket = Socket | TLSSocket;
 
 type SmtpConfig = SmtpEnvironmentConfig;
 
-type SmtpMessage = {
+export type SmtpAttachment = {
+  filename: string;
+  content: Buffer | Uint8Array;
+  contentType?: string;
+};
+
+export type SmtpMessage = {
   to: string;
   subject: string;
   text: string;
   html?: string | null;
   replyTo?: string | null;
+  /** Blindkopie (z. B. an das eigene Postfach) */
+  bcc?: string | null;
+  attachments?: SmtpAttachment[];
+  /** Zusätzliche Header, z. B. List-Unsubscribe */
+  headers?: Record<string, string>;
 };
 
 type SmtpResponse = {
@@ -31,7 +42,7 @@ type SmtpReaderState = {
   buffer: string;
 };
 
-const SOCKET_TIMEOUT_MS = 15_000;
+const SOCKET_TIMEOUT_MS = 30_000;
 
 function sanitizeHeaderValue(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
@@ -66,54 +77,81 @@ function dotStuffText(value: string): string {
     .join("\r\n");
 }
 
+function encodeFilename(value: string): string {
+  const clean = sanitizeHeaderValue(value).replace(/"/g, "'");
+  return /[^\x20-\x7E]/.test(clean) ? `=?UTF-8?B?${Buffer.from(clean, "utf8").toString("base64")}?=` : clean;
+}
+
+function buildAlternativePart(textBody: string, html: string | null): { contentType: string; body: string } {
+  if (!html) {
+    return {
+      contentType: "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64",
+      body: textBody,
+    };
+  }
+  const boundary = `qd-alt-${randomUUID()}`;
+  return {
+    contentType: `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    body: [
+      `--${boundary}`,
+      "Content-Type: text/plain; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      textBody,
+      `--${boundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      encodeBodyPart(html),
+      `--${boundary}--`,
+    ].join("\r\n"),
+  };
+}
+
 function buildRawMessage(message: SmtpMessage, from: string): string {
   const textBody = encodeBodyPart(message.text);
-  const html = message.html?.trim();
+  const html = message.html?.trim() || null;
   const replyTo = message.replyTo ? sanitizeHeaderValue(message.replyTo) : null;
+  const domain = extractEmailAddress(from).split("@")[1] || "quickdesign24.de";
   const headers = [
     `From: ${encodeHeaderValue(from)}`,
     `To: ${encodeHeaderValue(message.to)}`,
     `Subject: ${encodeHeaderValue(message.subject)}`,
     `Date: ${new Date().toUTCString()}`,
+    `Message-ID: <${randomUUID()}@${domain}>`,
     "MIME-Version: 1.0",
   ];
 
   if (replyTo) {
     headers.push(`Reply-To: ${encodeHeaderValue(replyTo)}`);
   }
-
-  if (!html) {
-    return [
-      ...headers,
-      "Content-Type: text/plain; charset=utf-8",
-      "Content-Transfer-Encoding: base64",
-      "",
-      dotStuffText(textBody),
-    ].join("\r\n");
+  for (const [name, value] of Object.entries(message.headers ?? {})) {
+    if (/^[A-Za-z0-9-]+$/.test(name)) headers.push(`${name}: ${sanitizeHeaderValue(value)}`);
   }
 
-  const boundary = `quickdesign-${randomUUID()}`;
-  const htmlBody = encodeBodyPart(html);
-  const multipartBody = [
-    `--${boundary}`,
-    "Content-Type: text/plain; charset=utf-8",
-    "Content-Transfer-Encoding: base64",
-    "",
-    textBody,
-    `--${boundary}`,
-    "Content-Type: text/html; charset=utf-8",
-    "Content-Transfer-Encoding: base64",
-    "",
-    htmlBody,
-    `--${boundary}--`,
-  ].join("\r\n");
+  const alternative = buildAlternativePart(textBody, html);
+  const attachments = message.attachments ?? [];
 
-  return [
-    ...headers,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    "",
-    dotStuffText(multipartBody),
-  ].join("\r\n");
+  if (attachments.length === 0) {
+    return [...headers, alternative.contentType, "", dotStuffText(alternative.body)].join("\r\n");
+  }
+
+  const mixed = `qd-mixed-${randomUUID()}`;
+  const parts = [`--${mixed}`, alternative.contentType, "", alternative.body];
+  for (const attachment of attachments) {
+    const name = encodeFilename(attachment.filename);
+    parts.push(
+      `--${mixed}`,
+      `Content-Type: ${attachment.contentType ?? "application/octet-stream"}; name="${name}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${name}"`,
+      "",
+      chunkBase64(Buffer.from(attachment.content).toString("base64")),
+    );
+  }
+  parts.push(`--${mixed}--`);
+
+  return [...headers, `Content-Type: multipart/mixed; boundary="${mixed}"`, "", dotStuffText(parts.join("\r\n"))].join("\r\n");
 }
 
 function waitForSocketConnect(
@@ -313,6 +351,7 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
   const text = message.text.trim();
   const html = message.html?.trim() || null;
   const replyTo = message.replyTo ? sanitizeHeaderValue(message.replyTo) : null;
+  const bcc = normalizeEmailAddress(message.bcc ?? null);
 
   if (!recipient) {
     throw new Error("SMTP recipient address is invalid.");
@@ -342,6 +381,9 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
       `RCPT TO:<${recipient}>`,
       [250, 251],
     );
+    if (bcc && bcc !== recipient) {
+      await sendCommand(socket, state, `RCPT TO:<${bcc}>`, [250, 251]);
+    }
     await sendCommand(socket, state, "DATA", [354]);
 
     const rawMessage = buildRawMessage(
@@ -351,6 +393,8 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
         text,
         html,
         replyTo,
+        attachments: message.attachments,
+        headers: message.headers,
       },
       config.from,
     );

@@ -34,7 +34,7 @@ export const site = {
   legal: {
     companyName: "Quick Design",
     owner: "Ahmad Abu Samir",
-    street: "Richard-Wagner-Straße",
+    street: "Richard-Wagner-Straße 73–75",
     postalCode: "66111",
     city: "Saarbrücken",
     country: "Deutschland",
