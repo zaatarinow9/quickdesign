@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { ConsentSettingsLink } from "@/components/consent/CookieConsent";
 import { services } from "@/content/services";
 import { navigation, printly, site } from "@/content/site";
 
@@ -110,7 +111,7 @@ export default function Footer() {
           <p>
             © {year} {site.name}. {site.tagline}.
           </p>
-          <ul className="flex gap-6">
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
             <li>
               <Link href="/impressum" className="hover:text-paper">
                 Impressum
@@ -120,6 +121,9 @@ export default function Footer() {
               <Link href="/datenschutz" className="hover:text-paper">
                 Datenschutz
               </Link>
+            </li>
+            <li>
+              <ConsentSettingsLink className="hover:text-paper" />
             </li>
           </ul>
         </div>

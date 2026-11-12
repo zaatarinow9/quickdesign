@@ -81,7 +81,7 @@ export const getAdmin = cache(async (): Promise<AdminUser | null> => {
 export async function requireAdmin(): Promise<AdminUser> {
   const state = await getAuthState();
   if (state.status === "mfa") redirect("/admin/login/bestaetigen");
-  if (state.status === "enroll") redirect("/admin/sicherheit?pflicht=1");
+  if (state.status === "enroll") redirect("/admin/2fa-einrichten");
   if (state.status !== "ok") redirect("/admin/login");
   return state.admin;
 }

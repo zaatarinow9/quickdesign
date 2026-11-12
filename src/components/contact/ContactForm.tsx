@@ -7,6 +7,8 @@ import { startTransition, useActionState, useState } from "react";
 import { sendContactRequest, type ContactFormState } from "@/app/(site)/kontakt/actions";
 import { services } from "@/content/services";
 import { cn } from "@/lib/utils";
+import { readAttribution } from "@/lib/consent";
+import { MARKETING_CONSENT_TEXT } from "@/lib/marketing/consent-text";
 
 const initialState: ContactFormState = { status: "idle" };
 
@@ -80,6 +82,8 @@ export default function ContactForm() {
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
+        const attribution = readAttribution();
+        if (attribution) formData.set("attribution", JSON.stringify(attribution));
         startTransition(() => formAction(formData));
       }}
       noValidate
@@ -179,6 +183,16 @@ export default function ContactForm() {
           </p>
         ) : null}
       </div>
+
+      <label className="-mt-4 flex cursor-pointer items-start gap-4">
+        <input type="checkbox" name="marketing" className="peer sr-only" />
+        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md ring-1 ring-ink/30 transition-colors peer-checked:bg-accent peer-checked:text-paper peer-checked:ring-accent peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100">
+          <Check className="h-4 w-4" />
+        </span>
+        <span className="text-sm leading-relaxed text-stone-dark">
+          <span className="font-medium text-ink">Optional:</span> {MARKETING_CONSENT_TEXT} Sie erhalten zuerst eine E-Mail zur Bestätigung (Double-Opt-in).
+        </span>
+      </label>
 
       <AnimatePresence>
         {state.status === "error" && state.message ? (

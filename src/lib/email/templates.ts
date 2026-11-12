@@ -213,7 +213,7 @@ ${button(opts.confirmUrl, "Ja, ich möchte E-Mails erhalten")}
   };
 }
 
-export function campaignEmail(opts: { siteUrl: string; company: Company; subject: string; greeting: string; body: string; unsubscribeUrl: string }): EmailContent {
+export function campaignEmail(opts: { siteUrl: string; company: Company; subject: string; greeting: string; body: string; unsubscribeUrl: string; oneClickUrl: string }): EmailContent {
   const html = layout({
     siteUrl: opts.siteUrl,
     company: opts.company,
@@ -226,7 +226,7 @@ export function campaignEmail(opts: { siteUrl: string; company: Company; subject
     html,
     text: `${opts.greeting}\n\n${opts.body}\n\n—\nAbmelden: ${opts.unsubscribeUrl}`,
     headers: {
-      "List-Unsubscribe": `<${opts.unsubscribeUrl}>`,
+      "List-Unsubscribe": `<${opts.oneClickUrl}>, <mailto:${opts.company.email}?subject=Abmelden>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
   };
