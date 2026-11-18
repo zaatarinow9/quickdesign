@@ -33,7 +33,7 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
   return [
     { title: "", items: [{ href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true }] },
     {
-      title: "Vertrieb",
+      title: "Tägliche Arbeit",
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
         { href: "/admin/angebote", label: "Angebote", icon: FileText },
@@ -45,9 +45,9 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
     {
       title: "Marketing",
       items: [
-        { href: "/admin/marketing", label: "Kontakte & Einwilligungen", icon: Megaphone, exact: true },
-        { href: "/admin/marketing/kampagnen", label: "E-Mail-Kampagnen", icon: FilePlus2 },
-        { href: "/admin/statistik", label: "Website-Statistik", icon: BarChart3 },
+        { href: "/admin/marketing", label: "Newsletter-Kontakte", icon: Megaphone, exact: true },
+        { href: "/admin/marketing/kampagnen", label: "Newsletter senden", icon: FilePlus2 },
+        { href: "/admin/statistik", label: "Besucher", icon: BarChart3 },
       ],
     },
     ...(fullAccess
@@ -55,15 +55,15 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
           {
             title: "Verwaltung",
             items: [
-              { href: "/admin/leistungen", label: "Leistungskatalog", icon: BookOpen },
+              { href: "/admin/leistungen", label: "Leistungen & Preise", icon: BookOpen },
               { href: "/admin/einstellungen", label: "Einstellungen", icon: Settings },
-              { href: "/admin/benutzer", label: "Benutzer & Rechte", icon: ShieldCheck },
+              { href: "/admin/benutzer", label: "Mitarbeiter", icon: ShieldCheck },
               { href: "/admin/protokoll", label: "Protokoll", icon: History },
             ],
           },
         ]
       : []),
-    { title: "Konto", items: [{ href: "/admin/sicherheit", label: "Sicherheit & 2FA", icon: KeyRound }] },
+    { title: "Konto", items: [{ href: "/admin/sicherheit", label: "Passwort & Sicherheit", icon: KeyRound }] },
   ];
 }
 
@@ -126,7 +126,7 @@ export function Sidebar({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm text-paper">{user.name}</p>
-          <p className="truncate text-xs text-paper/45">{user.role}</p>
+          <p className="truncate text-xs text-paper/45">{user.email}</p>
         </div>
         <form action={signOut}>
           <button type="submit" className="grid size-9 place-items-center rounded-lg text-paper/50 hover:bg-paper/10 hover:text-paper" aria-label="Abmelden" title="Abmelden">

@@ -294,8 +294,7 @@ function DocumentPdf({ doc, settings }: { doc: Doc; settings: Settings }) {
         <View style={s.closing} wrap={false}>
           {doc.closing ? <Text>{doc.closing}</Text> : null}
           <Text style={{ marginTop: 7 }}>Mit freundlichen Grüßen</Text>
-          <Text style={{ marginTop: 2, fontWeight: 600, color: INK }}>{c.owner || c.name}</Text>
-          <Text style={{ color: MUTED }}>{c.name}</Text>
+          <Text style={{ marginTop: 2, fontWeight: 600, color: INK }}>{c.name}</Text>
         </View>
 
         {isOffer && doc.accepted_at ? (
@@ -313,7 +312,6 @@ function DocumentPdf({ doc, settings }: { doc: Doc; settings: Settings }) {
         <View style={s.footer} fixed>
           <View style={s.footCol}>
             <Text style={s.footStrong}>{c.name}</Text>
-            {c.owner ? <Text>Inhaber: {c.owner}</Text> : null}
             <Text>{c.street}</Text>
             <Text>
               {c.postalCode} {c.city}

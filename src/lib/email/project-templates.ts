@@ -76,9 +76,9 @@ export function projectStageEmail(opts: {
 ${progress(opts.status)}
 ${summaryTable(rows)}
 ${opts.onlineUrl ? button(opts.onlineUrl, "Auftragsstatus online ansehen") : ""}
-<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.signature)}</strong><br>${escapeHtml(opts.company.name)}</p>`,
+<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.company.name)}</strong></p>`,
   });
-  const text = [opts.greeting, "", message, "", `Status: ${projectStatusInfo[opts.status].step}`, ...rows.map((r) => `${r.label}: ${r.value}`), opts.onlineUrl ? `\nOnline: ${opts.onlineUrl}` : "", "", "Mit freundlichen Grüßen", opts.signature, opts.company.name].join("\n");
+  const text = [opts.greeting, "", message, "", `Status: ${projectStatusInfo[opts.status].step}`, ...rows.map((r) => `${r.label}: ${r.value}`), opts.onlineUrl ? `\nOnline: ${opts.onlineUrl}` : "", "", "Mit freundlichen Grüßen", opts.company.name].join("\n");
   return { subject: `${m.subject} – ${p.title}`.slice(0, 190), html, text };
 }
 
@@ -118,9 +118,9 @@ ${summaryTable(rows)}
 <p style="margin:0;color:${STONE};font-size:14px;">${escapeHtml(hint)} Telefon: ${escapeHtml(opts.company.phone)}</p>
 <p style="margin:10px 0 0;color:${STONE};font-size:13px;">Den Termin können Sie über den Anhang direkt in Ihren Kalender übernehmen.</p>
 ${opts.onlineUrl ? button(opts.onlineUrl, "Auftrag online ansehen") : ""}
-<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.signature)}</strong><br>${escapeHtml(opts.company.name)}</p>`,
+<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.company.name)}</strong></p>`,
   });
-  const text = [opts.greeting, "", intro, "", ...rows.map((r) => `${r.label}: ${r.value}`), "", hint, `Telefon: ${opts.company.phone}`, "", "Mit freundlichen Grüßen", opts.signature, opts.company.name].join("\n");
+  const text = [opts.greeting, "", intro, "", ...rows.map((r) => `${r.label}: ${r.value}`), "", hint, `Telefon: ${opts.company.phone}`, "", "Mit freundlichen Grüßen", opts.company.name].join("\n");
   return {
     subject: `${opts.reminder ? "Erinnerung: " : ""}${info.noun} ${formatAppointment(p, { short: true })} – ${p.title}`.slice(0, 190),
     html,

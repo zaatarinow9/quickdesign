@@ -487,7 +487,7 @@ export async function sendDocumentEmail(_prev: ActionState, fd: FormData): Promi
     dueDate: doc.kind === "rechnung" && doc.due_date ? formatDateDE(doc.due_date) : null,
     gross: formatEuro(doc.gross_total),
     onlineUrl: `${env.siteUrl}/dokument/${doc.share_token}`,
-    signature: settings.company.owner || settings.company.name,
+    signature: settings.company.name,
     attachment: { filename: documentFilename(doc), content: pdf, contentType: "application/pdf" },
   });
 

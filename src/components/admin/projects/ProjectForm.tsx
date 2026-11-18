@@ -123,6 +123,12 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
               </label>
               <input id="site_city" name="site_city" className="adm-input" value={f.site_city} onChange={set("site_city")} onBlur={commitMap} />
             </div>
+            <details className="group sm:col-span-6" open={!!(project.site_maps_url || project.site_contact_name || project.site_contact_phone)}>
+              <summary className="cursor-pointer list-none text-sm text-accent hover:underline">
+                <span className="group-open:hidden">+ Genaue Position & Ansprechpartner vor Ort</span>
+                <span className="hidden group-open:inline">− Weniger anzeigen</span>
+              </summary>
+              <div className="mt-3 grid gap-3 sm:grid-cols-6">
             <div className="sm:col-span-6">
               <label className="adm-label" htmlFor="site_maps_url">
                 Genaue Position (optional)
@@ -136,7 +142,7 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
                 onChange={set("site_maps_url")}
                 onBlur={commitMap}
               />
-              <p className="mt-1 text-xs text-stone-dark">Für Baustellen, Hallen oder Hintereingänge: In Google Maps auf den Punkt tippen → „Teilen“ → Link hier einfügen.</p>
+              <p className="mt-1 text-xs text-stone-dark">In Google Maps auf den Punkt tippen → „Teilen“ → Link hier einfügen.</p>
             </div>
             <div className="sm:col-span-3">
               <label className="adm-label" htmlFor="site_contact_name">
@@ -150,6 +156,8 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
               </label>
               <input id="site_contact_phone" name="site_contact_phone" type="tel" className="adm-input" placeholder={project.phone ?? ""} value={f.site_contact_phone} onChange={set("site_contact_phone")} />
             </div>
+              </div>
+            </details>
           </div>
           <div className="overflow-hidden rounded-xl bg-ink/[0.03] ring-1 ring-ink/[0.06]">
             {embed ? (
@@ -176,7 +184,7 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="sm:col-span-2">
             <label className="adm-label" htmlFor="crew_notes">
-              Hinweise (Werkzeug, Material, Leiter, Anzahl Monteure, Zugang …)
+              Was ist mitzunehmen / zu beachten?
             </label>
             <textarea id="crew_notes" name="crew_notes" rows={4} className="adm-input" value={f.crew_notes} onChange={set("crew_notes")} placeholder={"z. B. 2 Monteure, große Leiter, Bohrmaschine\nZugang über Hof, Parkplatz vor dem Tor"} />
           </div>
@@ -193,22 +201,25 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
                 Offenen Rechnungsbetrag übernehmen ({formatEuro(openAmount)})
               </button>
             ) : null}
-            <p className="mt-1.5 text-xs text-stone-dark">Erscheint im Einsatzplan und in der Termin-E-Mail an den Kunden.</p>
+            <p className="mt-1.5 text-xs text-stone-dark">Steht im Einsatzplan und in der Termin-E-Mail an den Kunden.</p>
           </div>
-          <div className="sm:col-span-3">
-            <label className="adm-label" htmlFor="internal_notes">
-              Interne Notizen (nur für Sie und das Team)
-            </label>
-            <textarea id="internal_notes" name="internal_notes" rows={3} className="adm-input" value={f.internal_notes} onChange={set("internal_notes")} />
-          </div>
+          <details className="group sm:col-span-3" open={!!project.internal_notes}>
+            <summary className="cursor-pointer list-none text-sm text-accent hover:underline">
+              <span className="group-open:hidden">+ Interne Notiz</span>
+              <span className="hidden group-open:inline">− Interne Notiz</span>
+            </summary>
+            <textarea id="internal_notes" name="internal_notes" rows={3} className="adm-input mt-2" aria-label="Interne Notiz" placeholder="Nur für Sie und das Team" value={f.internal_notes} onChange={set("internal_notes")} />
+          </details>
         </div>
       </section>
 
       {/* Kunde */}
-      <section className="adm-card p-5">
-        <h2 className="mb-4 flex items-center gap-2 font-semibold">
-          <UserRound className="size-4 text-accent" aria-hidden /> Auftrag & Kunde
-        </h2>
+      <details className="adm-card group p-5" open={!project.email}>
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
+          <UserRound className="size-4 text-accent" aria-hidden /> Titel & Kontaktdaten des Kunden
+          <span className="ml-auto text-xs font-normal text-stone-dark group-open:hidden">{project.email || "keine E-Mail"} · ändern</span>
+        </summary>
+        <div className="mt-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label className="adm-label" htmlFor="title">
@@ -229,7 +240,8 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
             <input id="phone" name="phone" type="tel" className="adm-input" value={f.phone} onChange={set("phone")} />
           </div>
         </div>
-      </section>
+        </div>
+      </details>
 
       {/* Speichern */}
       <div className="sticky bottom-0 z-10 -mx-1 rounded-2xl bg-white/95 p-4 shadow-lg ring-1 ring-ink/10 backdrop-blur">

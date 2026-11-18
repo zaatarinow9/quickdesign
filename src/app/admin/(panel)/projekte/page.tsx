@@ -39,7 +39,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Aufträge & Termine"
-        description="Jedes angenommene Angebot wird automatisch zum Auftrag. Oben der Einsatzplan mit Montagen, Lieferungen und Abholungen – darunter alle Aufträge nach Phase."
+        description="Angenommene Angebote landen automatisch hier. Oben die nächsten Termine, darunter alle Aufträge."
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

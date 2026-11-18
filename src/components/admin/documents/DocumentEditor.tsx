@@ -417,6 +417,12 @@ export function DocumentEditor({
                 </label>
                 <input id="email" name="email" type="email" className="adm-input" value={f.email} onChange={set("email")} />
               </div>
+              <details className="group sm:col-span-6" open={!!(initial.phone || initial.customer_vat_id || (initial.country && initial.country !== "Deutschland"))}>
+                <summary className="cursor-pointer list-none text-sm text-accent hover:underline">
+                  <span className="group-open:hidden">+ Telefon, Land, USt-IdNr.</span>
+                  <span className="hidden group-open:inline">− Weniger anzeigen</span>
+                </summary>
+                <div className="mt-3 grid gap-3 sm:grid-cols-6">
               <div className="sm:col-span-2">
                 <label className="adm-label" htmlFor="phone">
                   Telefon
@@ -435,8 +441,10 @@ export function DocumentEditor({
                 </label>
                 <input id="customer_vat_id" name="customer_vat_id" className="adm-input" value={f.customer_vat_id} onChange={set("customer_vat_id")} />
               </div>
+                </div>
+              </details>
             </div>
-            {!f.customer_id ? <p className="mt-3 text-xs text-stone-dark">Neue Kunden werden beim Speichern automatisch in der Kundendatenbank angelegt (Abgleich über die E-Mail-Adresse).</p> : null}
+            {!f.customer_id ? <p className="mt-3 text-xs text-stone-dark">Neue Kunden werden beim Speichern automatisch angelegt.</p> : null}
           </section>
 
           {/* Kopf */}
@@ -448,12 +456,13 @@ export function DocumentEditor({
                 </label>
                 <input id="title" name="title" className="adm-input text-base font-medium" value={f.title} onChange={set("title")} />
               </div>
-              <div className="sm:col-span-2">
-                <label className="adm-label" htmlFor="reference">
-                  Bezug (optional)
-                </label>
-                <input id="reference" name="reference" className="adm-input" placeholder="z. B. Ihre Anfrage vom … / Projekt …" value={f.reference} onChange={set("reference")} />
-              </div>
+              <details className="group sm:col-span-2" open={!!initial.reference}>
+                <summary className="cursor-pointer list-none text-sm text-accent hover:underline">
+                  <span className="group-open:hidden">+ Bezug hinzufügen</span>
+                  <span className="hidden group-open:inline">− Bezug</span>
+                </summary>
+                <input id="reference" name="reference" aria-label="Bezug" className="adm-input mt-2" placeholder="z. B. Ihre Anfrage vom … / Projekt …" value={f.reference} onChange={set("reference")} />
+              </details>
               <div className="sm:col-span-2">
                 <label className="adm-label" htmlFor="intro">
                   Einleitung
@@ -467,7 +476,7 @@ export function DocumentEditor({
           <section className="adm-card">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/[0.06] px-5 py-3.5">
               <h2 className="font-semibold">Positionen</h2>
-              <span className="text-xs text-stone-dark">Preise wahlweise netto oder brutto eingeben – gespeichert wird netto.</span>
+              <span className="text-xs text-stone-dark">Leistung wählen – Preis wird automatisch berechnet</span>
             </div>
             <CatalogBar catalog={catalog} onPick={(sv) => addService(sv)} onFree={addFree} />
 
@@ -526,8 +535,12 @@ export function DocumentEditor({
           </section>
 
           {/* Texte */}
-          <section className="adm-card p-5">
-            <div className="grid gap-4 md:grid-cols-2">
+          <details className="adm-card group p-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-semibold">
+              Texte am Ende
+              <span className="text-xs font-normal text-stone-dark">Hinweise, Zahlungsbedingungen, Schlusstext · <span className="text-accent group-open:hidden">anzeigen</span><span className="hidden text-accent group-open:inline">ausblenden</span></span>
+            </summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
                 <label className="adm-label" htmlFor="notes">
                   Hinweise
@@ -547,7 +560,7 @@ export function DocumentEditor({
                 <textarea id="closing" name="closing" rows={2} className="adm-input" value={f.closing} onChange={set("closing")} />
               </div>
             </div>
-          </section>
+          </details>
         </div>
 
         {/* Seitenleiste */}
@@ -799,7 +812,7 @@ function CatalogBar({ catalog, onPick, onFree }: { catalog: CatalogService[]; on
         </div>
       ) : null}
       <p className="text-xs text-stone-dark">
-        Tipp: Leistungen per Drag &amp; Drop in die Liste ziehen – oder direkt auf eine Position, um sie zu kombinieren (z. B. Folie + Laminat auf eine Dibond-Platte).
+        Tipp: Leistungen in die Liste ziehen – oder auf eine Position, um sie zu kombinieren.
       </p>
     </div>
   );

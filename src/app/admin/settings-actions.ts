@@ -18,7 +18,6 @@ export async function updateSettings(_prev: ActionState, fd: FormData): Promise<
   const next = settingsSchema.safeParse({
     company: {
       name: str("company.name"),
-      owner: str("company.owner"),
       street: str("company.street"),
       postalCode: str("company.postalCode"),
       city: str("company.city"),

@@ -56,7 +56,6 @@ export function SettingsForm({ settings: s }: { settings: Settings }) {
     <form action={action} className="space-y-6 pb-24">
       <Section title="Firmendaten" text="Erscheinen auf Angeboten, Rechnungen und in E-Mails.">
         <Input name="company.name" label="Firmenname" value={s.company.name} />
-        <Input name="company.owner" label="Inhaber" value={s.company.owner} />
         <Input name="company.street" label="Straße & Hausnummer" value={s.company.street} className="sm:col-span-2" />
         <Input name="company.postalCode" label="PLZ" value={s.company.postalCode} />
         <Input name="company.city" label="Ort" value={s.company.city} />
@@ -109,7 +108,7 @@ export function SettingsForm({ settings: s }: { settings: Settings }) {
         <Toggle name="notifications.notifyOnAcceptance" label="E-Mail, wenn ein Kunde ein Angebot annimmt" checked={s.notifications.notifyOnAcceptance} />
         <Input
           name="notifications.teamInbox"
-          label="E-Mail für Termine & Einsatzplan (z. B. Inhaber / Fahrer – leer = Postfach oben)"
+          label="E-Mail für Termine & Einsatzplan (leer = Postfach oben)"
           value={s.notifications.teamInbox}
           type="email"
           className="sm:col-span-2"

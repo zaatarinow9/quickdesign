@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthState, roleLabels } from "@/lib/auth";
+import { getAuthState } from "@/lib/auth";
 import { formatDateTime } from "@/lib/documents/format";
 import { removeFactor } from "@/app/admin/auth-actions";
 import { EnrollTotp, PasswordChange } from "@/components/admin/SecurityForms";
@@ -16,7 +16,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
   const mandatory = !!(await searchParams).pflicht;
   return (
     <>
-      <PageHeader title="Sicherheit & 2FA" description={`${admin.email} · ${roleLabels[admin.role]}`} />
+      <PageHeader title="Sicherheit & 2FA" description={admin.email} />
       {mandatory && !factors.length ? (
         <div className="mb-6">
           <Notice tone="warn">Die Zwei-Faktor-Anmeldung ist verpflichtend. Bitte richten Sie sie jetzt ein, um die Verwaltung zu nutzen.</Notice>

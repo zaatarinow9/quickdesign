@@ -19,8 +19,8 @@ export default async function ServicesPage() {
   return (
     <>
       <PageHeader
-        title="Leistungskatalog"
-        description="Leistungen und Materialien mit ihrer Berechnungsart (Stück, Menge wie 1.000 Stk., m², lfm, Stunde, pauschal). Bausteine lassen sich per Drag & Drop zu Vorlagen kombinieren – im Angebot werden Mengen und Preise dann automatisch berechnet."
+        title="Leistungen & Preise"
+        description="Einmal anlegen – im Angebot nur noch auswählen. Preise und Mengen werden automatisch berechnet."
       />
       <Card title="Neue Leistung">
         <ServiceForm categories={categories} catalog={services} />

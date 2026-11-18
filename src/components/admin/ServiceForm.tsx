@@ -179,10 +179,13 @@ export function ServiceForm({
       )}
 
       {/* Bausteine */}
-      <div className="sm:col-span-12">
-        <span className="adm-label flex items-center gap-1.5">
-          <Puzzle className="size-3.5" aria-hidden /> Bausteine (optional)
-        </span>
+      <details className="group sm:col-span-12" open={!!service?.components.length}>
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm text-accent hover:underline">
+          <Puzzle className="size-3.5" aria-hidden />
+          <span className="group-open:hidden">+ Aus mehreren Teilen zusammensetzen (z. B. Schild = Platte + Druck + Laminat)</span>
+          <span className="hidden group-open:inline">Bausteine</span>
+        </summary>
+        <div className="mt-2">
         <div
           onDragOver={(e) => {
             if (!hasServiceDrag(e)) return;
@@ -242,7 +245,8 @@ export function ServiceForm({
         {components.length && p === 0 ? (
           <p className="mt-2 text-xs text-stone-dark">Preis 0 € mit Bausteinen = reine Vorlage: Im Angebot erscheinen nur die Bausteine mit ihren Preisen.</p>
         ) : null}
-      </div>
+        </div>
+      </details>
 
       <div className="sm:col-span-12">
         <label className="adm-label" htmlFor={`d-${id}`}>

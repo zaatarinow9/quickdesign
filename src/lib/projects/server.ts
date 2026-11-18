@@ -200,7 +200,7 @@ export async function sendStageMail(p: Project, status: ProjectStatus, message?:
     greeting: greetingLine(null, p.customer_name),
     message,
     onlineUrl: await offerShareUrl(p.offer_id),
-    signature: s.company.owner || s.company.name,
+    signature: s.company.name,
   });
   return sendMail(p.email, content, { replyTo: s.notifications.inbox || s.company.email, kind: "auftrag", relatedId: p.id });
 }
@@ -216,7 +216,7 @@ export async function sendAppointmentCustomerMail(p: Project, reminder = false):
     greeting: greetingLine(null, p.customer_name),
     reminder,
     onlineUrl: await offerShareUrl(p.offer_id),
-    signature: s.company.owner || s.company.name,
+    signature: s.company.name,
     ics: projectIcs(p, s, "kunde"),
   });
   return sendMail(p.email, content, { replyTo: s.notifications.inbox || s.company.email, kind: reminder ? "termin-erinnerung" : "termin", relatedId: p.id });

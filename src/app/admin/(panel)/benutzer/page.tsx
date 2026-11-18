@@ -14,7 +14,7 @@ export default async function UsersPage() {
   const { data: users } = await db().from("admin_users").select("*").order("created_at");
   return (
     <>
-      <PageHeader title="Benutzer & Rechte" description="Mitarbeiter einladen und Zugriffsrechte verwalten. Inhaber werden über die Umgebungsvariable ADMIN_EMAILS festgelegt." />
+      <PageHeader title="Benutzer & Rechte" description="Mitarbeiter einladen und festlegen, was sie sehen dürfen." />
       <Card title="Mitarbeiter einladen">
         <InviteForm canInviteAdmin={admin.role === "owner"} />
         <p className="mt-3 text-xs text-stone-dark">Mitarbeiter: Anfragen, Kunden, Angebote, Rechnungen, Marketing. Administratoren zusätzlich: Leistungskatalog, Einstellungen, Benutzer, Exporte, Löschungen.</p>

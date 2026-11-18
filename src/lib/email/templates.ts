@@ -110,7 +110,7 @@ export function documentEmail(opts: {
 <p style="margin:22px 0 0;font-family:Outfit,Inter,Arial,sans-serif;font-size:20px;font-weight:600;">${escapeHtml(opts.title)}</p>
 ${summaryTable(rows)}
 ${button(opts.onlineUrl, isOffer ? "Angebot online ansehen & annehmen" : "Rechnung online ansehen")}
-<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.signature)}</strong><br>${escapeHtml(opts.company.name)}</p>`,
+<p style="margin:26px 0 0;">Mit freundlichen Grüßen<br><strong>${escapeHtml(opts.company.name)}</strong></p>`,
   });
 
   const text = [
@@ -124,7 +124,6 @@ ${button(opts.onlineUrl, isOffer ? "Angebot online ansehen & annehmen" : "Rechnu
     `Online ansehen: ${opts.onlineUrl}`,
     "",
     "Mit freundlichen Grüßen",
-    opts.signature,
     opts.company.name,
   ].join("\n");
 
