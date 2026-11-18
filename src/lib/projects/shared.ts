@@ -11,18 +11,25 @@ export const projectStatusInfo: Record<ProjectStatus, { label: string; step: str
   abgeschlossen: { label: "Abgeschlossen", step: "Abgeschlossen", hint: "Montiert / übergeben", tone: "gray" },
 };
 
-export type AppointmentType = "montage" | "lieferung" | "abholung";
-export const appointmentTypes: AppointmentType[] = ["montage", "lieferung", "abholung"];
+export type AppointmentType = "montage" | "lieferung" | "abholung" | "besorgung" | "sonstiges";
+export const appointmentTypes: AppointmentType[] = ["montage", "lieferung", "abholung", "besorgung", "sonstiges"];
+/** Terminarten, die zu einem Kundenauftrag passen */
+export const orderAppointmentTypes: AppointmentType[] = ["montage", "lieferung", "abholung"];
 export const isAppointmentType = (v: unknown): v is AppointmentType => typeof v === "string" && (appointmentTypes as string[]).includes(v);
 export const appointmentInfo: Record<AppointmentType, { label: string; noun: string; atCustomer: boolean }> = {
   montage: { label: "Montage", noun: "Montagetermin", atCustomer: true },
   lieferung: { label: "Lieferung", noun: "Liefertermin", atCustomer: true },
   abholung: { label: "Abholung", noun: "Abholtermin", atCustomer: false },
+  besorgung: { label: "Material holen", noun: "Besorgung", atCustomer: true },
+  sonstiges: { label: "Sonstiges", noun: "Termin", atCustomer: true },
 };
+
+export type ProjectKind = "auftrag" | "aufgabe";
 
 export type Project = {
   id: string;
   number: string;
+  kind: ProjectKind;
   offer_id: string | null;
   customer_id: string | null;
   title: string;
@@ -59,6 +66,12 @@ export type Project = {
 export type ProjectFinance = { invoiced: number; paid: number; open: number; invoices: { id: string; number: string | null; status: string; gross: number; paid: number }[] };
 
 export const customerLabel = (p: Pick<Project, "company_name" | "customer_name">) => p.company_name || p.customer_name;
+
+/** Überschrift: „Kunde – Titel“ bzw. nur der Titel bei freien Terminen */
+export const projectHeading = (p: Pick<Project, "company_name" | "customer_name" | "title">) => {
+  const c = customerLabel(p)?.trim();
+  return c ? `${c} – ${p.title}` : p.title;
+};
 
 export function siteAddress(p: Pick<Project, "site_street" | "site_postal_code" | "site_city">): string {
   return [p.site_street, [p.site_postal_code, p.site_city].filter(Boolean).join(" ")].filter((s) => s && s.trim()).join(", ");

@@ -5,7 +5,6 @@ import {
   appointmentInfo,
   customerLabel,
   formatAppointment,
-  mapsUrl,
   navigationUrl,
   projectStatusInfo,
   projectStatuses,
@@ -129,93 +128,112 @@ ${opts.onlineUrl ? button(opts.onlineUrl, "Auftrag online ansehen") : ""}
   };
 }
 
-type TeamEntry = { project: Project; items: { description: string; quantity: string }[]; adminUrl: string };
+export type PlanEntry = { project: Project; items: { description: string; quantity: string }[]; adminUrl: string };
 
-function teamBlock(e: TeamEntry) {
+const eurFmt = (n: number) => eur.format(n);
+
+/** Eine Aufgabe im Einsatzplan – nummeriert, mit großem Navigations-Knopf */
+function planBlock(e: PlanEntry, n: number, total: number, shopAddress: string) {
   const p = e.project;
-  const info = appointmentInfo[p.appointment_type ?? "montage"];
-  const address = siteAddress(p);
-  const map = mapsUrl(p);
-  const nav = navigationUrl(p);
-  const contact = [p.site_contact_name || p.customer_name, p.site_contact_phone || p.phone].filter(Boolean).join(" · ");
+  const type = p.appointment_type ?? "montage";
+  const info = appointmentInfo[type];
+  const inShop = !info.atCustomer;
+  const address = inShop ? shopAddress : siteAddress(p);
+  const nav = inShop ? null : navigationUrl(p);
+  const who = customerLabel(p)?.trim();
+  const contactName = p.site_contact_name || (p.kind === "aufgabe" ? null : p.customer_name);
   const tel = p.site_contact_phone || p.phone;
-  const pill = (href: string, label: string, color = INK) =>
-    `<a href="${href}" style="display:inline-block;margin:4px 6px 0 0;padding:9px 16px;border-radius:999px;background:${color};color:#fff;font-size:13px;font-weight:600;text-decoration:none;">${escapeHtml(label)}</a>`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;border:1px solid #e6e2da;border-radius:14px;">
-<tr><td style="padding:16px 18px;background:${PAPER};border-radius:14px 14px 0 0;">
-  <div style="font-size:12px;color:${STONE};text-transform:uppercase;letter-spacing:.06em;">${escapeHtml(info.label)} · ${escapeHtml(p.number)}</div>
-  <div style="font-family:Outfit,Inter,Arial,sans-serif;font-size:19px;font-weight:700;margin-top:2px;">${escapeHtml(formatAppointment(p))}</div>
-  <div style="font-size:15px;margin-top:4px;">${escapeHtml(customerLabel(p))} – ${escapeHtml(p.title)}</div>
+  const time = p.appointment_time ? `${p.appointment_time.slice(0, 5)} Uhr` : "Uhrzeit offen";
+  const bigBtn = (href: string, label: string, color: string) =>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td align="center" style="border-radius:12px;background:${color};">
+<a href="${href}" style="display:block;padding:15px 12px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">${escapeHtml(label)}</a></td></tr></table>`;
+  const smallLink = (href: string, label: string) => `<a href="${href}" style="color:${INK};font-weight:600;text-decoration:underline;margin-right:16px;">${escapeHtml(label)}</a>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;border:2px solid ${INK};border-radius:16px;">
+<tr><td style="padding:14px 18px;background:${INK};border-radius:13px 13px 0 0;color:#ffffff;">
+  <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#f7a8d3;">Aufgabe ${n} von ${total}</div>
+  <div style="font-family:Outfit,Inter,Arial,sans-serif;font-size:21px;font-weight:700;margin-top:3px;">${escapeHtml(time)} · ${escapeHtml(info.label)}</div>
 </td></tr>
-<tr><td style="padding:14px 18px;font-size:14px;line-height:1.6;">
-  ${address ? `<div><strong>Ort:</strong> ${escapeHtml(address)}</div>` : `<div style="color:${STONE}">Kein Einsatzort hinterlegt</div>`}
-  ${contact ? `<div><strong>Ansprechpartner:</strong> ${escapeHtml(contact)}</div>` : ""}
-  ${p.collect_amount ? `<div style="margin-top:10px;padding:10px 12px;background:#fff4fa;border-left:3px solid ${ACCENT};border-radius:6px;"><strong>Vor Ort kassieren: ${escapeHtml(eur.format(p.collect_amount))}</strong></div>` : ""}
-  ${p.crew_notes ? `<div style="margin-top:10px;"><strong>Hinweise fürs Team:</strong><br>${nl2br(p.crew_notes)}</div>` : ""}
-  ${p.internal_notes ? `<div style="margin-top:10px;color:${STONE};"><strong>Interne Notizen:</strong><br>${nl2br(p.internal_notes)}</div>` : ""}
-  ${e.items.length ? `<div style="margin-top:10px;"><strong>Positionen:</strong><br>${e.items.map((i) => `• ${escapeHtml(i.quantity)} ${escapeHtml(i.description)}`).join("<br>")}</div>` : ""}
-  <div style="margin-top:12px;">
-    ${nav ? pill(nav, "Route starten", ACCENT) : ""}${map ? pill(map, "Karte") : ""}${tel ? pill(`tel:${tel.replace(/[^\d+]/g, "")}`, "Anrufen") : ""}${pill(e.adminUrl, "Auftrag öffnen", STONE)}
-  </div>
+<tr><td style="padding:16px 18px 18px;font-size:15px;line-height:1.6;color:${INK};">
+  <div style="font-size:17px;font-weight:700;">${escapeHtml(p.title)}</div>
+  ${who ? `<div style="color:${STONE};">Kunde: ${escapeHtml(who)}</div>` : ""}
+  <div style="margin-top:10px;"><strong>📍 ${inShop ? "Im Laden" : "Ort"}:</strong> ${address ? escapeHtml(address) : `<em style="color:${STONE}">kein Ort angegeben</em>`}</div>
+  ${contactName || tel ? `<div><strong>👤 Vor Ort:</strong> ${escapeHtml([contactName, tel].filter(Boolean).join(" · "))}</div>` : ""}
+  ${p.duration_hours ? `<div><strong>⏱ Dauer:</strong> ca. ${escapeHtml(String(p.duration_hours).replace(".", ","))} Std.</div>` : ""}
+  ${p.collect_amount ? `<div style="margin-top:12px;padding:12px 14px;background:#fff0f7;border:2px solid ${ACCENT};border-radius:10px;font-size:16px;"><strong>💶 Bitte kassieren: ${escapeHtml(eurFmt(p.collect_amount))}</strong></div>` : ""}
+  ${p.crew_notes ? `<div style="margin-top:12px;padding:12px 14px;background:${PAPER};border-radius:10px;"><strong>📝 Hinweise:</strong><br>${nl2br(p.crew_notes)}</div>` : ""}
+  ${p.internal_notes ? `<div style="margin-top:8px;color:${STONE};font-size:14px;"><strong>Intern:</strong> ${nl2br(p.internal_notes)}</div>` : ""}
+  ${e.items.length ? `<div style="margin-top:12px;font-size:14px;"><strong>Mitnehmen / Positionen:</strong><br>${e.items.map((i) => `• ${escapeHtml(i.quantity)} ${escapeHtml(i.description)}`).join("<br>")}</div>` : ""}
+  ${nav ? bigBtn(nav, "📍 Navigation zum Einsatzort starten", ACCENT) : ""}
+  <div style="margin-top:12px;font-size:14px;">${tel ? smallLink(`tel:${tel.replace(/[^\d+]/g, "")}`, "📞 Anrufen") : ""}${smallLink(e.adminUrl, "Details öffnen")}</div>
 </td></tr></table>`;
 }
 
-function teamText(e: TeamEntry) {
+function planText(e: PlanEntry, n: number, total: number, shopAddress: string) {
   const p = e.project;
   const info = appointmentInfo[p.appointment_type ?? "montage"];
+  const inShop = !info.atCustomer;
   return [
-    `${info.label} · ${p.number}: ${formatAppointment(p)}`,
-    `${customerLabel(p)} – ${p.title}`,
-    `Ort: ${siteAddress(p) || "–"}`,
-    `Karte: ${navigationUrl(p) ?? "–"}`,
-    `Ansprechpartner: ${[p.site_contact_name || p.customer_name, p.site_contact_phone || p.phone].filter(Boolean).join(" · ")}`,
-    p.collect_amount ? `VOR ORT KASSIEREN: ${eur.format(p.collect_amount)}` : "",
+    `===== AUFGABE ${n} VON ${total} =====`,
+    `${formatAppointment(p)} · ${info.label}`,
+    p.title,
+    customerLabel(p)?.trim() ? `Kunde: ${customerLabel(p)}` : "",
+    `Ort: ${(inShop ? shopAddress : siteAddress(p)) || "–"}`,
+    !inShop && navigationUrl(p) ? `Navigation: ${navigationUrl(p)}` : "",
+    [p.site_contact_name, p.site_contact_phone || p.phone].filter(Boolean).length ? `Vor Ort: ${[p.site_contact_name, p.site_contact_phone || p.phone].filter(Boolean).join(" · ")}` : "",
+    p.collect_amount ? `BITTE KASSIEREN: ${eurFmt(p.collect_amount)}` : "",
     p.crew_notes ? `Hinweise: ${p.crew_notes}` : "",
-    p.internal_notes ? `Intern: ${p.internal_notes}` : "",
     ...e.items.map((i) => `- ${i.quantity} ${i.description}`),
-    e.adminUrl,
+    `Details: ${e.adminUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-/** Einzelner Termin fürs Team (bei Planung oder Änderung) */
-export function appointmentTeamEmail(opts: { siteUrl: string; company: Company; entry: TeamEntry; changed: boolean; ics: SmtpAttachment }): EmailContent {
-  const p = opts.entry.project;
-  const info = appointmentInfo[p.appointment_type ?? "montage"];
-  const html = layout({
-    siteUrl: opts.siteUrl,
-    company: opts.company,
-    preheader: `${info.label} ${formatAppointment(p, { short: true })} – ${customerLabel(p)}`,
-    body: `<p style="margin:0 0 4px;font-size:13px;color:${STONE};">${opts.changed ? "Termin geändert" : "Neuer Termin eingeplant"}</p>
-<p style="margin:0 0 18px;font-family:Outfit,Inter,Arial,sans-serif;font-size:22px;font-weight:600;">${escapeHtml(info.label)} bei ${escapeHtml(customerLabel(p))}</p>
-${teamBlock(opts.entry)}`,
-  });
-  return {
-    subject: `${opts.changed ? "Geändert: " : ""}${info.label} ${formatAppointment(p, { short: true })} – ${customerLabel(p)}${p.site_city ? `, ${p.site_city}` : ""}`.slice(0, 190),
-    html,
-    text: `${opts.changed ? "Termin geändert" : "Neuer Termin"}\n\n${teamText(opts.entry)}`,
-    attachments: [opts.ics],
-  };
-}
+const divider = (n: number) =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;"><tr><td style="border-top:2px dashed #d9d4ca;font-size:0;line-height:0;">&nbsp;</td><td width="1" style="padding:0 10px;white-space:nowrap;font-size:12px;color:${STONE};">nächste Aufgabe (${n})</td><td style="border-top:2px dashed #d9d4ca;font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
 
-/** Einsatzplan für einen Tag (täglich am Vorabend) */
-export function dailyPlanEmail(opts: { siteUrl: string; company: Company; dayLabel: string; entries: TeamEntry[]; planUrl: string }): EmailContent {
+/**
+ * Einsatzplan: alle Aufgaben eines Tages in EINER E-Mail, nummeriert und klar getrennt.
+ * Mit `urgent` als Sofort-Nachricht (z. B. kurzfristiger Termin).
+ */
+export function planEmail(opts: { siteUrl: string; company: Company; dayLabel: string; entries: PlanEntry[]; planUrl: string; urgent?: boolean; ics?: SmtpAttachment }): EmailContent {
   const n = opts.entries.length;
-  const collect = opts.entries.reduce((s, e) => s + (e.project.collect_amount ?? 0), 0);
+  const shop = `${opts.company.street}, ${opts.company.postalCode} ${opts.company.city}`;
+  const collect = opts.entries.reduce((sum, e) => sum + (e.project.collect_amount ?? 0), 0);
+  const overview = opts.entries
+    .map((e, i) => {
+      const p = e.project;
+      const t = (p.appointment_time ?? "").slice(0, 5) || "–";
+      return `<tr><td style="padding:6px 0;font-weight:700;width:28px;">${i + 1}.</td><td style="padding:6px 0;width:56px;">${escapeHtml(t)}</td><td style="padding:6px 0;">${escapeHtml(appointmentInfo[p.appointment_type ?? "montage"].label)} – ${escapeHtml(p.title)}${p.site_city ? `, ${escapeHtml(p.site_city)}` : ""}</td></tr>`;
+    })
+    .join("");
+  const blocks = opts.entries.map((e, i) => (i ? divider(i + 1) : "") + planBlock(e, i + 1, n, shop)).join("");
   const html = layout({
     siteUrl: opts.siteUrl,
     company: opts.company,
-    preheader: `${opts.dayLabel}: ${n} Termin${n === 1 ? "" : "e"}`,
-    body: `<p style="margin:0 0 4px;font-size:13px;color:${STONE};">Einsatzplan</p>
-<p style="margin:0 0 6px;font-family:Outfit,Inter,Arial,sans-serif;font-size:22px;font-weight:600;">${escapeHtml(opts.dayLabel)} – ${n} Termin${n === 1 ? "" : "e"}</p>
-${collect ? `<p style="margin:0 0 18px;color:${STONE};">Insgesamt vor Ort zu kassieren: <strong style="color:${ACCENT}">${escapeHtml(eur.format(collect))}</strong></p>` : `<p style="margin:0 0 18px;"></p>`}
-${opts.entries.map(teamBlock).join("")}
-${button(opts.planUrl, "Alle Aufträge & Termine")}`,
+    preheader: `${opts.urgent ? "DRINGEND – " : ""}${opts.dayLabel}: ${n} Aufgabe${n === 1 ? "" : "n"}`,
+    body: `${opts.urgent ? `<div style="margin:0 0 14px;padding:10px 14px;background:${ACCENT};color:#fff;border-radius:10px;font-weight:700;">⚡ Dringend – kurzfristig eingeplant</div>` : ""}
+<p style="margin:0 0 4px;font-size:13px;color:${STONE};">Einsatzplan</p>
+<p style="margin:0 0 12px;font-family:Outfit,Inter,Arial,sans-serif;font-size:24px;font-weight:700;">${escapeHtml(opts.dayLabel)}</p>
+${
+  n > 1
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px;padding:12px 16px;background:${PAPER};border-radius:12px;font-size:14px;">${overview}</table>`
+    : ""
+}
+${collect ? `<p style="margin:6px 0 18px;">Insgesamt kassieren: <strong style="color:${ACCENT}">${escapeHtml(eurFmt(collect))}</strong></p>` : `<p style="margin:0 0 18px;"></p>`}
+${blocks}
+${button(opts.planUrl, "Alle Termine ansehen")}`,
   });
-  return {
-    subject: `Einsatzplan ${opts.dayLabel}: ${n} Termin${n === 1 ? "" : "e"}`.slice(0, 190),
-    html,
-    text: [`Einsatzplan ${opts.dayLabel}`, collect ? `Vor Ort kassieren gesamt: ${eur.format(collect)}` : "", "", ...opts.entries.map(teamText).flatMap((t) => [t, ""]), opts.planUrl].join("\n"),
-  };
+  const text = [
+    `${opts.urgent ? "DRINGEND – " : ""}Einsatzplan ${opts.dayLabel} (${n} Aufgabe${n === 1 ? "" : "n"})`,
+    collect ? `Insgesamt kassieren: ${eurFmt(collect)}` : "",
+    "",
+    ...opts.entries.flatMap((e, i) => [planText(e, i + 1, n, shop), ""]),
+    opts.planUrl,
+  ].join("\n");
+  const first = opts.entries[0]?.project;
+  const subject = opts.urgent && n === 1 && first
+    ? `DRINGEND: ${appointmentInfo[first.appointment_type ?? "montage"].label} ${formatAppointment(first, { short: true })} – ${first.title}`
+    : `${opts.urgent ? "DRINGEND – " : ""}Einsatzplan ${opts.dayLabel}: ${n} Aufgabe${n === 1 ? "" : "n"}`;
+  return { subject: subject.slice(0, 190), html, text, attachments: opts.ics ? [opts.ics] : undefined };
 }

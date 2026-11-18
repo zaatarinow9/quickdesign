@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { Briefcase, CalendarDays, CalendarX2, Hammer, Receipt, TriangleAlert, Wallet } from "lucide-react";
+import { Briefcase, CalendarDays, CalendarPlus, CalendarX2, Hammer, Receipt, TriangleAlert, Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings/server";
 import { addDays, formatEuro, todayBerlin } from "@/lib/documents/format";
-import { financeByOffer, listAppointments, listProjects } from "@/lib/projects/server";
-import { customerLabel, formatAppointment, projectStatuses, projectStatusInfo, type Project, type ProjectFinance } from "@/lib/projects/shared";
+import { financeByOffer, listAppointments, listProjects, teamInbox } from "@/lib/projects/server";
+import { SendPlan } from "@/components/admin/projects/SendPlan";
+import { db } from "@/lib/supabase/admin";
+import { customerLabel, formatAppointment, projectHeading, projectStatuses, projectStatusInfo, type Project, type ProjectFinance } from "@/lib/projects/shared";
 import { AppointmentAgenda } from "@/components/admin/projects/AppointmentCard";
 import { QuickAdvance } from "@/components/admin/projects/QuickAdvance";
 import { Badge, Card, EmptyState, FilterTabs, PageHeader, SearchForm, Stat } from "@/components/admin/ui";
@@ -19,7 +21,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const q = sp.q?.trim().slice(0, 80) || undefined;
   const today = todayBerlin();
   const [projects, upcoming, settings] = await Promise.all([
-    listProjects({ doneOnly: view === "abgeschlossen", q }),
+    listProjects({ doneOnly: view === "abgeschlossen", q, kind: "auftrag" }),
     listAppointments(addDays(today, -14), addDays(today, 45)),
     getSettings(),
   ]);
@@ -34,12 +36,23 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const openTotal = [...finance.values()].reduce((s, f) => s + f.open, 0);
   const missingAppt = projects.filter((p) => p.status === "fertig" && !p.appointment_date);
   const notify = settings.notifications.customerStageMails;
+  const tomorrow = addDays(today, 1);
+  const { data: runs } = await db().from("daily_plan_runs").select("plan_date, sent_at").in("plan_date", [today, tomorrow]);
+  const sentAt = (d: string) => runs?.find((r) => r.plan_date === d)?.sent_at as string | undefined;
+  const timeOf = (iso: string) => new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }).format(new Date(iso));
+  const tomorrowCount = agenda.filter((p) => p.appointment_date === tomorrow && p.status !== "abgeschlossen").length;
+  const todayCount = agenda.filter((p) => p.appointment_date === today && p.status !== "abgeschlossen").length;
 
   return (
     <>
       <PageHeader
         title="Aufträge & Termine"
         description="Angenommene Angebote landen automatisch hier. Oben die nächsten Termine, darunter alle Aufträge."
+        actions={
+          <Link href="/admin/projekte/neu" className="adm-btn adm-btn-primary">
+            <CalendarPlus className="size-4" aria-hidden /> Neuer Termin
+          </Link>
+        }
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -50,11 +63,25 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       </div>
 
       {view === "aktiv" ? (
-        <Card className="mb-6" title="Einsatzplan" action={<span className="text-xs text-stone-dark">Montage · Lieferung · Abholung</span>}>
+        <Card className="mb-6" title="Einsatzplan" action={<span className="text-xs text-stone-dark">E-Mail an {teamInbox(settings)}</span>}>
+          <div className="mb-5 grid gap-2 rounded-xl bg-ink/[0.03] p-3 sm:grid-cols-2">
+            <SendPlan
+              date={tomorrow}
+              label="Plan für morgen"
+              status={
+                sentAt(tomorrow)
+                  ? `gesendet um ${timeOf(sentAt(tomorrow)!)} Uhr`
+                  : tomorrowCount
+                    ? `${tomorrowCount} Aufgabe${tomorrowCount === 1 ? "" : "n"} · kommt automatisch um 18 Uhr`
+                    : "morgen keine Termine"
+              }
+            />
+            <SendPlan date={today} label="Plan für heute" status={todayCount ? `${todayCount} Aufgabe${todayCount === 1 ? "" : "n"} heute` : "heute keine Termine"} />
+          </div>
           {agenda.length ? (
             <AppointmentAgenda items={agenda} today={today} />
           ) : (
-            <EmptyState icon={CalendarX2} title="Keine Termine geplant" text="Öffnen Sie einen Auftrag und tragen Sie Datum, Uhrzeit und Einsatzort ein." />
+            <EmptyState icon={CalendarX2} title="Keine Termine geplant" text="Termin in einem Auftrag eintragen – oder oben „Neuer Termin“ für alles andere." />
           )}
           {missingAppt.length ? (
             <div className="mt-6 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
@@ -65,7 +92,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 {missingAppt.map((p) => (
                   <li key={p.id}>
                     <Link href={`/admin/projekte/${p.id}`} className="inline-flex h-8 items-center rounded-full bg-white px-3 text-sm ring-1 ring-amber-200 hover:ring-amber-400">
-                      {customerLabel(p)} – {p.title}
+                      {projectHeading(p)}
                     </Link>
                   </li>
                 ))}
@@ -121,7 +148,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 <Link href={`/admin/projekte/${p.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3.5 hover:bg-ink/[0.02]">
                   <span className="w-24 text-xs tabular-nums text-stone-dark">{p.number}</span>
                   <span className="min-w-0 flex-1 truncate font-medium">
-                    {customerLabel(p)} – {p.title}
+                    {projectHeading(p)}
                   </span>
                   <InvoiceBadge f={fin(p)} />
                   <span className="text-sm tabular-nums">{formatEuro(p.value_gross)}</span>

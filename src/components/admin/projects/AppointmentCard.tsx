@@ -4,7 +4,7 @@ import { appointmentIcons } from "./AppointmentIcons";
 import { formatEuro } from "@/lib/documents/format";
 import {
   appointmentInfo,
-  customerLabel,
+  projectHeading,
   formatDayHeading,
   hhmm,
   mapsUrl,
@@ -40,7 +40,7 @@ export function AppointmentCard({ p, compact }: { p: Project; compact?: boolean 
           <Badge tone={projectStatusInfo[p.status].tone}>{projectStatusInfo[p.status].label}</Badge>
         </div>
         <Link href={`/admin/projekte/${p.id}`} className="mt-0.5 line-clamp-2 block font-semibold hover:text-accent">
-          {customerLabel(p)} – {p.title}
+          {projectHeading(p)}
         </Link>
         <p className="mt-1 flex items-start gap-1.5 text-sm text-stone-dark">
           <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />

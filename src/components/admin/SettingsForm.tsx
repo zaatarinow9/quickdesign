@@ -108,12 +108,12 @@ export function SettingsForm({ settings: s }: { settings: Settings }) {
         <Toggle name="notifications.notifyOnAcceptance" label="E-Mail, wenn ein Kunde ein Angebot annimmt" checked={s.notifications.notifyOnAcceptance} />
         <Input
           name="notifications.teamInbox"
-          label="E-Mail für Termine & Einsatzplan (leer = Postfach oben)"
+          label="E-Mail(s) der Mitarbeiter für den Einsatzplan – mehrere mit Komma trennen (leer = Postfach oben)"
           value={s.notifications.teamInbox}
-          type="email"
+          type="text"
           className="sm:col-span-2"
         />
-        <Toggle name="notifications.dailyPlan" label="Täglich gegen 17–18 Uhr: Einsatzplan für morgen per E-Mail" checked={s.notifications.dailyPlan} />
+        <Toggle name="notifications.dailyPlan" label="Täglich um 18 Uhr: EIN Einsatzplan mit allen Aufgaben für morgen" checked={s.notifications.dailyPlan} />
         <Toggle name="notifications.customerReminder" label="Kunden am Vortag an ihren Termin erinnern" checked={s.notifications.customerReminder} />
         <Toggle name="notifications.customerStageMails" label="Kunden bei Statuswechsel eines Auftrags informieren (vorausgewählt)" checked={s.notifications.customerStageMails} />
       </Section>

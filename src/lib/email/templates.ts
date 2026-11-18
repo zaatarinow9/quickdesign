@@ -39,8 +39,8 @@ export function layout(opts: { siteUrl: string; company: Company; preheader: str
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};padding:32px 12px;">
 <tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;">
-    <tr><td style="background:${INK};padding:26px 32px;">
-      <img src="${siteUrl}/logo.png" width="150" alt="${escapeHtml(company.name)}" style="display:block;width:150px;height:auto;filter:invert(1);">
+    <tr><td style="background:#ffffff;padding:24px 32px 20px;">
+      <img src="${siteUrl}/brand/logo-email.png" width="170" height="70" alt="${escapeHtml(company.name)}" style="display:block;width:170px;height:auto;border:0;">
     </td></tr>
     <tr><td style="height:4px;background:linear-gradient(90deg,${ACCENT},${CYAN});background-color:${ACCENT};font-size:0;line-height:0;">&nbsp;</td></tr>
     <tr><td style="padding:34px 32px 10px;font-size:15px;line-height:1.65;color:${INK};">${opts.body}</td></tr>

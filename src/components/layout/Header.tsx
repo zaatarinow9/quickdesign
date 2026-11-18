@@ -166,6 +166,10 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, lenis]);
 
+  // Seiten mit hellem Hintergrund oben: Kopfzeile von Anfang an dunkel, damit das Logo sichtbar bleibt
+  const lightTop = ["/dokument/", "/einwilligung/", "/abmelden/"].some((p) => pathname.startsWith(p));
+  const solid = scrolled || open || lightTop;
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
   const closeMenu = () => {
@@ -191,7 +195,7 @@ export default function Header() {
         <div
           className={cn(
             "mx-auto flex h-16 max-w-[1440px] items-center justify-between rounded-full pl-6 pr-2.5 text-paper transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-[4.5rem] sm:pl-9 sm:pr-3",
-            scrolled || open
+            solid
               ? "bg-ink/80 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-paper/10 backdrop-blur-xl"
               : "bg-transparent",
           )}

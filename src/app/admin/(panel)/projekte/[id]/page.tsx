@@ -5,8 +5,11 @@ import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings/server";
 import { formatDateTime, formatEuro, formatQty, statusLabels, type DocItem } from "@/lib/documents/format";
 import { db } from "@/lib/supabase/admin";
-import { financeByOffer, getProject, offerShareUrl, projectEvents, teamInbox } from "@/lib/projects/server";
-import { customerLabel, formatAppointment, appointmentInfo, projectStatusInfo } from "@/lib/projects/shared";
+import { financeByOffer, getProject, offerShareUrl, planSentDates, projectEvents, teamInbox } from "@/lib/projects/server";
+import { addDays, todayBerlin } from "@/lib/documents/format";
+import { TaskDone } from "@/components/admin/projects/TaskDone";
+import { Notice } from "@/components/admin/ui";
+import { formatAppointment, appointmentInfo, projectHeading, projectStatusInfo } from "@/lib/projects/shared";
 import { convertToInvoice } from "@/app/admin/document-actions";
 import { deleteProject } from "@/app/admin/project-actions";
 import { StageControl } from "@/components/admin/projects/StageControl";
@@ -14,29 +17,33 @@ import { ProjectForm } from "@/components/admin/projects/ProjectForm";
 import { ConfirmSubmit } from "@/components/admin/documents/panels";
 import { Badge, Card, PageHeader, statusTone } from "@/components/admin/ui";
 
-export const metadata = { title: "Auftrag" };
+export const metadata = { title: "Auftrag / Termin" };
 
 const eventLabels: Record<string, string> = {
-  angelegt: "Auftrag angelegt",
+  angelegt: "Angelegt",
   status: "Status geändert",
   termin: "Termin",
   "e-mail": "E-Mail",
   bearbeitet: "Bearbeitet",
 };
 
-export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ neu?: string }> }) {
   const admin = await requireAdmin();
   const { id } = await params;
+  const isNew = (await searchParams).neu === "1";
+  const today = todayBerlin();
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const project = await getProject(id);
   if (!project) notFound();
-  const [settings, events, finance, shareUrl, offerRow] = await Promise.all([
+  const [settings, events, finance, shareUrl, offerRow, sentFor] = await Promise.all([
     getSettings(),
     projectEvents(id),
     financeByOffer(project.offer_id ? [project.offer_id] : []),
     offerShareUrl(project.offer_id),
     project.offer_id ? db().from("documents").select("number, items, gross_total").eq("id", project.offer_id).maybeSingle() : Promise.resolve({ data: null }),
+    planSentDates([today, addDays(today, 1), ...(project.appointment_date ? [project.appointment_date] : [])]),
   ]);
+  const isTask = project.kind === "aufgabe";
   const f = project.offer_id ? finance.get(project.offer_id) : undefined;
   const items = (Array.isArray(offerRow.data?.items) ? offerRow.data.items : []) as DocItem[];
   const openAmount = f ? f.open : null;
@@ -49,7 +56,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             <ArrowLeft className="size-4" aria-hidden /> Aufträge & Termine
           </Link>
         }
-        title={`${customerLabel(project)} – ${project.title}`}
+        title={projectHeading(project)}
         description={
           <span className="inline-flex flex-wrap items-center gap-2">
             <Badge tone={projectStatusInfo[project.status].tone}>{projectStatusInfo[project.status].label}</Badge>
@@ -87,6 +94,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         }
       />
 
+      {isNew ? (
+        <div className="mb-6">
+          <Notice tone="success">Termin angelegt. Ergänzen Sie bei Bedarf Ort und Hinweise – er kommt automatisch in den Einsatzplan.</Notice>
+        </div>
+      ) : null}
+
+      {isTask ? (
+        <Card className="mb-6">
+          <TaskDone id={project.id} done={project.status === "abgeschlossen"} />
+        </Card>
+      ) : (
       <Card className="mb-6" title="Fortschritt">
         <StageControl
           id={project.id}
@@ -96,11 +114,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           notifyDefault={settings.notifications.customerStageMails}
         />
       </Card>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <ProjectForm project={project} openAmount={openAmount} teamInbox={teamInbox(settings)} />
+        <ProjectForm project={project} openAmount={openAmount} teamInbox={teamInbox(settings)} today={today} planSentFor={sentFor} />
 
         <aside className="space-y-6">
+          {isTask ? null : (
           <Card title="Rechnungen & Zahlungen">
             <dl className="space-y-1.5 text-sm">
               <Row label="Auftragswert (Angebot)" value={formatEuro(project.value_gross)} />
@@ -126,6 +146,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
               <p className="mt-3 text-xs text-stone-dark">Noch keine Rechnung – über „Rechnung erstellen“ wird sie aus dem Angebot übernommen.</p>
             )}
           </Card>
+          )}
 
           {items.length ? (
             <Card title="Positionen" padded={false}>

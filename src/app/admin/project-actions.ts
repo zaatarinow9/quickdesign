@@ -12,9 +12,11 @@ import {
   getProject,
   logProjectEvent,
   sendAppointmentCustomerMail,
-  sendAppointmentTeamMail,
+  sendDayPlan,
   sendStageMail,
+  sendUrgentTask,
 } from "@/lib/projects/server";
+import { todayBerlin } from "@/lib/documents/format";
 import { appointmentTypes, formatAppointment, isProjectStatus, projectStatusInfo, type AppointmentType } from "@/lib/projects/shared";
 import type { ActionState } from "./document-actions";
 
@@ -133,7 +135,6 @@ export async function saveProject(_prev: ActionState, fd: FormData): Promise<Act
 
   const key = (p: typeof before) => [p.appointment_type, p.appointment_date, p.appointment_time?.slice(0, 5), p.site_street, p.site_postal_code, p.site_city].join("|");
   const apptChanged = key(before) !== key(after);
-  const hadAppt = !!before.appointment_date;
   if (apptChanged) {
     await logProjectEvent(id.data, "termin", after.appointment_date ? formatAppointment(after) : "Termin entfernt", admin.email);
     if (after.appointment_date !== before.appointment_date) await db().from("projects").update({ customer_reminder_sent_for: null }).eq("id", id.data);
@@ -148,13 +149,13 @@ export async function saveProject(_prev: ActionState, fd: FormData): Promise<Act
         await logProjectEvent(id.data, "e-mail", "Termin an Kunden gesendet", admin.email);
       } else notes.push(`Kunden-E-Mail fehlgeschlagen: ${r.error}`);
     }
-    if (fd.get("notify_team") === "on") {
-      const r = await sendAppointmentTeamMail(after, hadAppt && apptChanged);
+    if (fd.get("urgent") === "on") {
+      const r = await sendUrgentTask(after, todayBerlin());
       if (r.ok) {
-        notes.push("Einsatzplan-E-Mail gesendet");
-        await logProjectEvent(id.data, "e-mail", "Termin an Team gesendet", admin.email);
+        notes.push("Dringend an Mitarbeiter gesendet");
+        await logProjectEvent(id.data, "e-mail", "Dringend an Mitarbeiter gesendet", admin.email);
         await db().from("projects").update({ appointment_notified_at: new Date().toISOString() }).eq("id", id.data);
-      } else notes.push(`Team-E-Mail fehlgeschlagen: ${r.error}`);
+      } else notes.push(`Senden an Mitarbeiter fehlgeschlagen: ${r.error}`);
     }
   }
   paths(id.data);
@@ -169,4 +170,43 @@ export async function deleteProject(fd: FormData) {
   await logActivity(admin.email, "gelöscht", "auftrag", id.data, `Auftrag ${data?.number ?? ""} gelöscht`);
   paths();
   redirect("/admin/projekte");
+}
+
+/** Freier Termin ohne Angebot (z. B. Material holen, Besprechung) */
+export async function createTask(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await assertAdmin();
+  const title = String(fd.get("title") ?? "").trim().slice(0, 200);
+  if (!title) return { error: "Bitte kurz beschreiben, worum es geht." };
+  const type = String(fd.get("appointment_type") ?? "besorgung");
+  const date = String(fd.get("appointment_date") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Bitte ein Datum wählen." };
+  const time = String(fd.get("appointment_time") ?? "");
+  const { data, error } = await db()
+    .from("projects")
+    .insert({
+      kind: "aufgabe",
+      title,
+      customer_name: "",
+      appointment_type: (appointmentTypes as string[]).includes(type) ? type : "sonstiges",
+      appointment_date: date,
+      appointment_time: /^\d{2}:\d{2}$/.test(time) ? time : null,
+      status: "fertig",
+      created_by: admin.email,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return { error: "Termin konnte nicht angelegt werden." };
+  await logProjectEvent(data.id, "angelegt", "Freier Termin", admin.email);
+  paths(data.id);
+  redirect(`/admin/projekte/${data.id}?neu=1`);
+}
+
+/** Einsatzplan eines Tages sofort senden (z. B. wenn sich kurzfristig etwas geändert hat) */
+export async function sendPlanNow(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  await assertAdmin();
+  const date = String(fd.get("date") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Ungültiges Datum." };
+  const res = await sendDayPlan(date, { today: todayBerlin() });
+  paths();
+  return res.ok ? { ok: res.message } : { error: res.message };
 }

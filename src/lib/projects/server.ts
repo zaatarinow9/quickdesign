@@ -5,13 +5,15 @@ import { getSettings } from "@/lib/settings/server";
 import { mailCompany } from "@/lib/admin/company";
 import { logActivity } from "@/lib/admin/log";
 import { sendMail, type SendResult } from "@/lib/email/send";
-import { appointmentCustomerEmail, appointmentTeamEmail, projectStageEmail } from "@/lib/email/project-templates";
+import { appointmentCustomerEmail, planEmail, projectStageEmail, type PlanEntry } from "@/lib/email/project-templates";
+import type { EmailContent } from "@/lib/email/templates";
 import { formatQty, greetingLine, type DocItem } from "@/lib/documents/format";
 import type { Settings } from "@/lib/settings/schema";
 import {
   appointmentInfo,
   buildIcs,
-  customerLabel,
+  formatDayHeading,
+  projectHeading,
   isAppointmentType,
   isProjectStatus,
   siteAddress,
@@ -27,6 +29,7 @@ export function normalizeProject(row: Record<string, unknown>): Project {
   return {
     ...(row as unknown as Project),
     status: isProjectStatus(row.status) ? row.status : "angenommen",
+    kind: row.kind === "aufgabe" ? "aufgabe" : "auftrag",
     appointment_type: isAppointmentType(row.appointment_type) ? row.appointment_type : null,
     value_gross: num(row.value_gross),
     duration_hours: numOrNull(row.duration_hours),
@@ -44,8 +47,9 @@ export async function projectForOffer(offerId: string): Promise<Project | null> 
   return data ? normalizeProject(data) : null;
 }
 
-export async function listProjects(opts: { includeDone?: boolean; doneOnly?: boolean; q?: string } = {}): Promise<Project[]> {
+export async function listProjects(opts: { includeDone?: boolean; doneOnly?: boolean; q?: string; kind?: "auftrag" | "aufgabe" } = {}): Promise<Project[]> {
   let q = db().from("projects").select("*");
+  if (opts.kind) q = q.eq("kind", opts.kind);
   if (opts.doneOnly) q = q.eq("status", "abgeschlossen");
   else if (!opts.includeDone) q = q.neq("status", "abgeschlossen");
   if (opts.q) {
@@ -163,13 +167,13 @@ export async function offerShareUrl(offerId: string | null): Promise<string | nu
   return data?.share_enabled && data.share_token ? `${env.siteUrl}/dokument/${data.share_token}` : null;
 }
 
-export const teamInbox = (s: Settings) => s.notifications.teamInbox || s.notifications.inbox || s.company.email;
+export const teamInbox = (s: Settings) => teamRecipients(s).join(", ");
 export const adminProjectUrl = (id: string) => `${env.siteUrl}/admin/projekte/${id}`;
 
 export function projectIcs(p: Project, s: Settings, audience: "kunde" | "team") {
   const info = appointmentInfo[p.appointment_type ?? "montage"];
   const location = info.atCustomer ? siteAddress(p) : `${s.company.street}, ${s.company.postalCode} ${s.company.city}`;
-  const summary = audience === "team" ? `${info.label}: ${customerLabel(p)} – ${p.title}` : `${info.noun} ${s.company.name}: ${p.title}`;
+  const summary = audience === "team" ? `${info.label}: ${projectHeading(p)}` : `${info.noun} ${s.company.name}: ${p.title}`;
   const description =
     audience === "team"
       ? [p.number, p.site_contact_name, p.site_contact_phone || p.phone, p.collect_amount ? `Kassieren: ${p.collect_amount.toFixed(2).replace(".", ",")} €` : "", p.crew_notes, adminProjectUrl(p.id)]
@@ -222,15 +226,75 @@ export async function sendAppointmentCustomerMail(p: Project, reminder = false):
   return sendMail(p.email, content, { replyTo: s.notifications.inbox || s.company.email, kind: reminder ? "termin-erinnerung" : "termin", relatedId: p.id });
 }
 
-export async function sendAppointmentTeamMail(p: Project, changed: boolean): Promise<SendResult> {
-  if (!p.appointment_date) return { ok: false, error: "Kein Termin hinterlegt." };
+/** Empfänger des Einsatzplans (mehrere Adressen mit Komma möglich) */
+export function teamRecipients(s: Settings): string[] {
+  const list = (s.notifications.teamInbox || "").split(/[,;\s]+/).map((x) => x.trim().toLowerCase()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  return list.length ? [...new Set(list)] : [s.notifications.inbox || s.company.email];
+}
+
+async function planEntries(list: Project[]): Promise<PlanEntry[]> {
+  return Promise.all(list.map(async (p) => ({ project: p, items: await offerItems(p.offer_id), adminUrl: adminProjectUrl(p.id) })));
+}
+
+async function sendToTeam(s: Settings, content: EmailContent, relatedId: string | null): Promise<{ sent: string[]; failed: string[]; error?: string }> {
+  const sent: string[] = [];
+  const failed: string[] = [];
+  let error: string | undefined;
+  for (const to of teamRecipients(s)) {
+    const r = await sendMail(to, content, { kind: "einsatzplan", relatedId });
+    if (r.ok) sent.push(to);
+    else {
+      failed.push(to);
+      error = r.error;
+    }
+  }
+  return { sent, failed, error };
+}
+
+/** Offene Termine eines Tages, nach Uhrzeit sortiert */
+export async function dayTasks(date: string): Promise<Project[]> {
+  return (await listAppointments(date, date)).filter((p) => p.status !== "abgeschlossen");
+}
+
+export async function planSentDates(dates: string[]): Promise<string[]> {
+  const { data } = await db().from("daily_plan_runs").select("plan_date").in("plan_date", dates);
+  return (data ?? []).map((r) => r.plan_date as string);
+}
+
+/** Einsatzplan für einen Tag senden (alle Aufgaben in einer E-Mail) */
+export async function sendDayPlan(date: string, opts: { today: string; force?: boolean }): Promise<{ ok: boolean; count: number; message: string }> {
   const s = await getSettings();
-  const content = appointmentTeamEmail({
+  const list = await dayTasks(date);
+  if (!list.length) return { ok: true, count: 0, message: "Für diesen Tag sind keine Termine geplant." };
+  const content = planEmail({
     siteUrl: env.siteUrl,
     company: mailCompany(s),
-    entry: { project: p, items: await offerItems(p.offer_id), adminUrl: adminProjectUrl(p.id) },
-    changed,
+    dayLabel: formatDayHeading(date, opts.today),
+    entries: await planEntries(list),
+    planUrl: `${env.siteUrl}/admin/projekte`,
+  });
+  const res = await sendToTeam(s, content, null);
+  if (res.sent.length) {
+    await db().from("daily_plan_runs").upsert({ plan_date: date, sent_at: new Date().toISOString(), recipients: res.sent.join(", "), task_count: list.length });
+  }
+  return res.sent.length
+    ? { ok: true, count: list.length, message: `Einsatzplan mit ${list.length} Aufgabe${list.length === 1 ? "" : "n"} an ${res.sent.join(", ")} gesendet.` }
+    : { ok: false, count: list.length, message: `Versand fehlgeschlagen: ${res.error ?? "unbekannt"}` };
+}
+
+/** Dringend: eine Aufgabe sofort an das Team senden */
+export async function sendUrgentTask(p: Project, today: string): Promise<SendResult> {
+  if (!p.appointment_date) return { ok: false, error: "Kein Termin hinterlegt." };
+  const s = await getSettings();
+  const content = planEmail({
+    siteUrl: env.siteUrl,
+    company: mailCompany(s),
+    dayLabel: formatDayHeading(p.appointment_date, today),
+    entries: await planEntries([p]),
+    planUrl: `${env.siteUrl}/admin/projekte`,
+    urgent: true,
     ics: projectIcs(p, s, "team"),
   });
-  return sendMail(teamInbox(s), content, { kind: "termin-team", relatedId: p.id });
+  const res = await sendToTeam(s, content, p.id);
+  return res.sent.length ? { ok: true } : { ok: false, error: res.error ?? "Versand fehlgeschlagen." };
 }

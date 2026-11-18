@@ -1,18 +1,33 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { CalendarClock, Check, ClipboardList, Loader2, Mail, MapPin, Navigation, UserRound, Wallet } from "lucide-react";
+import { CalendarClock, Check, ClipboardList, Loader2, Mail, MapPin, Navigation, UserRound, Wallet, Zap } from "lucide-react";
 import { saveProject } from "@/app/admin/project-actions";
 import type { ActionState } from "@/app/admin/document-actions";
 import { formatEuro, formatNumber } from "@/lib/documents/format";
-import { appointmentInfo, appointmentTypes, formatAppointment, hhmm, mapsEmbedUrl, navigationUrl, type AppointmentType, type Project } from "@/lib/projects/shared";
+import { appointmentInfo, appointmentTypes, orderAppointmentTypes, formatAppointment, hhmm, mapsEmbedUrl, navigationUrl, type AppointmentType, type Project } from "@/lib/projects/shared";
 import { appointmentIcons } from "./AppointmentIcons";
 import { Notice } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 const money = (n: number | null) => (n === null || n === undefined ? "" : formatNumber(n, 2).replace(/\./g, ""));
 
-export function ProjectForm({ project, openAmount, teamInbox }: { project: Project; openAmount: number | null; teamInbox: string }) {
+export function ProjectForm({
+  project,
+  openAmount,
+  teamInbox,
+  today,
+  planSentFor,
+}: {
+  project: Project;
+  openAmount: number | null;
+  teamInbox: string;
+  /** heutiges Datum (Europe/Berlin) */
+  today: string;
+  /** Tage, für die der Einsatzplan bereits verschickt wurde */
+  planSentFor: string[];
+}) {
+  const isTask = project.kind === "aufgabe";
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProject, {});
   const [f, setF] = useState({
     title: project.title,
@@ -43,6 +58,10 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
   const current = [f.appointment_type, f.appointment_date, f.appointment_time, f.site_street, f.site_postal_code, f.site_city].join("|");
   const changed = original !== current || (!!f.appointment_date && !project.appointment_notified_at);
   const atCustomer = appointmentInfo[f.appointment_type].atCustomer;
+  const typeChoices = isTask ? appointmentTypes : [...new Set([...orderAppointmentTypes, f.appointment_type])];
+  // Dringend vorschlagen, wenn der Tagesplan für dieses Datum schon raus ist (oder der Termin heute ist)
+  const planGone = !!f.appointment_date && (f.appointment_date <= today || planSentFor.includes(f.appointment_date));
+  const suggestUrgent = changed && planGone;
   const preview = useMemo(
     () => (f.appointment_date ? formatAppointment({ appointment_date: f.appointment_date, appointment_time: f.appointment_time || null, duration_hours: Number(f.duration_hours.replace(",", ".")) || null }) : ""),
     [f.appointment_date, f.appointment_time, f.duration_hours],
@@ -58,8 +77,16 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
           <CalendarClock className="size-4 text-accent" aria-hidden /> Termin
         </h2>
         <input type="hidden" name="appointment_type" value={f.appointment_type} />
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {appointmentTypes.map((t) => {
+        {isTask ? (
+          <div className="mb-4">
+            <label className="adm-label" htmlFor="task_title">
+              Was ist zu tun?
+            </label>
+            <input id="task_title" className="adm-input text-base font-medium" value={f.title} onChange={set("title")} required />
+          </div>
+        ) : null}
+        <div className={cn("mb-4 grid gap-2", typeChoices.length > 3 ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-3")}>
+          {typeChoices.map((t) => {
             const Icon = appointmentIcons[t];
             return (
               <button
@@ -213,7 +240,9 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
         </div>
       </section>
 
+      {isTask ? <input type="hidden" name="title" value={f.title} /> : null}
       {/* Kunde */}
+      {isTask ? null : (
       <details className="adm-card group p-5" open={!project.email}>
         <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
           <UserRound className="size-4 text-accent" aria-hidden /> Titel & Kontaktdaten des Kunden
@@ -225,7 +254,7 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
             <label className="adm-label" htmlFor="title">
               Titel
             </label>
-            <input id="title" name="title" required className="adm-input" value={f.title} onChange={set("title")} />
+            <input id="title" name={isTask ? undefined : "title"} required className="adm-input" value={f.title} onChange={set("title")} />
           </div>
           <div>
             <label className="adm-label" htmlFor="email">
@@ -242,18 +271,37 @@ export function ProjectForm({ project, openAmount, teamInbox }: { project: Proje
         </div>
         </div>
       </details>
+      )}
+      {isTask ? (
+        <>
+          <input type="hidden" name="email" value={f.email} />
+          <input type="hidden" name="phone" value={f.phone} />
+        </>
+      ) : null}
 
       {/* Speichern */}
       <div className="sticky bottom-0 z-10 -mx-1 rounded-2xl bg-white/95 p-4 shadow-lg ring-1 ring-ink/10 backdrop-blur">
         {f.appointment_date ? (
-          <div className="mb-3 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
-            <label className={cn("flex items-center gap-2", !f.email && "opacity-50")}>
-              <input type="checkbox" name="notify_customer" key={`c${changed}`} defaultChecked={changed && !!f.email} disabled={!f.email} className="size-4 accent-[var(--color-accent)]" />
-              <Mail className="size-4 text-stone-dark" aria-hidden /> Kunde: Termin per E-Mail (mit Kalendereintrag){!f.email ? " – keine E-Mail" : ""}
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="notify_team" key={`t${changed}`} defaultChecked={changed} className="size-4 accent-[var(--color-accent)]" />
-              <Mail className="size-4 text-stone-dark" aria-hidden /> Einsatzplan an {teamInbox}
+          <div className="mb-3 space-y-2 text-sm">
+            {!isTask ? (
+              <label className={cn("flex items-center gap-2", !f.email && "opacity-50")}>
+                <input type="checkbox" name="notify_customer" key={`c${changed}`} defaultChecked={changed && !!f.email} disabled={!f.email} className="size-4 accent-[var(--color-accent)]" />
+                <Mail className="size-4 text-stone-dark" aria-hidden /> Kunde: Termin per E-Mail (mit Kalendereintrag){!f.email ? " – keine E-Mail" : ""}
+              </label>
+            ) : null}
+            <label className={cn("flex items-start gap-2 rounded-lg px-2 py-1.5", suggestUrgent && "bg-accent/[0.07]")}>
+              <input type="checkbox" name="urgent" key={`u${suggestUrgent}`} defaultChecked={suggestUrgent} className="mt-0.5 size-4 accent-[var(--color-accent)]" />
+              <span>
+                <span className="font-medium">
+                  <Zap className="mr-1 inline size-4 text-accent" aria-hidden />
+                  Dringend: sofort an Mitarbeiter senden
+                </span>
+                <span className="block text-xs text-stone-dark">
+                  {planGone
+                    ? `Der Einsatzplan für diesen Tag ist schon raus – so erfährt das Team trotzdem davon (${teamInbox}).`
+                    : "Sonst kommt der Termin automatisch mit dem Einsatzplan am Vortag um 18 Uhr."}
+                </span>
+              </span>
             </label>
           </div>
         ) : null}

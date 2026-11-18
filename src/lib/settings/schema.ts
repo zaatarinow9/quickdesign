@@ -47,7 +47,7 @@ export const settingsSchema = z.object({
     notifyOnInquiry: z.boolean().default(true),
     notifyOnAcceptance: z.boolean().default(true),
     /** Empfänger für Termine & Einsatzplan (z. B. Inhaber/Fahrer); leer = Postfach */
-    teamInbox: z.string().trim().max(254).default(""),
+    teamInbox: z.string().trim().max(1000).default(""),
     /** Täglich am Vorabend: Einsatzplan für morgen */
     dailyPlan: z.boolean().default(true),
     /** Kunden am Vortag an den Termin erinnern */
