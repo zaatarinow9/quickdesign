@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, Mail, SlidersHorizontal, X } from "lucide-react";
 import { abortUpload, completeUploadBatch, finishUpload, startUpload } from "@/app/admin/file-actions";
-import { formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { datePrefix, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { previewsFromFile } from "@/lib/files/preview-client";
+import { savePreviews } from "@/lib/files/preview-upload";
 import { Notice } from "@/components/admin/ui";
 import { FileIcon } from "./FileIcon";
 import { cn } from "@/lib/utils";
@@ -83,7 +85,7 @@ export function FileUploader({
   const dirInput = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
-  const [opts, setOpts] = useState({ projectId: defaultProjectId ?? "", message: "", assignedTo: "", notify: true });
+  const [opts, setOpts] = useState({ projectId: defaultProjectId ?? "", message: "", assignedTo: "", notify: true, category: "", withDate: false });
   // Anzeige-Kopie des Upload-Zustands (die Arbeitsdaten liegen in Refs)
   const [view, setView] = useState<{ items: Item[]; running: boolean }>({ items: [], running: false });
   const [result, setResult] = useState<{ ok?: string; error?: string }>({});
@@ -95,6 +97,8 @@ export function FileUploader({
   const optsRef = useRef(opts);
   const cancelled = useRef(false);
   const lastPaint = useRef(0);
+  const previewJobs = useRef<{ id: string; file: File }[]>([]);
+  const previewRunning = useRef(false);
   useEffect(() => {
     optsRef.current = opts;
   }, [opts]);
@@ -111,6 +115,24 @@ export function FileUploader({
     paint(patch.state !== undefined);
   };
 
+  /** Vorschaubilder nacheinander im Hintergrund erzeugen (die Datei liegt lokal vor) */
+  const runPreviews = async () => {
+    if (previewRunning.current) return;
+    previewRunning.current = true;
+    let saved = 0;
+    try {
+      for (;;) {
+        const job = previewJobs.current.shift();
+        if (!job) break;
+        const p = await previewsFromFile(job.file);
+        if (p && (await savePreviews(job.id, p))) saved++;
+      }
+    } finally {
+      previewRunning.current = false;
+      if (saved) router.refresh();
+    }
+  };
+
   const process = async () => {
     if (running.current) return;
     running.current = true;
@@ -124,6 +146,7 @@ export function FileUploader({
         const res = await startUpload({
           files: chunk.map((i) => ({ name: i.file.name, size: i.file.size, type: i.file.type || "application/octet-stream", dir: i.dir })),
           folder,
+          category: o.category || null,
           projectId: o.projectId || null,
           message: o.message.trim() || null,
           assignedTo: o.assignedTo || null,
@@ -161,7 +184,11 @@ export function FileUploader({
         if (failIds.length) await abortUpload(failIds);
         if (okIds.length) {
           const fin = await finishUpload(okIds);
-          if (!fin.error) sessionIds.current.push(...okIds);
+          if (!fin.error) {
+            sessionIds.current.push(...okIds);
+            for (const it of chunk) if (it.state === "fertig" && it.id) previewJobs.current.push({ id: it.id, file: it.file });
+            void runPreviews();
+          }
         }
       }
       // Vorgang abgeschlossen → einmal benachrichtigen und Liste aktualisieren
@@ -186,7 +213,12 @@ export function FileUploader({
     // abgeschlossene Einträge eines früheren Vorgangs ausblenden
     if (!running.current) items.current = items.current.filter((i) => i.state !== "fertig");
     let added = 0;
-    for (const { file, dir } of list) {
+    const withDate = optsRef.current.withDate;
+    const stamp = datePrefix();
+    for (const entry of list) {
+      const { file } = entry;
+      // Hochgeladene Ordner optional mit Datum versehen: "2026-11-19 Ordnername"
+      const dir = withDate && entry.dir ? [`${stamp} ${entry.dir.split("/")[0]}`, ...entry.dir.split("/").slice(1)].join("/") : entry.dir;
       if (IGNORE.test(file.name)) continue;
       if (items.current.length >= MAX_FILES_PER_UPLOAD) break;
       const tooBig = file.size > MAX_FILE_SIZE;
@@ -235,6 +267,8 @@ export function FileUploader({
     opts.projectId && !defaultProjectId ? (projects.find((p) => p.id === opts.projectId)?.label.split(" · ")[0] ?? "Auftrag") : null,
     opts.assignedTo ? `für ${team.find((m) => m.email === opts.assignedTo)?.name ?? opts.assignedTo}` : null,
     opts.message ? "mit Nachricht" : null,
+    opts.category || null,
+    opts.withDate ? "Ordner mit Datum" : null,
   ].filter(Boolean);
 
   return (
@@ -243,7 +277,7 @@ export function FileUploader({
       <div className="rounded-xl bg-[#f7f5f1] ring-1 ring-ink/[0.06]">
         <button type="button" onClick={() => setShowOptions((v) => !v)} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm" aria-expanded={showOptions}>
           <SlidersHorizontal className="size-4 text-accent" aria-hidden />
-          <span className="font-medium">Auftrag, Nachricht & Empfänger</span>
+          <span className="font-medium">Kategorie, Auftrag, Nachricht & Empfänger</span>
           <span className="min-w-0 flex-1 truncate text-xs text-stone-dark">{optionSummary.length ? optionSummary.join(" · ") : "optional – vor dem Hineinziehen festlegen"}</span>
           <ChevronDown className={cn("size-4 text-stone-dark transition-transform", showOptions && "rotate-180")} aria-hidden />
         </button>
@@ -264,6 +298,21 @@ export function FileUploader({
                 </select>
               </div>
             ) : null}
+            <div>
+              <label className="adm-label" htmlFor="up-category">
+                Kategorie
+              </label>
+              <input id="up-category" list="up-categories" className="adm-input" value={opts.category} onChange={(e) => setOpts((o) => ({ ...o, category: e.target.value }))} placeholder="z. B. Druckdaten" />
+              <datalist id="up-categories">
+                {fileCategories.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </div>
+            <label className="flex items-center gap-2 self-end pb-2.5 text-sm">
+              <input type="checkbox" checked={opts.withDate} onChange={(e) => setOpts((o) => ({ ...o, withDate: e.target.checked }))} className="size-4 accent-[var(--color-accent)]" />
+              Hochgeladene Ordner mit Datum versehen ({datePrefix()} …)
+            </label>
             <div className="sm:col-span-2">
               <label className="adm-label" htmlFor="up-message">
                 Nachricht / Details

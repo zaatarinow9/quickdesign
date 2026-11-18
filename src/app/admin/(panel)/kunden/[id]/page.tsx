@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileDown, FileText, Inbox, Mail, Phone, Receipt, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, FileDown, FileText, FolderOpen, Inbox, Mail, Phone, Receipt, ShieldCheck, Trash2 } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { displayStatus, formatDateDE, formatDateTime, formatEuro, kindLabels, statusLabels, todayBerlin, type DocumentKind } from "@/lib/documents/format";
@@ -30,12 +30,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const client = db();
-  const [{ data: c }, { data: docs }, { data: inquiries }, { data: consents }] = await Promise.all([
+  const [{ data: c }, { data: docs }, { data: inquiries }, { data: consents }, { data: folders }] = await Promise.all([
     client.from("customers").select("*").eq("id", id).maybeSingle(),
     client.from("documents").select("id, kind, number, status, title, gross_total, paid_amount, doc_date, valid_until, due_date").eq("customer_id", id).order("created_at", { ascending: false }).limit(100),
     client.from("inquiries").select("id, reference, status, message, created_at").eq("customer_id", id).order("created_at", { ascending: false }).limit(50),
     client.from("consent_events").select("id, action, source, text_version, created_at, actor").eq("customer_id", id).order("created_at", { ascending: false }).limit(30),
+    client.from("file_folders").select("path").eq("customer_id", id).order("path").limit(1),
   ]);
+  const customerFolder = folders?.[0]?.path as string | undefined;
   if (!c) notFound();
   const today = todayBerlin();
   const invoices = (docs ?? []).filter((d) => d.kind === "rechnung" && d.number && d.status !== "storniert");
@@ -67,6 +69,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         }
         actions={
           <>
+            <Link href={customerFolder ? `/admin/dateien?ordner=${encodeURIComponent(customerFolder)}` : "/admin/dateien"} className="adm-btn adm-btn-ghost" title={customerFolder ? customerFolder : "Noch kein Kundenordner – unter Dateien „Neuer Ordner“ → Kunde wählen"}>
+              <FolderOpen className="size-4" aria-hidden /> Dateien
+            </Link>
             {c.email ? (
               <a href={`mailto:${c.email}`} className="adm-btn adm-btn-ghost">
                 <Mail className="size-4" aria-hidden /> E-Mail

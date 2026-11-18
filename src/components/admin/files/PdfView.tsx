@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Minus, Plus } from "lucide-react";
 
-type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage>; destroy: () => Promise<void> };
+type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage> };
 type PdfPage = {
   getViewport: (o: { scale: number }) => { width: number; height: number };
   render: (o: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number }; canvas: HTMLCanvasElement }) => { promise: Promise<void> };
 };
 
 /** PDF (und Illustrator .ai mit PDF-Kompatibilität) mit pdf.js – funktioniert auch auf Handys */
-export function PdfView({ url, onError }: { url: string; onError: (msg: string) => void }) {
+export function PdfView({ url, onError, onFirstPage }: { url: string; onError: (msg: string) => void; onFirstPage?: (canvas: HTMLCanvasElement, pages: number) => void }) {
   const [doc, setDoc] = useState<PdfDoc | null>(null);
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(0);
@@ -18,12 +18,15 @@ export function PdfView({ url, onError }: { url: string; onError: (msg: string) 
 
   useEffect(() => {
     let alive = true;
-    let loaded: PdfDoc | null = null;
+    let task: { destroy: () => Promise<void> } | null = null;
     (async () => {
       try {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
-        loaded = (await pdfjs.getDocument({ url }).promise) as unknown as PdfDoc;
+        // Nur die benötigten Teile laden (HTTP-Range) – große PDFs öffnen sofort
+        const t = pdfjs.getDocument({ url, disableAutoFetch: true, disableStream: true, rangeChunkSize: 262144 });
+        task = t;
+        const loaded = (await t.promise) as unknown as PdfDoc;
         if (alive) setDoc(loaded);
       } catch (e) {
         if (alive) onError(e instanceof Error && /Invalid PDF/i.test(e.message) ? "Diese Datei enthält keine PDF-Daten (z. B. Illustrator-Datei ohne PDF-Kompatibilität)." : "Das PDF konnte nicht geöffnet werden.");
@@ -31,7 +34,7 @@ export function PdfView({ url, onError }: { url: string; onError: (msg: string) 
     })();
     return () => {
       alive = false;
-      void loaded?.destroy();
+      void task?.destroy().catch(() => {});
     };
   }, [url, onError]);
 
@@ -51,7 +54,9 @@ export function PdfView({ url, onError }: { url: string; onError: (msg: string) 
             <Loader2 className="size-8 animate-spin" aria-hidden />
           </div>
         ) : (
-          Array.from({ length: doc.numPages }, (_, i) => <PdfPageCanvas key={i} doc={doc} n={i + 1} width={Math.max(200, (width - 32) * zoom)} />)
+          Array.from({ length: doc.numPages }, (_, i) => (
+            <PdfPageCanvas key={i} doc={doc} n={i + 1} width={Math.max(200, (width - 32) * zoom)} onRendered={i === 0 && onFirstPage ? (c) => onFirstPage(c, doc.numPages) : undefined} />
+          ))
         )}
       </div>
       {doc ? (
@@ -73,7 +78,7 @@ export function PdfView({ url, onError }: { url: string; onError: (msg: string) 
 }
 
 /** Eine Seite – wird erst gezeichnet, wenn sie in den sichtbaren Bereich kommt */
-function PdfPageCanvas({ doc, n, width }: { doc: PdfDoc; n: number; width: number }) {
+function PdfPageCanvas({ doc, n, width, onRendered }: { doc: PdfDoc; n: number; width: number; onRendered?: (c: HTMLCanvasElement) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [visible, setVisible] = useState(n <= 2);
   const [ratio, setRatio] = useState(1.414);
@@ -100,10 +105,13 @@ function PdfPageCanvas({ doc, n, width }: { doc: PdfDoc; n: number; width: numbe
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
       await page.render({ canvasContext: canvas.getContext("2d")!, viewport, canvas }).promise;
+      if (!cancelled) onRendered?.(canvas);
     })().catch(() => {});
     return () => {
       cancelled = true;
     };
+    // onRendered absichtlich nicht als Abhängigkeit (nur beim Zeichnen relevant)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, n, width, visible]);
 
   return <canvas ref={ref} className="mx-auto mb-4 block bg-white shadow-lg" style={{ width, height: width * ratio }} aria-label={`Seite ${n}`} />;

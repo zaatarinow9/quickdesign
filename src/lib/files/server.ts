@@ -1,9 +1,9 @@
 import "server-only";
 import { db } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
-import { isFileStatus, type FileStatus, type StoredFile } from "./shared";
+import { isFileStatus, type FileStatus, type FolderEntry, type StoredFile } from "./shared";
 
-const COLS = "id, name, size, content_type, folder, project_id, message, status, assigned_to, uploaded_by, created_at, project:projects(id, number, title, customer_name, company_name)";
+const COLS = "id, name, size, content_type, folder, category, project_id, message, status, assigned_to, uploaded_by, created_at, project:projects(id, number, title, customer_name, company_name)";
 
 function normalize(row: Record<string, unknown>): StoredFile {
   const project = Array.isArray(row.project) ? row.project[0] : row.project;
@@ -11,13 +11,15 @@ function normalize(row: Record<string, unknown>): StoredFile {
     ...(row as unknown as StoredFile),
     size: Number(row.size ?? 0),
     folder: String(row.folder ?? ""),
+    category: (row.category as string) ?? null,
     status: isFileStatus(row.status) ? row.status : "bearbeitung",
     project: (project as StoredFile["project"]) ?? null,
   };
 }
 
-export async function listFiles(opts: { status?: FileStatus; q?: string; projectId?: string; assignedTo?: string; folder?: string; limit?: number } = {}): Promise<StoredFile[]> {
+export async function listFiles(opts: { status?: FileStatus; q?: string; projectId?: string; assignedTo?: string; folder?: string; category?: string; limit?: number } = {}): Promise<StoredFile[]> {
   let q = db().from("files").select(COLS).eq("complete", true);
+  if (opts.category) q = q.eq("category", opts.category);
   if (opts.folder !== undefined) q = q.eq("folder", opts.folder);
   if (opts.status) q = q.eq("status", opts.status);
   if (opts.projectId) q = q.eq("project_id", opts.projectId);
@@ -63,26 +65,65 @@ export async function projectOptions(): Promise<{ id: string; label: string }[]>
   });
 }
 
-export type FolderEntry = { path: string; name: string; fileCount: number; totalSize: number; lastUpload: string | null };
-
-/** Unterordner direkt unterhalb von `folder` (mit Anzahl/Größe aller enthaltenen Dateien) */
+/** Unterordner direkt unterhalb von `folder` – aus angelegten Ordnern und Dateipfaden */
 export async function subfolders(folder: string): Promise<FolderEntry[]> {
-  const { data } = await db().from("file_folder_stats").select("folder, file_count, total_size, last_upload");
+  const [{ data: stats }, { data: meta }] = await Promise.all([
+    db().from("file_folder_stats").select("folder, file_count, total_size, last_upload"),
+    db().from("file_folders").select("path, color, customer_id"),
+  ]);
   const prefix = folder ? `${folder}/` : "";
   const map = new Map<string, FolderEntry>();
-  for (const r of data ?? []) {
-    const path = String(r.folder ?? "");
-    if (!path || (prefix && !path.startsWith(prefix)) || path === folder) continue;
-    const rest = path.slice(prefix.length);
-    const name = rest.split("/")[0];
-    const child = prefix + name;
-    const e = map.get(child) ?? { path: child, name, fileCount: 0, totalSize: 0, lastUpload: null };
+  const childOf = (path: string) => {
+    if (!path || path === folder || (prefix && !path.startsWith(prefix))) return null;
+    const name = path.slice(prefix.length).split("/")[0];
+    return { child: prefix + name, name };
+  };
+  const entry = (child: string, name: string) => map.get(child) ?? { path: child, name, fileCount: 0, totalSize: 0, lastUpload: null, color: null, customerId: null };
+  for (const r of meta ?? []) {
+    const c = childOf(String(r.path));
+    if (!c) continue;
+    const e = entry(c.child, c.name);
+    if (r.path === c.child) {
+      e.color = (r.color as string) ?? null;
+      e.customerId = (r.customer_id as string) ?? null;
+    }
+    map.set(c.child, e);
+  }
+  for (const r of stats ?? []) {
+    const c = childOf(String(r.folder ?? ""));
+    if (!c) continue;
+    const e = entry(c.child, c.name);
     e.fileCount += Number(r.file_count);
     e.totalSize += Number(r.total_size);
     if (!e.lastUpload || (r.last_upload && r.last_upload > e.lastUpload)) e.lastUpload = r.last_upload;
-    map.set(child, e);
+    map.set(c.child, e);
   }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return [...map.values()];
+}
+
+/** Alle Ordnerpfade (für „Verschieben nach …“) */
+export async function allFolderPaths(): Promise<string[]> {
+  const [{ data: a }, { data: b }] = await Promise.all([db().from("file_folders").select("path"), db().from("file_folder_stats").select("folder")]);
+  const set = new Set<string>();
+  for (const r of a ?? []) set.add(String(r.path));
+  for (const r of b ?? []) if (r.folder) set.add(String(r.folder));
+  return [...set].sort((x, y) => x.localeCompare(y, "de"));
+}
+
+export async function folderMeta(path: string) {
+  if (!path) return null;
+  const { data } = await db().from("file_folders").select("path, color, customer_id, customer:customers(id, name, company_name)").eq("path", path).maybeSingle();
+  return data;
+}
+
+export async function usedCategories(): Promise<string[]> {
+  const { data } = await db().from("files").select("category").eq("complete", true).not("category", "is", null).limit(5000);
+  return [...new Set((data ?? []).map((r) => String(r.category)))].sort((a, b) => a.localeCompare(b, "de"));
+}
+
+export async function customerOptionsForFolders(): Promise<{ id: string; label: string }[]> {
+  const { data } = await db().from("customers").select("id, name, company_name").order("updated_at", { ascending: false }).limit(500);
+  return (data ?? []).map((c) => ({ id: c.id as string, label: ((c.company_name as string) || (c.name as string) || "").trim() })).filter((c) => c.label);
 }
 
 /** Nachbarn im selben Ordner (für Blättern im Betrachter) */
@@ -91,15 +132,18 @@ export async function siblings(folder: string): Promise<{ id: string; name: stri
   return (data ?? []) as { id: string; name: string }[];
 }
 
-/** Signierte Vorschaubild-Links für Bilder (kurzlebig, nur für angemeldete Seiten) */
+/** Signierte Miniatur-Links: gespeicherte Vorschau, sonst kleine Originalbilder */
 export async function thumbnailUrls(files: { id: string; name: string; size: number }[]): Promise<Record<string, string>> {
   const { presignDownload, isR2Configured } = await import("./r2");
   const { thumbnailable } = await import("./shared");
-  if (!isR2Configured()) return {};
-  const ids = files.filter((f) => thumbnailable(f.name) && f.size <= 25 * 1024 ** 2).map((f) => f.id);
-  if (!ids.length) return {};
-  const { data } = await db().from("files").select("id, object_key, name").in("id", ids);
+  if (!isR2Configured() || !files.length) return {};
+  const { data } = await db().from("files").select("id, object_key, thumb_key, name, size").in("id", files.map((f) => f.id).slice(0, 1000));
   const out: Record<string, string> = {};
-  await Promise.all((data ?? []).map(async (r) => (out[r.id] = await presignDownload(r.object_key, r.name, { inline: true, seconds: 3600 }))));
+  await Promise.all(
+    (data ?? []).map(async (r) => {
+      if (r.thumb_key) out[r.id] = await presignDownload(r.thumb_key, "vorschau.jpg", { inline: true, seconds: 3600, contentType: "image/jpeg" });
+      else if (thumbnailable(r.name) && Number(r.size) <= 8 * 1024 ** 2) out[r.id] = await presignDownload(r.object_key, r.name, { inline: true, seconds: 3600 });
+    }),
+  );
   return out;
 }

@@ -14,7 +14,7 @@ import { normalizeFolder } from "@/lib/files/shared";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileList } from "@/components/admin/files/FileList";
 import { Notice } from "@/components/admin/ui";
-import { formatAppointment, appointmentInfo, projectHeading, projectStatusInfo } from "@/lib/projects/shared";
+import { customerLabel, formatAppointment, appointmentInfo, projectHeading, projectStatusInfo } from "@/lib/projects/shared";
 import { convertToInvoice } from "@/app/admin/document-actions";
 import { deleteProject } from "@/app/admin/project-actions";
 import { StageControl } from "@/components/admin/projects/StageControl";
@@ -217,7 +217,11 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             projects={[]}
             team={team}
             defaultProjectId={project.id}
-            folder={normalizeFolder(`${isTask ? "Termine" : "Aufträge"}/${project.number} ${projectHeading(project).replace(/\//g, "-")}`)}
+            folder={
+              customerLabel(project)?.trim()
+                ? normalizeFolder(`Kunden/${customerLabel(project).replace(/\//g, "-")}/${project.number} ${project.title.replace(/\//g, "-")}`)
+                : normalizeFolder(`${isTask ? "Termine" : "Aufträge"}/${project.number} ${project.title.replace(/\//g, "-")}`)
+            }
             compact
             configured={isR2Configured()}
           />

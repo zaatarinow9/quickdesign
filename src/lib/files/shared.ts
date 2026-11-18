@@ -28,6 +28,7 @@ export type StoredFile = {
   uploaded_by: string | null;
   created_at: string;
   folder: string;
+  category: string | null;
   project?: { id: string; number: string; title: string; customer_name: string; company_name: string | null } | null;
 };
 
@@ -101,3 +102,19 @@ export function viewerKind(name: string, type?: string | null): ViewerKind {
 
 /** Bilder, die der Browser direkt als Vorschaubild anzeigen kann */
 export const thumbnailable = (name: string) => ["jpg", "jpeg", "png", "gif", "webp", "avif", "svg", "bmp"].includes(ext(name));
+
+/* ------------------------------ Organisation ------------------------------ */
+
+export const fileCategories = ["Druckdaten", "Entwurf", "Korrektur", "Logo", "Vektor", "Foto", "Schrift", "Dokument", "Sonstiges"] as const;
+
+export const folderColors = ["#df1986", "#2fa7df", "#f2b705", "#16a34a", "#7c3aed", "#ea580c", "#64748b"] as const;
+
+/** Heutiges Datum als Präfix: "2026-11-19" */
+export const datePrefix = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+
+export type FolderEntry = { path: string; name: string; fileCount: number; totalSize: number; lastUpload: string | null; color: string | null; customerId: string | null };
+
+export type SortKey = "name" | "neu" | "alt" | "groesse" | "typ";
+export const sortLabels: Record<SortKey, string> = { name: "Name A–Z", neu: "Neueste zuerst", alt: "Älteste zuerst", groesse: "Größte zuerst", typ: "Dateityp" };
+export const isSortKey = (v: unknown): v is SortKey => typeof v === "string" && v in sortLabels;
+export type ViewMode = "raster" | "liste";

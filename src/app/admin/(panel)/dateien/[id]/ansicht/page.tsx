@@ -23,7 +23,7 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const { data: f } = await db()
     .from("files")
-    .select("id, object_key, name, size, content_type, folder, message, status, uploaded_by, assigned_to, created_at, complete, project:projects(id, number, title)")
+    .select("id, object_key, preview_key, name, size, content_type, folder, message, status, uploaded_by, assigned_to, created_at, complete, project:projects(id, number, title)")
     .eq("id", id)
     .maybeSingle();
   if (!f || !f.complete) notFound();
@@ -31,10 +31,11 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
 
   const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
   const kind = viewerKind(f.name, f.content_type);
-  const [url, downloadUrl, list] = await Promise.all([
+  const [url, downloadUrl, list, previewUrl] = await Promise.all([
     presignDownload(f.object_key, f.name, { inline: true, seconds: 3600, contentType: MIME[ext] }),
     presignDownload(f.object_key, f.name, { seconds: 3600 }),
     siblings(f.folder ?? ""),
+    f.preview_key ? presignDownload(f.preview_key, `${f.name}.jpg`, { inline: true, seconds: 3600, contentType: "image/jpeg" }) : Promise.resolve(null),
   ]);
   // Office-Dateien zeigt der Microsoft-Viewer an (er lädt die Datei über den zeitlich begrenzten Link)
   const officeUrl = kind === "office" ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}` : null;
@@ -95,7 +96,7 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
       </header>
       {f.message ? <p className="whitespace-pre-line border-b border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/85 sm:px-6">💬 {f.message}</p> : null}
       <div className="flex min-h-0 flex-1 items-center justify-center p-3 sm:p-6">
-        <FileViewer kind={kind} url={url} officeUrl={officeUrl} name={f.name} size={Number(f.size)} downloadUrl={downloadUrl} />
+        <FileViewer fileId={f.id} previewUrl={previewUrl} kind={kind} url={url} officeUrl={officeUrl} name={f.name} size={Number(f.size)} downloadUrl={downloadUrl} />
       </div>
     </div>
   );

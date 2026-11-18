@@ -103,7 +103,8 @@ Migration: `supabase/migrations/20261118120000_service_pricing.sql` (im Projekt 
 ### Dateien (`/admin/dateien`, Cloudflare R2)
 
 - Dateien (bis 5 GB) und ganze Ordner werden direkt aus dem Browser in den R2-Bucket `quickdesign-dateien` (EU) geladen – der Upload startet sofort beim Hineinziehen; der Server signiert nur kurzlebige Links.
-- Ordner-Browser mit Pfadleiste; Aufträge bekommen automatisch einen eigenen Ordner.
+- Ordner-Browser (Kacheln oder Liste – Auswahl wird per Cookie gemerkt), Sortierung, Kategorien, Mehrfachauswahl (verschieben, Kategorie, Status, löschen), Ordner umbenennen/verschieben/färben, Kundenordner (`Kunden/<Kunde>/<Auftrag>`), optional mit Datum.
+- Schnelle Vorschau: Beim Hochladen erzeugt der Browser Miniatur + Vorschaubild (JPEG, `vorschau/<id>/…`); ältere Dateien bekommen sie beim ersten Ansehen. PDFs laden per HTTP-Range nur benötigte Teile, ZIPs nur das Inhaltsverzeichnis.
 - Betrachter (`/admin/dateien/[id]/ansicht`): Bilder, TIFF, HEIC, PSD, PDF/AI (pdf.js, Worker unter `public/pdfjs/` – bei Updates von `pdfjs-dist` mitkopieren), EPS (eingebettete Vorschau), Video, Audio, Text/CSV, Office (Microsoft-Viewer), ZIP-Inhalt, Schriften; sonst Download.
 - Je Datei: Auftrag, Nachricht, Status (In Bearbeitung / Druckfertig / Erledigt), Empfänger mit E-Mail-Benachrichtigung. Downloads nur nach Anmeldung.
 - Umgebungsvariablen: `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_JURISDICTION=eu`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (R2-API-Token mit „Object Read & Write“ nur für diesen Bucket).
