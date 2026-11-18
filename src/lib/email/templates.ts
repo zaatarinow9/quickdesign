@@ -30,17 +30,63 @@ export const nl2br = (value: string) => escapeHtml(value).replace(/\r?\n/g, "<br
 
 export type Company = { name: string; street: string; postalCode: string; city: string; phone: string; email: string; website: string };
 
+/* ------------------------- Nachtmodus (Dark Mode) -------------------------
+ * Apple Mail / iOS Mail / Outlook (App & Web) / Samsung Mail werten prefers-color-scheme aus.
+ * Gmail färbt selbst um – deshalb bleibt die Kopfzeile immer dunkel (wird nie invertiert) und
+ * das Logo hat dort helle Schrift. Klassen werden automatisch anhand der Inline-Farben gesetzt.
+ */
+const DARK = { bg: "#0b0b0c", card: "#18181b", paper: "#26262a", text: "#f2f0eb", muted: "#b3ada3", border: "#3a3a3f", pink: "#3b1529" };
+
+const DARK_CSS = `
+:root{color-scheme:light dark;supported-color-schemes:light dark;}
+@media (prefers-color-scheme: dark){
+  .qd-bg{background:${DARK.bg}!important;}
+  .qd-card{background:${DARK.card}!important;}
+  .qd-paper{background:${DARK.paper}!important;}
+  .qd-pink{background:${DARK.pink}!important;}
+  .qd-ink{color:${DARK.text}!important;}
+  .qd-muted{color:${DARK.muted}!important;}
+  .qd-line{border-color:${DARK.border}!important;}
+  .qd-frame{border-color:${DARK.border}!important;}
+}
+[data-ogsc] .qd-ink{color:${DARK.text}!important;}
+[data-ogsc] .qd-muted{color:${DARK.muted}!important;}
+[data-ogsb] .qd-bg{background:${DARK.bg}!important;}
+[data-ogsb] .qd-card{background:${DARK.card}!important;}
+[data-ogsb] .qd-paper{background:${DARK.paper}!important;}
+[data-ogsb] .qd-pink{background:${DARK.pink}!important;}
+`;
+
+/** Ergänzt anhand der Inline-Farben die Klassen für den Nachtmodus */
+function darkClasses(html: string): string {
+  return html.replace(/<([a-z][a-z0-9]*)(\s[^>]*?)?\sstyle="([^"]*)"/gi, (match, tag: string, attrs: string | undefined, style: string) => {
+    const st = style.toLowerCase();
+    const cls: string[] = [];
+    const bg = /background(?:-color)?:\s*(#[0-9a-f]{3,6})/.exec(st)?.[1];
+    if (bg === PAPER) cls.push("qd-paper");
+    else if (bg === "#ffffff" || bg === "#fff") cls.push("qd-card");
+    else if (bg === "#fff0f7" || bg === "#fff4fa") cls.push("qd-pink");
+    const color = /(?:^|;)\s*color:\s*(#[0-9a-f]{3,6})/.exec(st)?.[1];
+    if (color === INK) cls.push("qd-ink");
+    else if (color === STONE) cls.push("qd-muted");
+    if (/border[^:]*:[^;]*(#e6e2da|#ebe8e1|#d9d4ca)/.test(st)) cls.push("qd-line");
+    if (/border:\s*2px solid #0b0b0c/.test(st)) cls.push("qd-frame");
+    if (!cls.length || /\sclass="/.test(attrs ?? "")) return match;
+    return `<${tag}${attrs ?? ""} class="${cls.join(" ")}" style="${style}"`;
+  });
+}
+
 export function layout(opts: { siteUrl: string; company: Company; preheader: string; body: string; footerExtra?: string }) {
   const { siteUrl, company } = opts;
-  return `<!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(company.name)}</title></head>
-<body style="margin:0;padding:0;background:${PAPER};font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:${INK};">
+  return darkClasses(`<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escapeHtml(company.name)}</title><style>${DARK_CSS}</style></head>
+<body class="qd-bg" style="margin:0;padding:0;background:${PAPER};font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:${INK};">
 <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${escapeHtml(opts.preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};padding:32px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="qd-bg" style="background:${PAPER};padding:32px 12px;">
 <tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;">
-    <tr><td style="background:#ffffff;padding:24px 32px 20px;">
-      <img src="${siteUrl}/brand/logo-email.png" width="170" height="70" alt="${escapeHtml(company.name)}" style="display:block;width:170px;height:auto;border:0;">
+    <tr><td style="background:${INK};padding:24px 32px 20px;">
+      <img src="${siteUrl}/brand/logo-email-dark.png" width="170" height="70" alt="${escapeHtml(company.name)}" style="display:block;width:170px;height:auto;border:0;">
     </td></tr>
     <tr><td style="height:4px;background:linear-gradient(90deg,${ACCENT},${CYAN});background-color:${ACCENT};font-size:0;line-height:0;">&nbsp;</td></tr>
     <tr><td style="padding:34px 32px 10px;font-size:15px;line-height:1.65;color:${INK};">${opts.body}</td></tr>
@@ -51,7 +97,7 @@ export function layout(opts: { siteUrl: string; company: Company; preheader: str
       ${opts.footerExtra ?? ""}
     </td></tr>
   </table>
-</td></tr></table></body></html>`;
+</td></tr></table></body></html>`);
 }
 
 export function button(href: string, label: string) {
