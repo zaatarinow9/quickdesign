@@ -1,24 +1,60 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, CloudUpload, Loader2, Mail, X } from "lucide-react";
-import { abortUpload, finishUpload, startUpload } from "@/app/admin/file-actions";
-import { formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD } from "@/lib/files/shared";
+import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, Mail, SlidersHorizontal, X } from "lucide-react";
+import { abortUpload, completeUploadBatch, finishUpload, startUpload } from "@/app/admin/file-actions";
+import { formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { Notice } from "@/components/admin/ui";
 import { FileIcon } from "./FileIcon";
 import { cn } from "@/lib/utils";
 
-type Item = { file: File; progress: number; state: "wartet" | "laedt" | "fertig" | "fehler"; error?: string };
+type State = "wartet" | "vorbereitet" | "laedt" | "fertig" | "fehler";
+type Item = { key: string; file: File; dir: string; progress: number; state: State; error?: string; id?: string; url?: string; contentType?: string };
+
+const PARALLEL = 4;
+const IGNORE = /^(\.ds_store|thumbs\.db|desktop\.ini)$|^\._/i;
+
+/* ----------------------- Ordner aus Drag & Drop lesen ----------------------- */
+
+type FsEntry = { isFile: boolean; isDirectory: boolean; name: string; fullPath: string; file?: (cb: (f: File) => void, err: (e: unknown) => void) => void; createReader?: () => { readEntries: (cb: (e: FsEntry[]) => void, err: (e: unknown) => void) => void } };
+
+async function readEntry(entry: FsEntry, dir: string, out: { file: File; dir: string }[]) {
+  if (entry.isFile && entry.file) {
+    const file = await new Promise<File>((res, rej) => entry.file!(res, rej));
+    out.push({ file, dir });
+  } else if (entry.isDirectory && entry.createReader) {
+    const reader = entry.createReader();
+    const sub = dir ? `${dir}/${entry.name}` : entry.name;
+    // readEntries liefert nur Teilmengen – so lange lesen, bis nichts mehr kommt
+    for (;;) {
+      const batch = await new Promise<FsEntry[]>((res, rej) => reader.readEntries(res, rej));
+      if (!batch.length) break;
+      for (const e of batch) await readEntry(e, sub, out);
+    }
+  }
+}
+
+async function filesFromDrop(dt: DataTransfer): Promise<{ file: File; dir: string }[]> {
+  const entries: FsEntry[] = [];
+  for (const i of Array.from(dt.items ?? [])) {
+    const entry = i.kind === "file" && typeof i.webkitGetAsEntry === "function" ? (i.webkitGetAsEntry() as unknown as FsEntry | null) : null;
+    if (entry) entries.push(entry);
+  }
+  if (!entries.length) return Array.from(dt.files).map((file) => ({ file, dir: "" }));
+  const out: { file: File; dir: string }[] = [];
+  for (const e of entries) await readEntry(e, "", out);
+  return out;
+}
 
 /** Datei per PUT direkt zu R2 – mit Fortschritt */
-function putFile(url: string, file: File, contentType: string, onProgress: (p: number) => void, signal: { xhr?: XMLHttpRequest }) {
+function putFile(url: string, file: File, contentType: string, onProgress: (loaded: number) => void, register: (x: XMLHttpRequest) => void) {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    signal.xhr = xhr;
+    register(xhr);
     xhr.open("PUT", url);
     xhr.setRequestHeader("content-type", contentType);
-    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
+    xhr.upload.onprogress = (e) => onProgress(e.loaded);
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload fehlgeschlagen (${xhr.status})`)));
     xhr.onerror = () => reject(new Error("Verbindung unterbrochen"));
     xhr.onabort = () => reject(new Error("Abgebrochen"));
@@ -30,228 +66,348 @@ export function FileUploader({
   projects,
   team,
   defaultProjectId,
+  folder = "",
   compact,
   configured,
 }: {
   projects: { id: string; label: string }[];
   team: { email: string; name: string }[];
   defaultProjectId?: string;
+  /** Zielordner (aktueller Ordner im Datei-Browser) */
+  folder?: string;
   compact?: boolean;
   configured: boolean;
 }) {
   const router = useRouter();
-  const input = useRef<HTMLInputElement>(null);
-  const [items, setItems] = useState<Item[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const dirInput = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
-  const [projectId, setProjectId] = useState(defaultProjectId ?? "");
-  const [message, setMessage] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
-  const [notify, setNotify] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [opts, setOpts] = useState({ projectId: defaultProjectId ?? "", message: "", assignedTo: "", notify: true });
+  // Anzeige-Kopie des Upload-Zustands (die Arbeitsdaten liegen in Refs)
+  const [view, setView] = useState<{ items: Item[]; running: boolean }>({ items: [], running: false });
   const [result, setResult] = useState<{ ok?: string; error?: string }>({});
-  const xhrs = useRef<{ xhr?: XMLHttpRequest }[]>([]);
 
-  const add = (list: FileList | File[]) => {
-    setResult({});
-    const next = [...items.filter((i) => i.state !== "fertig")];
-    for (const f of Array.from(list)) {
-      if (next.length >= MAX_FILES_PER_UPLOAD) break;
-      if (next.some((i) => i.file.name === f.name && i.file.size === f.size)) continue;
-      next.push({ file: f, progress: 0, state: f.size > MAX_FILE_SIZE ? "fehler" : "wartet", error: f.size > MAX_FILE_SIZE ? "größer als 5 GB" : f.size === 0 ? "leer" : undefined });
+  const items = useRef<Item[]>([]);
+  const running = useRef(false);
+  const xhrs = useRef(new Set<XMLHttpRequest>());
+  const sessionIds = useRef<string[]>([]);
+  const optsRef = useRef(opts);
+  const cancelled = useRef(false);
+  const lastPaint = useRef(0);
+  useEffect(() => {
+    optsRef.current = opts;
+  }, [opts]);
+
+  const paint = (force = false) => {
+    const now = Date.now();
+    if (force || now - lastPaint.current > 120) {
+      lastPaint.current = now;
+      setView({ items: items.current.map((i) => ({ ...i })), running: running.current });
     }
-    setItems(next);
   };
-  const update = (i: number, patch: Partial<Item>) => setItems((list) => list.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const set = (it: Item, patch: Partial<Item>) => {
+    Object.assign(it, patch);
+    paint(patch.state !== undefined);
+  };
 
-  const upload = async () => {
-    const queue = items.map((it, i) => ({ it, i })).filter(({ it }) => it.state === "wartet" && it.file.size > 0);
-    if (!queue.length) return;
-    setBusy(true);
-    setResult({});
-    const res = await startUpload({
-      files: queue.map(({ it }) => ({ name: it.file.name, size: it.file.size, type: it.file.type || "application/octet-stream" })),
-      projectId: projectId || null,
-      message: message.trim() || null,
-      assignedTo: assignedTo || null,
-    });
-    if (res.error || !res.uploads) {
-      setResult({ error: res.error ?? "Upload fehlgeschlagen." });
-      setBusy(false);
-      return;
-    }
-    const uploads = res.uploads;
-    const okIds: string[] = [];
-    const failedIds: string[] = [];
-    // max. 3 Dateien gleichzeitig
-    let cursor = 0;
-    const worker = async () => {
-      while (cursor < queue.length) {
-        const n = cursor++;
-        const { it, i } = queue[n];
-        const up = uploads[n];
-        const sig: { xhr?: XMLHttpRequest } = {};
-        xhrs.current.push(sig);
-        update(i, { state: "laedt", progress: 0 });
-        try {
-          await putFile(up.url, it.file, up.contentType, (p) => update(i, { progress: p }), sig);
-          update(i, { state: "fertig", progress: 1 });
-          okIds.push(up.id);
-        } catch (e) {
-          update(i, { state: "fehler", error: e instanceof Error ? e.message : "Fehler" });
-          failedIds.push(up.id);
+  const process = async () => {
+    if (running.current) return;
+    running.current = true;
+    cancelled.current = false;
+    try {
+      for (;;) {
+        if (cancelled.current) break;
+        const chunk = items.current.filter((i) => i.state === "wartet").slice(0, UPLOAD_CHUNK);
+        if (!chunk.length) break;
+        const o = optsRef.current;
+        const res = await startUpload({
+          files: chunk.map((i) => ({ name: i.file.name, size: i.file.size, type: i.file.type || "application/octet-stream", dir: i.dir })),
+          folder,
+          projectId: o.projectId || null,
+          message: o.message.trim() || null,
+          assignedTo: o.assignedTo || null,
+        });
+        if (res.error || !res.uploads) {
+          chunk.forEach((i) => set(i, { state: "fehler", error: res.error ?? "Fehler" }));
+          setResult({ error: res.error ?? "Upload fehlgeschlagen." });
+          continue;
+        }
+        chunk.forEach((i, n) => set(i, { state: "vorbereitet", id: res.uploads![n].id, url: res.uploads![n].url, contentType: res.uploads![n].contentType }));
+
+        // parallel hochladen
+        let cursor = 0;
+        const okIds: string[] = [];
+        const failIds: string[] = [];
+        const worker = async () => {
+          while (cursor < chunk.length && !cancelled.current) {
+            const it = chunk[cursor++];
+            set(it, { state: "laedt", progress: 0 });
+            try {
+              await putFile(it.url!, it.file, it.contentType!, (loaded) => set(it, { progress: loaded }), (x) => {
+                xhrs.current.add(x);
+                x.addEventListener("loadend", () => xhrs.current.delete(x));
+              });
+              set(it, { state: "fertig", progress: it.file.size });
+              okIds.push(it.id!);
+            } catch (e) {
+              set(it, { state: "fehler", error: e instanceof Error ? e.message : "Fehler" });
+              failIds.push(it.id!);
+            }
+          }
+        };
+        await Promise.all(Array.from({ length: PARALLEL }, worker));
+        chunk.filter((i) => i.state === "vorbereitet").forEach((i) => failIds.push(i.id!));
+        if (failIds.length) await abortUpload(failIds);
+        if (okIds.length) {
+          const fin = await finishUpload(okIds);
+          if (!fin.error) sessionIds.current.push(...okIds);
         }
       }
-    };
-    await Promise.all([worker(), worker(), worker()]);
-    xhrs.current = [];
-    if (failedIds.length) await abortUpload(failedIds);
-    if (okIds.length) {
-      const fin = await finishUpload({ ids: okIds, notify: notify && !!assignedTo });
-      setResult(fin.error ? { error: fin.error } : { ok: fin.ok });
-      if (!fin.error) {
-        setMessage("");
+      // Vorgang abgeschlossen → einmal benachrichtigen und Liste aktualisieren
+      if (sessionIds.current.length) {
+        const ids = sessionIds.current;
+        sessionIds.current = [];
+        const o = optsRef.current;
+        const done = await completeUploadBatch({ ids, notify: o.notify && !!o.assignedTo });
+        setResult(done.error ? { error: done.error } : { ok: done.ok });
         router.refresh();
       }
-    } else setResult({ error: "Keine Datei wurde hochgeladen." });
-    setBusy(false);
+    } finally {
+      running.current = false;
+      paint(true);
+      // falls während des Abschlusses neue Dateien kamen
+      if (!cancelled.current && items.current.some((i) => i.state === "wartet")) void process();
+    }
   };
 
-  const cancel = () => xhrs.current.forEach((s) => s.xhr?.abort());
-  const waiting = items.filter((i) => i.state === "wartet").length;
-  const totalSize = items.filter((i) => i.state === "wartet").reduce((s, i) => s + i.file.size, 0);
+  const add = (list: { file: File; dir: string }[]) => {
+    setResult({});
+    // abgeschlossene Einträge eines früheren Vorgangs ausblenden
+    if (!running.current) items.current = items.current.filter((i) => i.state !== "fertig");
+    let added = 0;
+    for (const { file, dir } of list) {
+      if (IGNORE.test(file.name)) continue;
+      if (items.current.length >= MAX_FILES_PER_UPLOAD) break;
+      const tooBig = file.size > MAX_FILE_SIZE;
+      items.current.push({
+        key: `${dir}/${file.name}/${file.size}/${file.lastModified}/${Math.random()}`,
+        file,
+        dir,
+        progress: 0,
+        state: tooBig || file.size === 0 ? "fehler" : "wartet",
+        error: tooBig ? "größer als 5 GB" : file.size === 0 ? "leere Datei" : undefined,
+      });
+      added++;
+    }
+    if (list.length && !added) setResult({ error: "Keine hochladbaren Dateien gefunden." });
+    paint(true);
+    void process();
+  };
+
+  const cancel = () => {
+    cancelled.current = true;
+    xhrs.current.forEach((x) => x.abort());
+    items.current.filter((i) => i.state === "wartet").forEach((i) => set(i, { state: "fehler", error: "Abgebrochen" }));
+    paint(true);
+  };
+  const clearDone = () => {
+    items.current = items.current.filter((i) => i.state === "wartet" || i.state === "laedt" || i.state === "vorbereitet");
+    paint(true);
+  };
 
   if (!configured) {
     return <Notice tone="warn">Der Cloud-Speicher ist noch nicht verbunden. Sobald die R2-Zugangsschlüssel in Vercel hinterlegt sind, funktioniert der Upload.</Notice>;
   }
 
+  const all = view.items;
+  const totalBytes = all.reduce((s, i) => s + (i.state === "fehler" ? 0 : i.file.size), 0);
+  const doneBytes = all.reduce((s, i) => s + (i.state === "fertig" ? i.file.size : i.state === "laedt" ? i.progress : 0), 0);
+  const counts = {
+    fertig: all.filter((i) => i.state === "fertig").length,
+    offen: all.filter((i) => i.state === "wartet" || i.state === "laedt" || i.state === "vorbereitet").length,
+    fehler: all.filter((i) => i.state === "fehler").length,
+  };
+  const busy = counts.offen > 0 || view.running;
+  const pct = totalBytes ? Math.round((doneBytes / totalBytes) * 100) : 0;
+  const visible = [...all.filter((i) => i.state === "laedt" || i.state === "fehler"), ...all.filter((i) => i.state !== "laedt" && i.state !== "fehler")].slice(0, 8);
+  const optionSummary = [
+    opts.projectId && !defaultProjectId ? (projects.find((p) => p.id === opts.projectId)?.label.split(" · ")[0] ?? "Auftrag") : null,
+    opts.assignedTo ? `für ${team.find((m) => m.email === opts.assignedTo)?.name ?? opts.assignedTo}` : null,
+    opts.message ? "mit Nachricht" : null,
+  ].filter(Boolean);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {/* Optionen – gelten für alles, was danach hineingezogen wird */}
+      <div className="rounded-xl bg-[#f7f5f1] ring-1 ring-ink/[0.06]">
+        <button type="button" onClick={() => setShowOptions((v) => !v)} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm" aria-expanded={showOptions}>
+          <SlidersHorizontal className="size-4 text-accent" aria-hidden />
+          <span className="font-medium">Auftrag, Nachricht & Empfänger</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-stone-dark">{optionSummary.length ? optionSummary.join(" · ") : "optional – vor dem Hineinziehen festlegen"}</span>
+          <ChevronDown className={cn("size-4 text-stone-dark transition-transform", showOptions && "rotate-180")} aria-hidden />
+        </button>
+        {showOptions ? (
+          <div className="grid gap-3 border-t border-ink/[0.06] p-3.5 sm:grid-cols-2">
+            {!defaultProjectId ? (
+              <div className="sm:col-span-2">
+                <label className="adm-label" htmlFor="up-project">
+                  Zu welchem Auftrag?
+                </label>
+                <select id="up-project" className="adm-input" value={opts.projectId} onChange={(e) => setOpts((o) => ({ ...o, projectId: e.target.value }))}>
+                  <option value="">– kein Auftrag –</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            <div className="sm:col-span-2">
+              <label className="adm-label" htmlFor="up-message">
+                Nachricht / Details
+              </label>
+              <textarea id="up-message" rows={2} className="adm-input" value={opts.message} onChange={(e) => setOpts((o) => ({ ...o, message: e.target.value }))} placeholder="z. B. Druckfertig – bitte auf 3 mm Beschnitt achten, Farbe HKS 13" />
+            </div>
+            <div>
+              <label className="adm-label" htmlFor="up-assign">
+                Für wen?
+              </label>
+              <select id="up-assign" className="adm-input" value={opts.assignedTo} onChange={(e) => setOpts((o) => ({ ...o, assignedTo: e.target.value }))}>
+                <option value="">– alle –</option>
+                {team.map((m) => (
+                  <option key={m.email} value={m.email}>
+                    {m.name === m.email ? m.email : `${m.name} (${m.email})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className={cn("flex items-center gap-2 self-end pb-2.5 text-sm", !opts.assignedTo && "opacity-40")}>
+              <input type="checkbox" checked={opts.notify} disabled={!opts.assignedTo} onChange={(e) => setOpts((o) => ({ ...o, notify: e.target.checked }))} className="size-4 accent-[var(--color-accent)]" />
+              <Mail className="size-4 text-stone-dark" aria-hidden /> nach dem Upload per E-Mail benachrichtigen
+            </label>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Ablagefläche */}
       <div
-        role="button"
-        tabIndex={0}
-        onClick={() => !busy && input.current?.click()}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && input.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
           setDrag(true);
         }}
-        onDragLeave={() => setDrag(false)}
-        onDrop={(e) => {
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false);
+        }}
+        onDrop={async (e) => {
           e.preventDefault();
           setDrag(false);
-          if (!busy && e.dataTransfer.files.length) add(e.dataTransfer.files);
+          add(await filesFromDrop(e.dataTransfer));
         }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-center transition-colors",
-          compact ? "px-4 py-6" : "px-6 py-10",
-          drag ? "border-accent bg-accent/[0.06]" : "border-ink/15 bg-white hover:border-accent/60 hover:bg-accent/[0.02]",
+          "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed text-center transition-colors",
+          compact ? "px-4 py-6" : "px-6 py-9",
+          drag ? "border-accent bg-accent/[0.06]" : "border-ink/15 bg-white",
         )}
       >
         <CloudUpload className={cn("text-accent", compact ? "size-7" : "size-10")} aria-hidden />
-        <p className="font-semibold">Dateien hierher ziehen oder klicken</p>
-        <p className="text-xs text-stone-dark">PDF, AI, PSD, Bilder, ZIP … bis 5 GB pro Datei · bis zu {MAX_FILES_PER_UPLOAD} Dateien auf einmal</p>
+        <div>
+          <p className="font-semibold">Dateien oder ganze Ordner hierher ziehen</p>
+          <p className="mt-0.5 text-xs text-stone-dark">Der Upload startet sofort · jede Datei bis 5 GB · Ordnerstruktur bleibt erhalten</p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          <button type="button" onClick={() => fileInput.current?.click()} className="adm-btn adm-btn-primary adm-btn-sm">
+            <CloudUpload className="size-4" aria-hidden /> Dateien wählen
+          </button>
+          <button type="button" onClick={() => dirInput.current?.click()} className="adm-btn adm-btn-ghost adm-btn-sm">
+            <FolderUp className="size-4" aria-hidden /> Ordner wählen
+          </button>
+        </div>
         <input
-          ref={input}
+          ref={fileInput}
           type="file"
           multiple
           hidden
           onChange={(e) => {
-            if (e.target.files) add(e.target.files);
+            if (e.target.files) add(Array.from(e.target.files).map((file) => ({ file, dir: "" })));
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={dirInput}
+          type="file"
+          multiple
+          hidden
+          {...{ webkitdirectory: "", directory: "" }}
+          onChange={(e) => {
+            if (e.target.files)
+              add(
+                Array.from(e.target.files).map((file) => {
+                  const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+                  return { file, dir: rel.split("/").slice(0, -1).join("/") };
+                }),
+              );
             e.target.value = "";
           }}
         />
       </div>
 
-      {items.length ? (
-        <ul className="space-y-2">
-          {items.map((it, i) => (
-            <li key={`${it.file.name}-${it.file.size}`} className="flex items-center gap-3 rounded-xl bg-white p-2.5 ring-1 ring-ink/[0.07]">
-              <FileIcon name={it.file.name} type={it.file.type} className="size-9" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="truncate font-medium">{it.file.name}</span>
-                  <span className="shrink-0 text-xs tabular-nums text-stone-dark">
-                    {it.state === "laedt" ? `${Math.round(it.progress * 100)} % · ` : ""}
-                    {formatBytes(it.file.size)}
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink/[0.06]">
-                  <div
-                    className={cn("h-full rounded-full transition-[width] duration-200", it.state === "fehler" ? "bg-red-500" : it.state === "fertig" ? "bg-emerald-500" : "bg-accent")}
-                    style={{ width: `${it.state === "fehler" ? 100 : Math.round(it.progress * 100)}%` }}
-                  />
-                </div>
-                {it.error ? <p className="mt-1 text-xs text-red-700">{it.error}</p> : null}
-              </div>
-              {it.state === "fertig" ? (
-                <CheckCircle2 className="size-5 shrink-0 text-emerald-600" aria-label="Hochgeladen" />
-              ) : it.state === "laedt" ? (
-                <Loader2 className="size-5 shrink-0 animate-spin text-accent" aria-hidden />
-              ) : (
-                <button type="button" disabled={busy} onClick={() => setItems((l) => l.filter((_, j) => j !== i))} className="grid size-7 shrink-0 place-items-center rounded-md text-stone-dark hover:bg-ink/[0.06]" aria-label="Entfernen">
-                  <X className="size-4" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {waiting ? (
-        <div className="grid gap-3 rounded-2xl bg-[#f7f5f1] p-4 ring-1 ring-ink/[0.06] sm:grid-cols-2">
-          {!defaultProjectId ? (
-            <div className="sm:col-span-2">
-              <label className="adm-label" htmlFor="up-project">
-                Zu welchem Auftrag? (optional)
-              </label>
-              <select id="up-project" className="adm-input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-                <option value="">– kein Auftrag –</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-          <div className="sm:col-span-2">
-            <label className="adm-label" htmlFor="up-message">
-              Nachricht / Details (optional)
-            </label>
-            <textarea id="up-message" rows={2} className="adm-input" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="z. B. Druckfertig – bitte auf 3 mm Beschnitt achten, Farbe HKS 13" />
-          </div>
-          <div>
-            <label className="adm-label" htmlFor="up-assign">
-              Für wen?
-            </label>
-            <select id="up-assign" className="adm-input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-              <option value="">– alle –</option>
-              {team.map((m) => (
-                <option key={m.email} value={m.email}>
-                  {m.name === m.email ? m.email : `${m.name} (${m.email})`}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className={cn("flex items-center gap-2 self-end pb-2.5 text-sm", !assignedTo && "opacity-40")}>
-            <input type="checkbox" checked={notify} disabled={!assignedTo} onChange={(e) => setNotify(e.target.checked)} className="size-4 accent-[var(--color-accent)]" />
-            <Mail className="size-4 text-stone-dark" aria-hidden /> per E-Mail benachrichtigen
-          </label>
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
-            <span className="text-sm text-stone-dark">
-              {waiting} Datei{waiting === 1 ? "" : "en"} · {formatBytes(totalSize)}
+      {/* Fortschritt */}
+      {all.length ? (
+        <div className="rounded-xl bg-white p-3.5 ring-1 ring-ink/[0.07]">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="flex items-center gap-2 font-medium">
+              {busy ? <Loader2 className="size-4 animate-spin text-accent" aria-hidden /> : <CheckCircle2 className="size-4 text-emerald-600" aria-hidden />}
+              {busy ? `Lädt hoch … ${counts.fertig} von ${all.length - counts.fehler}` : `${counts.fertig} hochgeladen`}
+              {counts.fehler ? <span className="text-red-700">· {counts.fehler} Fehler</span> : null}
             </span>
-            <div className="flex gap-2">
+            <span className="flex items-center gap-2 text-xs tabular-nums text-stone-dark">
+              {formatBytes(doneBytes)} / {formatBytes(totalBytes)} · {pct} %
               {busy ? (
-                <button type="button" onClick={cancel} className="adm-btn adm-btn-ghost">
+                <button type="button" onClick={cancel} className="rounded-md px-2 py-1 text-red-700 hover:bg-red-50">
                   Abbrechen
                 </button>
-              ) : null}
-              <button type="button" onClick={upload} disabled={busy} className="adm-btn adm-btn-primary min-w-40">
-                {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <CloudUpload className="size-4" aria-hidden />} {busy ? "Lädt hoch …" : "Hochladen"}
-              </button>
-            </div>
+              ) : (
+                <button type="button" onClick={clearDone} className="rounded-md px-2 py-1 hover:bg-ink/[0.05]">
+                  Liste leeren
+                </button>
+              )}
+            </span>
           </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/[0.06]">
+            <div className={cn("h-full rounded-full transition-[width] duration-300", busy ? "bg-accent" : "bg-emerald-500")} style={{ width: `${pct}%` }} />
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {visible.map((it) => (
+              <li key={it.key} className="flex items-center gap-2.5 text-sm">
+                <FileIcon name={it.file.name} type={it.file.type} className="size-8 rounded-lg [&>span]:hidden" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">
+                    {it.dir ? <span className="text-stone-dark">{it.dir}/</span> : null}
+                    {it.file.name}
+                  </span>
+                  {it.state === "laedt" ? (
+                    <span className="mt-1 block h-1 overflow-hidden rounded-full bg-ink/[0.06]">
+                      <span className="block h-full bg-accent" style={{ width: `${Math.round((it.progress / Math.max(1, it.file.size)) * 100)}%` }} />
+                    </span>
+                  ) : it.error ? (
+                    <span className="block text-xs text-red-700">{it.error}</span>
+                  ) : null}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-stone-dark">{formatBytes(it.file.size)}</span>
+                {it.state === "fertig" ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" aria-label="fertig" />
+                ) : it.state === "fehler" ? (
+                  <X className="size-4 shrink-0 text-red-600" aria-label="Fehler" />
+                ) : (
+                  <Loader2 className={cn("size-4 shrink-0 text-stone", it.state === "laedt" && "animate-spin text-accent")} aria-hidden />
+                )}
+              </li>
+            ))}
+          </ul>
+          {all.length > visible.length ? <p className="mt-2 text-xs text-stone-dark">… und {all.length - visible.length} weitere</p> : null}
         </div>
       ) : null}
 

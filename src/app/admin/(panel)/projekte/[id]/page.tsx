@@ -8,8 +8,9 @@ import { db } from "@/lib/supabase/admin";
 import { financeByOffer, getProject, offerShareUrl, planSentDates, projectEvents, teamInbox } from "@/lib/projects/server";
 import { addDays, todayBerlin } from "@/lib/documents/format";
 import { TaskDone } from "@/components/admin/projects/TaskDone";
-import { listFiles, teamMembers } from "@/lib/files/server";
+import { listFiles, teamMembers, thumbnailUrls } from "@/lib/files/server";
 import { isR2Configured } from "@/lib/files/r2";
+import { normalizeFolder } from "@/lib/files/shared";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileList } from "@/components/admin/files/FileList";
 import { Notice } from "@/components/admin/ui";
@@ -49,6 +50,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   ]);
   const isTask = project.kind === "aufgabe";
   const [files, team] = await Promise.all([listFiles({ projectId: project.id }), teamMembers()]);
+  const thumbs = await thumbnailUrls(files);
   const f = project.offer_id ? finance.get(project.offer_id) : undefined;
   const items = (Array.isArray(offerRow.data?.items) ? offerRow.data.items : []) as DocItem[];
   const openAmount = f ? f.open : null;
@@ -211,11 +213,18 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
 
       <Card className="mt-6" title={`Dateien${files.length ? ` (${files.length})` : ""}`} padded={false}>
         <div className="p-5">
-          <FileUploader projects={[]} team={team} defaultProjectId={project.id} compact configured={isR2Configured()} />
+          <FileUploader
+            projects={[]}
+            team={team}
+            defaultProjectId={project.id}
+            folder={normalizeFolder(`${isTask ? "Termine" : "Aufträge"}/${project.number} ${projectHeading(project).replace(/\//g, "-")}`)}
+            compact
+            configured={isR2Configured()}
+          />
         </div>
         {files.length ? (
           <div className="border-t border-ink/[0.06]">
-            <FileList files={files} showProject={false} team={team} />
+            <FileList files={files} showProject={false} showFolder team={team} thumbs={thumbs} />
           </div>
         ) : null}
       </Card>

@@ -43,8 +43,9 @@ export async function presignUpload(key: string, contentType: string, seconds = 
 }
 
 /** Signierter Download-Link (GET) – als Anhang oder zur Ansicht im Browser */
-export async function presignDownload(key: string, filename: string, opts: { inline?: boolean; seconds?: number } = {}): Promise<string> {
+export async function presignDownload(key: string, filename: string, opts: { inline?: boolean; seconds?: number; contentType?: string } = {}): Promise<string> {
   const url = new URL(objectUrl(key));
+  if (opts.contentType) url.searchParams.set("response-content-type", opts.contentType);
   url.searchParams.set("X-Amz-Expires", String(opts.seconds ?? 600));
   const ascii = filename.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
   url.searchParams.set("response-content-disposition", `${opts.inline ? "inline" : "attachment"}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`);

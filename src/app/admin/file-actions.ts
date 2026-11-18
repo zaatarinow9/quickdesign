@@ -11,7 +11,7 @@ import { logActivity } from "@/lib/admin/log";
 import { sendMail } from "@/lib/email/send";
 import { fileNotifyEmail } from "@/lib/email/project-templates";
 import { deleteObject, headObject, isR2Configured, presignUpload } from "@/lib/files/r2";
-import { formatBytes, isFileStatus, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD } from "@/lib/files/shared";
+import { formatBytes, isFileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { logProjectEvent } from "@/lib/projects/server";
 import type { ActionState } from "./document-actions";
 
@@ -41,10 +41,13 @@ const startSchema = z.object({
         name: z.string().trim().min(1).max(255),
         size: z.number().int().min(1, { error: "Leere Dateien können nicht hochgeladen werden." }).max(MAX_FILE_SIZE, { error: "Eine Datei ist größer als 5 GB." }),
         type: z.string().max(200),
+        /** Unterordner relativ zum Zielordner (bei hochgeladenen Ordnern) */
+        dir: z.string().max(500).optional(),
       }),
     )
     .min(1)
-    .max(MAX_FILES_PER_UPLOAD, { error: `Maximal ${MAX_FILES_PER_UPLOAD} Dateien auf einmal.` }),
+    .max(UPLOAD_CHUNK),
+  folder: z.string().max(500).optional(),
   projectId: uuid.nullable(),
   message: z.string().trim().max(4000).nullable(),
   assignedTo: z.email().max(254).nullable(),
@@ -57,6 +60,7 @@ export async function startUpload(input: z.input<typeof startSchema>): Promise<{
   const parsed = startSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Ungültige Dateien." };
   const { files, projectId, message, assignedTo } = parsed.data;
+  const base = normalizeFolder(parsed.data.folder);
 
   let customerId: string | null = null;
   if (projectId) {
@@ -72,6 +76,7 @@ export async function startUpload(input: z.input<typeof startSchema>): Promise<{
     name: f.name,
     size: f.size,
     content_type: f.type || "application/octet-stream",
+    folder: joinFolder(base, f.dir),
     project_id: projectId,
     customer_id: customerId,
     message: message || null,
@@ -87,59 +92,91 @@ export async function startUpload(input: z.input<typeof startSchema>): Promise<{
   return { uploads };
 }
 
-/** Schritt 2: Upload bestätigen, prüfen und ggf. Kollegen benachrichtigen */
-export async function finishUpload(input: { ids: string[]; notify: boolean }): Promise<{ error?: string; ok?: string }> {
+/** Schritt 2: Upload bestätigen (Größe in R2 prüfen) */
+export async function finishUpload(ids: string[]): Promise<{ error?: string; done: number }> {
+  await assertAdmin();
+  const parsed = z.array(uuid).min(1).max(UPLOAD_CHUNK).safeParse(ids);
+  if (!parsed.success) return { error: "Ungültige Dateien.", done: 0 };
+  const client = db();
+  const { data: rows } = await client.from("files").select("id, object_key, size").in("id", parsed.data);
+  let done = 0;
+  await Promise.all(
+    (rows ?? []).map(async (r) => {
+      const head = await headObject(r.object_key).catch(() => null);
+      if (!head) {
+        await client.from("files").delete().eq("id", r.id);
+        return;
+      }
+      await client.from("files").update({ complete: true, size: head.size || r.size }).eq("id", r.id);
+      done++;
+    }),
+  );
+  return { done };
+}
+
+/** Schritt 3: einmal pro Vorgang protokollieren und ggf. Kollegen benachrichtigen */
+export async function completeUploadBatch(input: { ids: string[]; notify: boolean }): Promise<{ ok?: string; error?: string }> {
   const admin = await assertAdmin();
-  const ids = z.array(uuid).min(1).max(MAX_FILES_PER_UPLOAD).safeParse(input.ids);
+  const ids = z.array(uuid).min(1).max(5000).safeParse(input.ids);
   if (!ids.success) return { error: "Ungültige Dateien." };
   const client = db();
-  const { data: rows } = await client.from("files").select("id, object_key, name, size, project_id, message, assigned_to").in("id", ids.data);
-  const done: { name: string; size: number }[] = [];
-  for (const r of rows ?? []) {
-    const head = await headObject(r.object_key).catch(() => null);
-    if (!head) {
-      await client.from("files").delete().eq("id", r.id);
-      continue;
-    }
-    await client.from("files").update({ complete: true, size: head.size || r.size }).eq("id", r.id);
-    done.push({ name: r.name, size: head.size || Number(r.size) });
-  }
-  const first = rows?.[0];
-  if (!done.length) return { error: "Die Dateien sind nicht angekommen. Bitte erneut versuchen." };
-  await logActivity(admin.email, "hochgeladen", "datei", first?.id ?? null, `${done.length} Datei(en): ${done.map((d) => d.name).join(", ").slice(0, 300)}`);
-  if (first?.project_id) await logProjectEvent(first.project_id, "datei", `${done.length} Datei(en) hochgeladen`, admin.email);
+  const { data: rows } = await client
+    .from("files")
+    .select("id, name, size, folder, project_id, message, assigned_to")
+    .in("id", ids.data.slice(0, 300))
+    .eq("complete", true);
+  const list = rows ?? [];
+  const total = ids.data.length;
+  const first = list[0];
+  if (!first) return { error: "Die Dateien sind nicht angekommen. Bitte erneut versuchen." };
+  const folders = [...new Set(list.map((r) => r.folder).filter(Boolean))];
+  await logActivity(admin.email, "hochgeladen", "datei", first.id, `${total} Datei(en)${folders[0] ? ` in „${folders[0]}“` : ""}: ${list.map((d) => d.name).join(", ").slice(0, 250)}`);
+  if (first.project_id) await logProjectEvent(first.project_id, "datei", `${total} Datei(en) hochgeladen`, admin.email);
 
   let note = "";
-  if (input.notify && first?.assigned_to) {
+  if (input.notify && first.assigned_to) {
     const s = await getSettings();
     let project: string | null = null;
     if (first.project_id) {
       const { data: p } = await client.from("projects").select("number, title, customer_name, company_name").eq("id", first.project_id).maybeSingle();
       if (p) project = `${p.number} · ${(p.company_name || p.customer_name || "").trim() ? `${p.company_name || p.customer_name} – ` : ""}${p.title}`;
     }
+    const shown = list.slice(0, 25).map((d) => ({ name: d.folder ? `${d.folder}/${d.name}` : d.name, size: formatBytes(Number(d.size)) }));
+    if (total > shown.length) shown.push({ name: `… und ${total - shown.length} weitere`, size: "" });
+    const target = folders.length === 1 ? `/admin/dateien?ordner=${encodeURIComponent(folders[0])}` : `/admin/dateien?fuer=${encodeURIComponent(first.assigned_to)}`;
     const res = await sendMail(
       first.assigned_to,
-      fileNotifyEmail({
-        siteUrl: env.siteUrl,
-        company: mailCompany(s),
-        from: admin.name || admin.email,
-        files: done.map((d) => ({ name: d.name, size: formatBytes(d.size) })),
-        message: first.message,
-        project,
-        url: `${env.siteUrl}/admin/dateien?fuer=${encodeURIComponent(first.assigned_to)}`,
-      }),
+      fileNotifyEmail({ siteUrl: env.siteUrl, company: mailCompany(s), from: admin.name || admin.email, files: shown, message: first.message, project, url: `${env.siteUrl}${target}` }),
       { kind: "datei", relatedId: first.id },
     );
     note = res.ok ? ` ${first.assigned_to} wurde per E-Mail informiert.` : ` E-Mail fehlgeschlagen: ${res.error}`;
   }
-  paths(first?.project_id);
-  return { ok: `${done.length} Datei${done.length === 1 ? "" : "en"} hochgeladen.${note}` };
+  paths(first.project_id);
+  return { ok: `${total} Datei${total === 1 ? "" : "en"} hochgeladen.${note}` };
+}
+
+/** Ganzen Ordner (inkl. Unterordner) löschen */
+export async function deleteFolder(fd: FormData) {
+  const admin = await assertAdmin();
+  const folder = normalizeFolder(String(fd.get("folder") ?? ""));
+  if (!folder) return;
+  const client = db();
+  // Ordner selbst + alle Unterordner (Präfix-Vergleich in JS, damit Sonderzeichen keine Rolle spielen)
+  const { data: all } = await client.from("files").select("id, object_key, folder").like("folder", `${folder.slice(0, 1)}%`).limit(20000);
+  const data = (all ?? []).filter((r) => r.folder === folder || String(r.folder).startsWith(`${folder}/`));
+  const rows = data ?? [];
+  for (let i = 0; i < rows.length; i += 10) {
+    await Promise.all(rows.slice(i, i + 10).map((r) => deleteObject(r.object_key).catch(() => {})));
+  }
+  if (rows.length) await client.from("files").delete().in("id", rows.map((r) => r.id));
+  await logActivity(admin.email, "gelöscht", "ordner", null, `Ordner „${folder}“ mit ${rows.length} Datei(en) gelöscht`);
+  paths();
 }
 
 /** Abgebrochene Uploads aufräumen */
 export async function abortUpload(ids: string[]) {
   await assertAdmin();
-  const parsed = z.array(uuid).max(MAX_FILES_PER_UPLOAD).safeParse(ids);
+  const parsed = z.array(uuid).max(UPLOAD_CHUNK * 4).safeParse(ids);
   if (!parsed.success || !parsed.data.length) return;
   const { data } = await db().from("files").select("id, object_key").in("id", parsed.data).eq("complete", false);
   for (const r of data ?? []) await deleteObject(r.object_key).catch(() => {});
