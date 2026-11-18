@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { db } from "@/lib/supabase/admin";
 import { safeEqual } from "@/lib/security";
+import { deleteObject, isR2Configured } from "@/lib/files/r2";
 
 /** Täglicher Job (Vercel Cron): Löschfristen laut Datenschutzerklärung umsetzen. */
 export async function GET(request: Request) {
@@ -18,5 +19,15 @@ export async function GET(request: Request) {
     // Nie bestätigte Double-Opt-ins nach 30 Tagen zurücksetzen
     client.from("customers").update({ marketing_status: "keine", doi_token: null }).eq("marketing_status", "ausstehend").lt("doi_sent_at", new Date(Date.now() - 30 * 864e5).toISOString()),
   ]);
-  return NextResponse.json({ pageViews: views.count ?? 0, rateLimits: limits.count ?? 0, emailLog: emails.count ?? 0, doiReset: doi.error ? "error" : "ok" });
+  // Abgebrochene Datei-Uploads (älter als 1 Tag) entfernen
+  let staleUploads = 0;
+  if (isR2Configured()) {
+    const { data: stale } = await client.from("files").select("id, object_key").eq("complete", false).lt("created_at", new Date(Date.now() - 864e5).toISOString()).limit(500);
+    for (const f of stale ?? []) {
+      await deleteObject(f.object_key).catch(() => {});
+      await client.from("files").delete().eq("id", f.id);
+      staleUploads++;
+    }
+  }
+  return NextResponse.json({ staleUploads, pageViews: views.count ?? 0, rateLimits: limits.count ?? 0, emailLog: emails.count ?? 0, doiReset: doi.error ? "error" : "ok" });
 }

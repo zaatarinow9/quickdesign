@@ -237,3 +237,36 @@ ${button(opts.planUrl, "Alle Termine ansehen")}`,
     : `${opts.urgent ? "DRINGEND – " : ""}Einsatzplan ${opts.dayLabel}: ${n} Aufgabe${n === 1 ? "" : "n"}`;
   return { subject: subject.slice(0, 190), html, text, attachments: opts.ics ? [opts.ics] : undefined };
 }
+
+/** Neue Datei(en) für einen Kollegen */
+export function fileNotifyEmail(opts: {
+  siteUrl: string;
+  company: Company;
+  from: string;
+  files: { name: string; size: string }[];
+  message: string | null;
+  project: string | null;
+  url: string;
+}): EmailContent {
+  const n = opts.files.length;
+  const list = opts.files
+    .map(
+      (f) =>
+        `<tr><td style="padding:9px 14px;font-size:14px;font-weight:600;color:${INK};border-bottom:1px solid #e6e2da;">📄 ${escapeHtml(f.name)}</td><td align="right" style="padding:9px 14px;font-size:13px;color:${STONE};border-bottom:1px solid #e6e2da;white-space:nowrap;">${escapeHtml(f.size)}</td></tr>`,
+    )
+    .join("");
+  const html = layout({
+    siteUrl: opts.siteUrl,
+    company: opts.company,
+    preheader: `${opts.from} hat ${n} Datei${n === 1 ? "" : "en"} für dich hochgeladen`,
+    body: `<p style="margin:0 0 4px;font-size:13px;color:${STONE};">Neue Datei${n === 1 ? "" : "en"} für dich</p>
+<p style="margin:0 0 16px;font-family:Outfit,Inter,Arial,sans-serif;font-size:22px;font-weight:700;">${escapeHtml(opts.from)} hat ${n} Datei${n === 1 ? "" : "en"} hochgeladen</p>
+${opts.project ? `<p style="margin:0 0 12px;"><strong>Projekt:</strong> ${escapeHtml(opts.project)}</p>` : ""}
+${opts.message ? `<div style="margin:0 0 16px;padding:14px 16px;background:${PAPER};border-left:3px solid ${ACCENT};border-radius:8px;">${nl2br(opts.message)}</div>` : ""}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px;border:1px solid #e6e2da;border-radius:10px;">${list}</table>
+${button(opts.url, n === 1 ? "Datei öffnen" : "Dateien öffnen")}
+<p style="margin:12px 0 0;font-size:13px;color:${STONE};">Zum Herunterladen ist die Anmeldung in der Verwaltung nötig.</p>`,
+  });
+  const text = [`${opts.from} hat ${n} Datei${n === 1 ? "" : "en"} hochgeladen.`, opts.project ? `Projekt: ${opts.project}` : "", opts.message ?? "", "", ...opts.files.map((f) => `- ${f.name} (${f.size})`), "", opts.url].filter((x) => x !== "").join("\n");
+  return { subject: `Neue Datei${n === 1 ? "" : "en"}: ${opts.files[0]?.name ?? ""}${n > 1 ? ` (+${n - 1})` : ""}`.slice(0, 190), html, text };
+}

@@ -8,6 +8,10 @@ import { db } from "@/lib/supabase/admin";
 import { financeByOffer, getProject, offerShareUrl, planSentDates, projectEvents, teamInbox } from "@/lib/projects/server";
 import { addDays, todayBerlin } from "@/lib/documents/format";
 import { TaskDone } from "@/components/admin/projects/TaskDone";
+import { listFiles, teamMembers } from "@/lib/files/server";
+import { isR2Configured } from "@/lib/files/r2";
+import { FileUploader } from "@/components/admin/files/FileUploader";
+import { FileList } from "@/components/admin/files/FileList";
 import { Notice } from "@/components/admin/ui";
 import { formatAppointment, appointmentInfo, projectHeading, projectStatusInfo } from "@/lib/projects/shared";
 import { convertToInvoice } from "@/app/admin/document-actions";
@@ -44,6 +48,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     planSentDates([today, addDays(today, 1), ...(project.appointment_date ? [project.appointment_date] : [])]),
   ]);
   const isTask = project.kind === "aufgabe";
+  const [files, team] = await Promise.all([listFiles({ projectId: project.id }), teamMembers()]);
   const f = project.offer_id ? finance.get(project.offer_id) : undefined;
   const items = (Array.isArray(offerRow.data?.items) ? offerRow.data.items : []) as DocItem[];
   const openAmount = f ? f.open : null;
@@ -203,6 +208,17 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           ) : null}
         </aside>
       </div>
+
+      <Card className="mt-6" title={`Dateien${files.length ? ` (${files.length})` : ""}`} padded={false}>
+        <div className="p-5">
+          <FileUploader projects={[]} team={team} defaultProjectId={project.id} compact configured={isR2Configured()} />
+        </div>
+        {files.length ? (
+          <div className="border-t border-ink/[0.06]">
+            <FileList files={files} showProject={false} team={team} />
+          </div>
+        ) : null}
+      </Card>
     </>
   );
 }

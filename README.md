@@ -100,6 +100,13 @@ Migration: `supabase/migrations/20261118120000_service_pricing.sql` (im Projekt 
 - Täglicher Cron `/api/cron/tagesplan` (16:07 UTC): Einsatzplan für morgen an die Termin-E-Mail aus den Einstellungen und Terminerinnerung an Kunden.
 - Migration: `supabase/migrations/20261118150000_projects.sql` (im Projekt bereits eingespielt).
 
+### Dateien (`/admin/dateien`, Cloudflare R2)
+
+- Dateien (bis 5 GB) werden direkt aus dem Browser in den R2-Bucket `quickdesign-dateien` (EU) geladen – der Server signiert nur kurzlebige Links.
+- Je Datei: Auftrag, Nachricht, Status (In Bearbeitung / Druckfertig / Erledigt), Empfänger mit E-Mail-Benachrichtigung. Downloads nur nach Anmeldung.
+- Umgebungsvariablen: `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_JURISDICTION=eu`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (R2-API-Token mit „Object Read & Write“ nur für diesen Bucket).
+- CORS des Buckets erlaubt PUT/GET/HEAD von quickdesign24.de. Abgebrochene Uploads entfernt der tägliche Cleanup-Cron.
+
 ### Einrichtung
 
 1. **Datenbank:** Migration `supabase/migrations/20261112100000_admin_crm.sql` ist im Supabase-Projekt **QuickDesign** bereits eingespielt.
