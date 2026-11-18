@@ -107,6 +107,16 @@ export function SettingsForm({ settings: s }: { settings: Settings }) {
         <Input name="notifications.inbox" label="Postfach für Benachrichtigungen" value={s.notifications.inbox} type="email" className="sm:col-span-2" />
         <Toggle name="notifications.notifyOnInquiry" label="E-Mail bei neuer Anfrage" checked={s.notifications.notifyOnInquiry} />
         <Toggle name="notifications.notifyOnAcceptance" label="E-Mail, wenn ein Kunde ein Angebot annimmt" checked={s.notifications.notifyOnAcceptance} />
+        <Input
+          name="notifications.teamInbox"
+          label="E-Mail für Termine & Einsatzplan (z. B. Inhaber / Fahrer – leer = Postfach oben)"
+          value={s.notifications.teamInbox}
+          type="email"
+          className="sm:col-span-2"
+        />
+        <Toggle name="notifications.dailyPlan" label="Täglich gegen 17–18 Uhr: Einsatzplan für morgen per E-Mail" checked={s.notifications.dailyPlan} />
+        <Toggle name="notifications.customerReminder" label="Kunden am Vortag an ihren Termin erinnern" checked={s.notifications.customerReminder} />
+        <Toggle name="notifications.customerStageMails" label="Kunden bei Statuswechsel eines Auftrags informieren (vorausgewählt)" checked={s.notifications.customerStageMails} />
       </Section>
       <Section title="Sicherheit">
         <Toggle name="security.require2fa" label="Zwei-Faktor-Anmeldung für alle Benutzer verpflichtend" checked={s.security.require2fa} hint="Benutzer ohne 2FA werden nach der Anmeldung zur Einrichtung geleitet." />

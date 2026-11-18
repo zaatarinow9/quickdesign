@@ -11,11 +11,11 @@ export type EmailContent = {
   headers?: Record<string, string>;
 };
 
-const INK = "#0b0b0c";
-const PAPER = "#f4f2ed";
-const ACCENT = "#df1986";
-const CYAN = "#2fa7df";
-const STONE = "#5e5b55";
+export const INK = "#0b0b0c";
+export const PAPER = "#f4f2ed";
+export const ACCENT = "#df1986";
+export const CYAN = "#2fa7df";
+export const STONE = "#5e5b55";
 
 export function escapeHtml(value: string): string {
   return value
@@ -26,11 +26,11 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const nl2br = (value: string) => escapeHtml(value).replace(/\r?\n/g, "<br>");
+export const nl2br = (value: string) => escapeHtml(value).replace(/\r?\n/g, "<br>");
 
-type Company = { name: string; street: string; postalCode: string; city: string; phone: string; email: string; website: string };
+export type Company = { name: string; street: string; postalCode: string; city: string; phone: string; email: string; website: string };
 
-function layout(opts: { siteUrl: string; company: Company; preheader: string; body: string; footerExtra?: string }) {
+export function layout(opts: { siteUrl: string; company: Company; preheader: string; body: string; footerExtra?: string }) {
   const { siteUrl, company } = opts;
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(company.name)}</title></head>
@@ -54,12 +54,12 @@ function layout(opts: { siteUrl: string; company: Company; preheader: string; bo
 </td></tr></table></body></html>`;
 }
 
-function button(href: string, label: string) {
+export function button(href: string, label: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 8px;"><tr><td style="border-radius:999px;background:${ACCENT};">
 <a href="${href}" style="display:inline-block;padding:14px 28px;font-weight:600;font-size:15px;color:#ffffff;text-decoration:none;border-radius:999px;">${escapeHtml(label)}</a></td></tr></table>`;
 }
 
-function summaryTable(rows: { label: string; value: string; strong?: boolean }[]) {
+export function summaryTable(rows: { label: string; value: string; strong?: boolean }[]) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;background:${PAPER};border-radius:12px;">
 ${rows
   .map(

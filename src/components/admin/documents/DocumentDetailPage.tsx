@@ -9,6 +9,10 @@ import { cancelInvoice, convertToInvoice, deleteDocument, duplicateDocument, fin
 import { DocumentEditor } from "./DocumentEditor";
 import { ConfirmSubmit, CopyLink, PaymentForm, SendPanel } from "./panels";
 import { Badge, Card, Notice, PageHeader, statusTone } from "@/components/admin/ui";
+import { projectForOffer } from "@/lib/projects/server";
+import { formatAppointment, projectStatusInfo } from "@/lib/projects/shared";
+import { openProjectForOffer } from "@/app/admin/project-actions";
+import { Hammer } from "lucide-react";
 
 const eventLabels: Record<string, string> = {
   erstellt: "Erstellt",
@@ -29,7 +33,14 @@ export async function DocumentDetailPage({ kind, id, isNew }: { kind: DocumentKi
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const doc = await getDocument(id);
   if (!doc || doc.kind !== kind) notFound();
-  const [catalog, customers, events, related, settings] = await Promise.all([listCatalog(), customerOptions(), documentEvents(id), relatedDocuments(id), getSettings()]);
+  const [catalog, customers, events, related, settings, project] = await Promise.all([
+    listCatalog(),
+    customerOptions(),
+    documentEvents(id),
+    relatedDocuments(id),
+    getSettings(),
+    kind === "angebot" ? projectForOffer(id) : Promise.resolve(null),
+  ]);
   const label = kindLabels[kind];
   const today = todayBerlin();
   const ds = displayStatus(doc, today);
@@ -116,6 +127,23 @@ export async function DocumentDetailPage({ kind, id, isNew }: { kind: DocumentKi
         <Card title={kind === "angebot" ? "Online-Angebot & Status" : "Zahlung & Status"}>
           {kind === "angebot" ? (
             <div className="space-y-4">
+              {project ? (
+                <Link href={`/admin/projekte/${project.id}`} className="flex items-center gap-3 rounded-xl bg-ink p-3.5 text-white hover:bg-ink/90">
+                  <Hammer className="size-5 shrink-0 text-accent" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">Auftrag {project.number}: {projectStatusInfo[project.status].label}</span>
+                    <span className="block truncate text-xs text-white/70">{project.appointment_date ? formatAppointment(project, { short: true }) : "Noch kein Termin – jetzt planen"}</span>
+                  </span>
+                  <span className="text-xs">Öffnen →</span>
+                </Link>
+              ) : doc.status === "angenommen" || doc.accepted_at ? (
+                <form action={openProjectForOffer}>
+                  <input type="hidden" name="offer_id" value={doc.id} />
+                  <button type="submit" className="adm-btn adm-btn-primary w-full">
+                    <Hammer className="size-4" aria-hidden /> Auftrag anlegen & Termin planen
+                  </button>
+                </form>
+              ) : null}
               {doc.accepted_at ? (
                 <Notice tone="success">
                   <strong>Angenommen</strong> am {formatDateTime(doc.accepted_at)} von {doc.accepted_name}.

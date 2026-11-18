@@ -9,6 +9,7 @@ import {
   ExternalLink,
   FilePlus2,
   FileText,
+  Hammer,
   History,
   Inbox,
   KeyRound,
@@ -36,6 +37,7 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
         { href: "/admin/angebote", label: "Angebote", icon: FileText },
+        { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
         { href: "/admin/rechnungen", label: "Rechnungen", icon: Receipt },
         { href: "/admin/kunden", label: "Kunden", icon: Users },
       ],

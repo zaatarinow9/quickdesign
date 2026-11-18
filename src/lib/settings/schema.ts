@@ -46,6 +46,14 @@ export const settingsSchema = z.object({
     inbox: z.string().trim().max(254).default(site.contact.email),
     notifyOnInquiry: z.boolean().default(true),
     notifyOnAcceptance: z.boolean().default(true),
+    /** Empfänger für Termine & Einsatzplan (z. B. Inhaber/Fahrer); leer = Postfach */
+    teamInbox: z.string().trim().max(254).default(""),
+    /** Täglich am Vorabend: Einsatzplan für morgen */
+    dailyPlan: z.boolean().default(true),
+    /** Kunden am Vortag an den Termin erinnern */
+    customerReminder: z.boolean().default(true),
+    /** Kunden bei Statuswechsel standardmäßig informieren */
+    customerStageMails: z.boolean().default(true),
   }).prefault({}),
   security: z.object({
     require2fa: z.boolean().default(false),

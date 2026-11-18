@@ -5,6 +5,9 @@ import { overviewStats } from "@/lib/admin/stats";
 import { formatDateDE, formatDateTime, formatEuro } from "@/lib/documents/format";
 import { BarChart, RankList } from "@/components/admin/charts";
 import { Badge, Card, EmptyState, Notice, PageHeader, Stat } from "@/components/admin/ui";
+import { listAppointments } from "@/lib/projects/server";
+import { addDays } from "@/lib/documents/format";
+import { AppointmentAgenda } from "@/components/admin/projects/AppointmentCard";
 
 export const metadata = { title: "Übersicht" };
 
@@ -19,6 +22,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const admin = await requireAdmin();
   const sp = await searchParams;
   const s = await overviewStats();
+  const nextAppointments = (await listAppointments(s.today, addDays(s.today, 7))).filter((p) => p.status !== "abgeschlossen");
   const trend = s.revenuePrevMonth > 0 ? Math.round(((s.revenueMonth - s.revenuePrevMonth) / s.revenuePrevMonth) * 100) : null;
   const firstName = (admin.name ?? "").split(" ")[0];
 
@@ -65,6 +69,20 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         <Stat label="Marketing-Kontakte (bestätigt)" value={s.marketingContacts} hint="Double-Opt-in, rechtssicher" icon={Megaphone} href="/admin/marketing" />
         <Stat label="Website-Besucher (30 Tage)" value={s.visitors} hint={`${s.pageViews} Seitenaufrufe · nur mit Einwilligung`} icon={Eye} href="/admin/statistik" />
       </div>
+
+      {nextAppointments.length ? (
+        <Card
+          className="mt-6"
+          title={`Termine der nächsten 7 Tage (${nextAppointments.length})`}
+          action={
+            <Link href="/admin/projekte" className="text-xs text-stone-dark hover:text-accent">
+              Einsatzplan
+            </Link>
+          }
+        >
+          <AppointmentAgenda items={nextAppointments} today={s.today} compact />
+        </Card>
+      ) : null}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2" title="Rechnungsumsatz (brutto) – letzte 12 Monate" action={<span className="text-xs text-stone-dark">Jahr {s.today.slice(0, 4)}: {formatEuro(s.revenueYear)}</span>}>

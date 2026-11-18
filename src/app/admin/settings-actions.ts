@@ -50,6 +50,10 @@ export async function updateSettings(_prev: ActionState, fd: FormData): Promise<
       inbox: str("notifications.inbox"),
       notifyOnInquiry: fd.get("notifications.notifyOnInquiry") === "on",
       notifyOnAcceptance: fd.get("notifications.notifyOnAcceptance") === "on",
+      teamInbox: str("notifications.teamInbox"),
+      dailyPlan: fd.get("notifications.dailyPlan") === "on",
+      customerReminder: fd.get("notifications.customerReminder") === "on",
+      customerStageMails: fd.get("notifications.customerStageMails") === "on",
     },
     security: { require2fa: fd.get("security.require2fa") === "on" },
   });

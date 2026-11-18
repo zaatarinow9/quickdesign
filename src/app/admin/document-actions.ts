@@ -29,6 +29,7 @@ import {
 } from "@/lib/documents/format";
 import { getDocument, normalizeDoc } from "@/lib/documents/queries";
 import { renderDocumentPdf } from "@/lib/documents/pdf";
+import { ensureProjectForOffer, getProject, logProjectEvent, sendStageMail } from "@/lib/projects/server";
 
 export type ActionState = { ok?: string; error?: string };
 
@@ -266,6 +267,11 @@ export async function setDocumentStatus(fd: FormData) {
   if (status === "abgelehnt") patch.declined_at = new Date().toISOString();
   await db().from("documents").update(patch).eq("id", id.data);
   await logDocumentEvent(id.data, "status", `Status → ${status}`, admin.email);
+  // Angenommenes Angebot → Auftrag anlegen
+  if (doc.kind === "angebot" && status === "angenommen") {
+    const project = await ensureProjectForOffer(id.data, admin.email);
+    if (project) revalidatePath("/admin/projekte");
+  }
   paths(doc.kind, id.data);
 }
 
@@ -549,11 +555,21 @@ export async function respondToOffer(_prev: ActionState, fd: FormData): Promise<
   await logDocumentEvent(offer.id, "angenommen", `online von ${name}`, "Kunde");
   await logActivity("Kunde", "angenommen", "angebot", offer.id, `Angebot ${offer.number} angenommen von ${name}`);
   if (offer.customer_id) await client.from("customers").update({ status: "kunde" }).eq("id", offer.customer_id).eq("status", "lead");
+  const project = await ensureProjectForOffer(offer.id, "Kunde");
   revalidatePath(`/dokument/${token}`);
+  revalidatePath("/admin/projekte");
   paths("angebot", offer.id);
 
   after(async () => {
     const settings = await getSettings();
+    // Auftragsbestätigung an den Kunden
+    if (project?.created && settings.notifications.customerStageMails) {
+      const p = await getProject(project.id);
+      if (p?.email) {
+        const r = await sendStageMail(p, "angenommen");
+        if (r.ok) await logProjectEvent(p.id, "e-mail", "Auftragsbestätigung an Kunden gesendet", "System");
+      }
+    }
     if (!settings.notifications.notifyOnAcceptance) return;
     await sendMail(
       settings.notifications.inbox || settings.company.email,

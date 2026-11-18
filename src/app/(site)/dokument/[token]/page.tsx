@@ -8,6 +8,8 @@ import { computeTotals, displayStatus, formatDateDE, formatEuro, formatQty, form
 import { getSettings } from "@/lib/settings/server";
 import { logDocumentEvent } from "@/lib/admin/log";
 import OfferResponse from "@/components/documents/OfferResponse";
+import { projectForOffer } from "@/lib/projects/server";
+import { appointmentInfo, formatAppointment, projectStatuses, projectStatusInfo, siteAddress } from "@/lib/projects/shared";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Ihr Dokument", robots: { index: false, follow: false } };
@@ -31,6 +33,9 @@ export default async function PublicDocumentPage({ params }: { params: Promise<{
       .eq("id", doc.id);
     if (!doc.first_viewed_at) await logDocumentEvent(doc.id, "angesehen", "Erstmals online geöffnet", "Kunde");
   }
+
+  const project = doc.kind === "angebot" && doc.accepted_at ? await projectForOffer(doc.id) : null;
+  const stageIdx = project ? projectStatuses.indexOf(project.status) : -1;
 
   const canRespond = doc.kind === "angebot" && !doc.accepted_at && doc.status !== "abgelehnt" && status !== "abgelaufen";
 
@@ -123,12 +128,38 @@ export default async function PublicDocumentPage({ params }: { params: Promise<{
               </a>
               {doc.kind === "angebot" ? (
                 doc.accepted_at ? (
-                  <div className="rounded-[1.25rem] bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
-                    <p className="font-medium">Angebot angenommen</p>
-                    <p className="mt-1 text-sm">
-                      am {formatDateDE(doc.accepted_at)} von {doc.accepted_name}. Vielen Dank für Ihren Auftrag!
-                    </p>
-                  </div>
+                  <>
+                    <div className="rounded-[1.25rem] bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200">
+                      <p className="font-medium">Angebot angenommen</p>
+                      <p className="mt-1 text-sm">
+                        am {formatDateDE(doc.accepted_at)} von {doc.accepted_name}. Vielen Dank für Ihren Auftrag!
+                      </p>
+                    </div>
+                    {project ? (
+                      <div className="rounded-[1.25rem] bg-white p-6 ring-1 ring-ink/10">
+                        <p className="font-medium">Status Ihres Auftrags</p>
+                        <ol className="mt-4 space-y-3">
+                          {projectStatuses.map((st, i) => (
+                            <li key={st} className="flex items-center gap-3 text-sm">
+                              <span
+                                className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${i < stageIdx ? "bg-emerald-500 text-white" : i === stageIdx ? "bg-accent text-white" : "bg-ink/[0.06] text-stone"}`}
+                              >
+                                {i < stageIdx ? "✓" : i + 1}
+                              </span>
+                              <span className={i === stageIdx ? "font-semibold" : i > stageIdx ? "text-stone" : ""}>{projectStatusInfo[st].step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        {project.appointment_date && project.appointment_type && project.status !== "abgeschlossen" ? (
+                          <div className="mt-5 rounded-xl bg-paper p-4 text-sm">
+                            <p className="text-stone-dark">{appointmentInfo[project.appointment_type].noun}</p>
+                            <p className="mt-0.5 font-semibold">{formatAppointment(project)}</p>
+                            {appointmentInfo[project.appointment_type].atCustomer && siteAddress(project) ? <p className="mt-0.5 text-stone-dark">{siteAddress(project)}</p> : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
                 ) : canRespond ? (
                   <OfferResponse token={token} gross={formatEuro(t.gross)} />
                 ) : (

@@ -92,6 +92,14 @@ Jede Leistung hat eine **Berechnungsart**: pro Stück, pro Menge (z. B. 130 € 
 Leistungen lassen sich per **Drag & Drop zu Bausteinen** kombinieren (z. B. „Schild“ = Alu-Dibond + Digitaldruck + Laminat). Im Angebots-/Rechnungseditor werden Maße und Anzahl einmal eingegeben, die Mengen aller Bausteine automatisch berechnet (manuell überschreibbar) und jede Leistung kann auf eine bestehende Position gezogen werden, um sie zu ergänzen.
 Migration: `supabase/migrations/20261118120000_service_pricing.sql` (im Projekt bereits eingespielt).
 
+### Aufträge & Termine (`/admin/projekte`)
+
+- Jedes angenommene Angebot (online oder manuell) wird automatisch zum **Auftrag** mit den Phasen Angenommen → In Arbeit → Fertig → Abgeschlossen. Bei jedem Wechsel kann der Kunde per E-Mail informiert werden; auf seiner Angebotsseite sieht er den aktuellen Status und Termin.
+- **Termin** (Montage, Lieferung oder Abholung) mit Datum, Uhrzeit, Dauer, Einsatzort, genauer Position (Google-Maps-Link oder Koordinaten), Ansprechpartner, Hinweisen fürs Team und Betrag zum Kassieren. Kunde und Team erhalten eine E-Mail mit Kalendereintrag (.ics).
+- **Einsatzplan**: Übersicht aller Termine mit Route, Karte und Anruf; Board aller laufenden Aufträge mit Rechnungsstand.
+- Täglicher Cron `/api/cron/tagesplan` (16:07 UTC): Einsatzplan für morgen an die Termin-E-Mail aus den Einstellungen und Terminerinnerung an Kunden.
+- Migration: `supabase/migrations/20261118150000_projects.sql` (im Projekt bereits eingespielt).
+
 ### Einrichtung
 
 1. **Datenbank:** Migration `supabase/migrations/20261112100000_admin_crm.sql` ist im Supabase-Projekt **QuickDesign** bereits eingespielt.
