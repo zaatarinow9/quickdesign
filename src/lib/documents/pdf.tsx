@@ -3,7 +3,7 @@ import path from "node:path";
 import { Defs, Document, Font, LinearGradient, Page, Path, Rect, Stop, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { BRAND_COLORS, LOGO_ARCS, LOGO_CORE, LOGO_SEGMENTS, LOGO_WORDMARK } from "@/components/brand/logo-paths";
 import type { Settings } from "@/lib/settings/schema";
-import { computeTotals, formatDateDE, formatEuro, formatQty, kindLabels, lineNet } from "./format";
+import { computeTotals, formatDateDE, formatEuro, formatQty, formatUnitPrice, kindLabels, lineNet } from "./format";
 import type { Doc } from "./queries";
 
 /**
@@ -200,7 +200,7 @@ function DocumentPdf({ doc, settings }: { doc: Doc; settings: Settings }) {
                 {formatQty(it.quantity)} {it.unit}
               </Text>
               <Text style={s.cVat}>{small ? "" : `${it.vat_rate} %`}</Text>
-              <Text style={s.cPrice}>{formatEuro(it.unit_price)}</Text>
+              <Text style={s.cPrice}>{formatUnitPrice(it)}</Text>
               <Text style={[s.cSum, { fontWeight: 600, color: INK }]}>{formatEuro(lineNet(it))}</Text>
             </View>
           ))}

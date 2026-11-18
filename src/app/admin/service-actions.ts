@@ -6,6 +6,7 @@ import { assertAdmin, assertFullAccess } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { logActivity } from "@/lib/admin/log";
 import { netFromGross, parseDecimal } from "@/lib/documents/format";
+import { calcTypeInfo, calcTypes, type CalcType } from "@/lib/documents/calc";
 import type { ActionState } from "./document-actions";
 
 const schema = z.object({
@@ -17,17 +18,34 @@ const schema = z.object({
   vat_rate: z.union([z.literal(19), z.literal(7), z.literal(0)]),
   is_favorite: z.boolean(),
   active: z.boolean(),
+  calc_type: z.enum(calcTypes as [CalcType, ...CalcType[]]),
+  price_per: z.number().int({ error: "„Preis gilt je“ muss eine ganze Zahl sein." }).min(1).max(100_000),
+  components: z.array(z.uuid()).max(30, { error: "Maximal 30 Bausteine." }),
 });
+
+function readComponents(fd: FormData, selfId?: string): string[] {
+  try {
+    const raw = JSON.parse(String(fd.get("components") ?? "[]"));
+    return Array.isArray(raw) ? [...new Set(raw.map(String))].filter((c) => c !== selfId) : [];
+  } catch {
+    return [];
+  }
+}
 
 function read(fd: FormData) {
   const vat = Number(fd.get("vat_rate") ?? 19);
   const price = parseDecimal(String(fd.get("price") ?? "0")) ?? Number.NaN;
   const mode = fd.get("price_mode") === "brutto" ? "brutto" : "netto";
+  const calcType = String(fd.get("calc_type") ?? "stueck") as CalcType;
+  const info = calcTypeInfo[calcType];
   return schema.safeParse({
     name: String(fd.get("name") ?? ""),
     description: String(fd.get("description") ?? "").trim() || null,
     category: String(fd.get("category") ?? "").trim() || null,
-    unit: String(fd.get("unit") ?? "Stk.").trim() || "Stk.",
+    unit: info?.unit ?? "Stk.",
+    calc_type: calcType,
+    price_per: calcType === "menge" ? Math.round(parseDecimal(String(fd.get("price_per") ?? "1")) ?? 1) : 1,
+    components: readComponents(fd, String(fd.get("id") ?? "") || undefined),
     // Katalogpreise werden netto mit 2 Nachkommastellen gespeichert
     price_net: mode === "brutto" ? Math.round(netFromGross(price, vat) * 100) / 100 : price,
     vat_rate: vat,
@@ -56,17 +74,29 @@ export async function saveService(_prev: ActionState, fd: FormData): Promise<Act
 }
 
 /** Aus dem Angebots-/Rechnungseditor: freie Position direkt in den Katalog übernehmen */
-export async function addServiceFromEditor(input: { name: string; description?: string; unit: string; price_net: number; vat_rate: number; favorite?: boolean }) {
+export async function addServiceFromEditor(input: {
+  name: string;
+  description?: string;
+  unit: string;
+  price_net: number;
+  vat_rate: number;
+  favorite?: boolean;
+  calc_type?: CalcType;
+  price_per?: number;
+}) {
   await assertAdmin();
   const parsed = schema.safeParse({
     name: input.name,
     description: input.description?.trim() || null,
     category: null,
-    unit: input.unit || "Stk.",
+    unit: input.calc_type ? calcTypeInfo[input.calc_type].unit : input.unit || "Stk.",
     price_net: Math.round(Number(input.price_net) * 100) / 100,
     vat_rate: Number(input.vat_rate),
     is_favorite: !!input.favorite,
     active: true,
+    calc_type: input.calc_type ?? "stueck",
+    price_per: input.price_per && input.price_per > 1 ? Math.round(input.price_per) : 1,
+    components: [],
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Ungültige Leistung." };
   const { data, error } = await db().from("service_catalog").insert(parsed.data).select("id").single();

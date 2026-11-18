@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/settings/server";
+import { calcTypeFromUnit, isCalcType, type CalcType } from "./calc";
 import { addDays, greetingLine, isStatusFor, todayBerlin, type DocItem, type DocStatus, type DocumentKind, type VatRate } from "./format";
 
 export type Doc = {
@@ -66,7 +67,7 @@ export function normalizeDoc(row: Record<string, unknown>): Doc {
     ...(row as unknown as Doc),
     kind,
     status: isStatusFor(kind, row.status) ? (row.status as DocStatus) : "entwurf",
-    items: items.map((i) => ({ ...i, quantity: num(i.quantity), unit_price: num(i.unit_price), vat_rate: rate(i.vat_rate) })),
+    items: items.map((i) => ({ ...i, quantity: num(i.quantity), unit_price: num(i.unit_price), price_per: Number(i.price_per) > 0 ? Number(i.price_per) : 1, vat_rate: rate(i.vat_rate) })),
     discount_percent: num(row.discount_percent),
     net_total: num(row.net_total),
     vat_total: num(row.vat_total),
@@ -214,13 +215,24 @@ export type CatalogService = {
   active: boolean;
   usage_count: number;
   sort_order: number;
+  calc_type: CalcType;
+  price_per: number;
+  components: string[];
 };
 
 export async function listCatalog(includeInactive = false): Promise<CatalogService[]> {
-  let q = db().from("service_catalog").select("id, name, description, category, unit, price_net, vat_rate, is_favorite, active, usage_count, sort_order");
+  let q = db().from("service_catalog").select("id, name, description, category, unit, price_net, vat_rate, is_favorite, active, usage_count, sort_order, calc_type, price_per, components");
   if (!includeInactive) q = q.eq("active", true);
   const { data } = await q.order("is_favorite", { ascending: false }).order("usage_count", { ascending: false }).order("sort_order").order("name");
-  return (data ?? []).map((s) => ({ ...s, price_net: num(s.price_net), vat_rate: rate(s.vat_rate), usage_count: num(s.usage_count) })) as CatalogService[];
+  return (data ?? []).map((s) => ({
+    ...s,
+    price_net: num(s.price_net),
+    vat_rate: rate(s.vat_rate),
+    usage_count: num(s.usage_count),
+    calc_type: isCalcType(s.calc_type) ? s.calc_type : calcTypeFromUnit(s.unit),
+    price_per: Number(s.price_per) > 0 ? Number(s.price_per) : 1,
+    components: Array.isArray(s.components) ? (s.components as string[]) : [],
+  })) as CatalogService[];
 }
 
 export type CustomerOption = { id: string; customer_number: string; name: string; company_name: string | null; email: string | null; city: string | null };

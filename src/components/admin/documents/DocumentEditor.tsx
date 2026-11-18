@@ -9,11 +9,15 @@ import {
   ChevronDown,
   Copy,
   Loader2,
+  GripVertical,
   Plus,
+  Puzzle,
+  RotateCcw,
   Search,
   Star,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import { saveDocument, type ActionState } from "@/app/admin/document-actions";
 import { addServiceFromEditor } from "@/app/admin/service-actions";
@@ -21,6 +25,7 @@ import {
   computeTotals,
   formatEuro,
   formatNumber,
+  formatQty,
   grossFromNet,
   greetingLine,
   kindLabels,
@@ -35,6 +40,24 @@ import {
   type VatRate,
 } from "@/lib/documents/format";
 import type { CatalogService, CustomerOption, DocDraft } from "@/lib/documents/queries";
+import {
+  calcArea,
+  calcNeedsFormat,
+  calcSummary,
+  calcToLine,
+  calcTypeFromUnit,
+  calcTypeInfo,
+  canAuto,
+  parseQtyInput,
+  partQty,
+  partTotal,
+  priceLabel,
+  pricePerOptions,
+  usesFormat,
+  type CalcPart,
+  type ItemCalc,
+} from "@/lib/documents/calc";
+import { CalcTypeIcon, DND_ROW, DND_SERVICE, hasServiceDrag, ServiceChip, ServicePalette } from "@/components/admin/pricing";
 import { Notice } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
@@ -47,9 +70,13 @@ type Row = {
   unit: string;
   price: string;
   price_mode: "netto" | "brutto";
+  /** Einzelpreis gilt je … Einheiten (z. B. 1000) */
+  price_per: number;
   vat_rate: VatRate;
   showDetails: boolean;
   saved?: boolean;
+  /** Rechner mit Format und Bausteinen (statt Menge × Preis) */
+  calc?: ItemCalc;
 };
 
 let seq = 0;
@@ -60,17 +87,21 @@ function toRow(it: DocItem): Row {
   const mode = it.price_mode ?? "netto";
   const price = mode === "brutto" ? grossFromNet(it.unit_price, it.vat_rate) : it.unit_price;
   const decimals = Math.round(price * 100) === price * 100 ? 2 : 4;
+  const calc = it.calc && Array.isArray(it.calc.parts) && it.calc.parts.length ? it.calc : undefined;
+  const details = calc ? (calc.user_details ?? "") : (it.details ?? "");
   return {
     key: newKey(),
     service_id: it.service_id ?? null,
     description: it.description,
-    details: it.details ?? "",
+    details,
     quantity: fmtInput(it.quantity, Number.isInteger(it.quantity) ? 0 : 2),
     unit: it.unit,
     price: fmtInput(price, decimals),
-    price_mode: mode,
+    price_mode: calc ? "netto" : mode,
+    price_per: it.price_per && it.price_per > 1 ? it.price_per : 1,
     vat_rate: it.vat_rate,
-    showDetails: !!it.details,
+    showDetails: !!details,
+    calc,
   };
 }
 
@@ -80,15 +111,70 @@ function rowNet(r: Row): number {
 }
 
 function toItem(r: Row): DocItem {
+  const userDetails = r.details.trim();
+  if (r.calc) {
+    const line = calcToLine(r.calc);
+    const summary = calcSummary(r.calc);
+    return {
+      service_id: r.service_id,
+      description: r.description.trim(),
+      details: [userDetails, summary].filter(Boolean).join("\n") || undefined,
+      quantity: line.quantity,
+      unit: line.unit,
+      unit_price: line.unit_price,
+      price_per: line.price_per,
+      vat_rate: r.vat_rate,
+      price_mode: "netto",
+      calc: { ...r.calc, user_details: userDetails || undefined },
+    };
+  }
   return {
     service_id: r.service_id,
     description: r.description.trim(),
-    details: r.details.trim() || undefined,
-    quantity: parseDecimal(r.quantity) ?? 0,
+    details: userDetails || undefined,
+    quantity: parseQtyInput(r.quantity) ?? 0,
     unit: r.unit,
     unit_price: rowNet(r),
+    price_per: r.price_per > 1 ? r.price_per : 1,
     vat_rate: r.vat_rate,
     price_mode: r.price_mode,
+  };
+}
+
+/** Katalogleistung → Baustein für den Rechner */
+function serviceToPart(s: CatalogService): CalcPart {
+  return {
+    service_id: s.id,
+    name: s.name,
+    calc_type: s.calc_type,
+    price_net: s.price_net,
+    price_per: s.calc_type === "menge" && s.price_per > 1 ? s.price_per : 1,
+    qty: 1,
+    auto: s.calc_type !== "stunde",
+  };
+}
+
+/** Alle Bausteine einer Katalogleistung (Vorlagen mit 0 € bestehen nur aus ihren Bausteinen) */
+function partsFor(s: CatalogService, catalog: CatalogService[]): CalcPart[] {
+  const comps = s.components.map((id) => catalog.find((c) => c.id === id)).filter((c): c is CatalogService => !!c);
+  const base = comps.length && s.price_net === 0 ? [] : [s];
+  return [...base, ...comps].map(serviceToPart);
+}
+
+/** Einfache Position in einen Rechner mit Bausteinen umwandeln */
+function rowToCalc(r: Row): ItemCalc {
+  if (r.calc) return r.calc;
+  const type = calcTypeFromUnit(r.unit);
+  const qty = parseQtyInput(r.quantity) ?? 1;
+  const countable = type === "stueck" || type === "menge";
+  const hasContent = !!(r.description.trim() || parseDecimal(r.price));
+  return {
+    count: countable ? qty : 1,
+    width_cm: null,
+    height_cm: null,
+    parts: hasContent
+      ? [{ service_id: r.service_id, name: r.description.trim() || "Position", calc_type: type, price_net: rowNet(r), price_per: r.price_per > 1 ? r.price_per : 1, qty, auto: countable || type === "pauschal" }]
+      : [],
   };
 }
 
@@ -157,28 +243,59 @@ export function DocumentEditor({
       return copy;
     });
 
-  const addService = (s: CatalogService) =>
-    setRows((rs) => [
-      ...rs,
-      {
-        key: newKey(),
-        service_id: s.id,
-        description: s.name,
-        details: s.description ?? "",
-        quantity: "1",
-        unit: s.unit,
-        price: fmtInput(s.price_net),
-        price_mode: "netto",
-        vat_rate: smallBusiness ? 0 : s.vat_rate,
-        showDetails: !!s.description,
-        saved: true,
-      },
-    ]);
+  const newRowFor = (s: CatalogService): Row => {
+    const parts = partsFor(s, catalog);
+    const vat = smallBusiness ? 0 : s.vat_rate;
+    const base = { key: newKey(), service_id: s.id, description: s.name, details: s.description ?? "", price_mode: "netto" as const, vat_rate: vat, showDetails: !!s.description, saved: true };
+    if (parts.length > 1 || parts.some((p) => usesFormat(p.calc_type))) {
+      return { ...base, quantity: "1", unit: "Stk.", price: "", price_per: 1, calc: { count: 1, width_cm: null, height_cm: null, parts } };
+    }
+    const per = s.calc_type === "menge" && s.price_per > 1 ? s.price_per : 1;
+    return { ...base, quantity: fmtInput(per, 0), unit: calcTypeInfo[s.calc_type].unit, price: fmtInput(s.price_net), price_per: per };
+  };
+
+  const addService = (s: CatalogService, at?: number) =>
+    setRows((rs) => {
+      const row = newRowFor(s);
+      if (at === undefined) return [...rs, row];
+      return [...rs.slice(0, at), row, ...rs.slice(at)];
+    });
+
+  /** Leistung auf eine bestehende Position ziehen → wird als Baustein ergänzt */
+  const addPartToRow = (key: string, s: CatalogService) =>
+    setRows((rs) =>
+      rs.map((r) => {
+        if (r.key !== key) return r;
+        const calc = rowToCalc(r);
+        const parts = [...calc.parts, ...partsFor(s, catalog)];
+        return {
+          ...r,
+          description: r.description.trim() || s.name,
+          service_id: r.service_id ?? s.id,
+          calc: { ...calc, parts },
+        };
+      }),
+    );
+
+  const moveRowTo = (fromKey: string, toKey: string) =>
+    setRows((rs) => {
+      const from = rs.findIndex((r) => r.key === fromKey);
+      const to = rs.findIndex((r) => r.key === toKey);
+      if (from < 0 || to < 0 || from === to) return rs;
+      const copy = [...rs];
+      const [moved] = copy.splice(from, 1);
+      copy.splice(to, 0, moved);
+      return copy;
+    });
+
   const addFree = (name = "") =>
     setRows((rs) => [
       ...rs,
-      { key: newKey(), service_id: null, description: name, details: "", quantity: "1", unit: "Stk.", price: "", price_mode: "netto", vat_rate: smallBusiness ? 0 : defaultVat, showDetails: false },
+      { key: newKey(), service_id: null, description: name, details: "", quantity: "1", unit: "Stk.", price: "", price_mode: "netto", price_per: 1, vat_rate: smallBusiness ? 0 : defaultVat, showDetails: false },
     ]);
+
+  const [listDrag, setListDrag] = useState(false);
+  const serviceById = (id: string) => catalog.find((c) => c.id === id);
 
   const pickCustomer = (id: string) => {
     const c = customers.find((x) => x.id === id);
@@ -352,27 +469,55 @@ export function DocumentEditor({
               <h2 className="font-semibold">Positionen</h2>
               <span className="text-xs text-stone-dark">Preise wahlweise netto oder brutto eingeben – gespeichert wird netto.</span>
             </div>
-            <CatalogBar catalog={catalog} onPick={addService} onFree={addFree} />
+            <CatalogBar catalog={catalog} onPick={(sv) => addService(sv)} onFree={addFree} />
 
-            {rows.length === 0 ? (
-              <p className="px-5 pb-6 pt-2 text-sm text-stone-dark">Noch keine Positionen. Wählen Sie eine Leistung aus dem Katalog oder fügen Sie eine freie Position hinzu.</p>
-            ) : (
-              <ol className="divide-y divide-ink/[0.06]">
-                {rows.map((r, i) => (
-                  <ItemRow
-                    key={r.key}
-                    index={i}
-                    row={r}
-                    count={rows.length}
-                    smallBusiness={smallBusiness}
-                    onChange={(patch) => updateRow(r.key, patch)}
-                    onMove={(d) => move(i, d)}
-                    onDuplicate={() => setRows((rs) => [...rs.slice(0, i + 1), { ...r, key: newKey() }, ...rs.slice(i + 1)])}
-                    onRemove={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}
-                  />
-                ))}
-              </ol>
-            )}
+            <div
+              onDragOver={(e) => {
+                if (!hasServiceDrag(e)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+                setListDrag(true);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setListDrag(false);
+              }}
+              onDrop={(e) => {
+                setListDrag(false);
+                const sv = serviceById(e.dataTransfer.getData(DND_SERVICE));
+                if (sv) {
+                  e.preventDefault();
+                  addService(sv);
+                }
+              }}
+            >
+              {rows.length === 0 ? (
+                <p className={cn("mx-5 mb-4 rounded-xl border-2 border-dashed px-4 py-8 text-center text-sm text-stone-dark transition-colors", listDrag ? "border-accent bg-accent/[0.05]" : "border-ink/10")}>
+                  Noch keine Positionen. Leistung hierher ziehen, oben auswählen oder eine freie Position hinzufügen.
+                </p>
+              ) : (
+                <ol className="divide-y divide-ink/[0.06]">
+                  {rows.map((r, i) => (
+                    <ItemRow
+                      key={r.key}
+                      index={i}
+                      row={r}
+                      count={rows.length}
+                      catalog={catalog}
+                      smallBusiness={smallBusiness}
+                      onChange={(patch) => updateRow(r.key, patch)}
+                      onMove={(d) => move(i, d)}
+                      onMoveTo={(fromKey) => moveRowTo(fromKey, r.key)}
+                      onAddPart={(sv) => addPartToRow(r.key, sv)}
+                      onDuplicate={() => setRows((rs) => [...rs.slice(0, i + 1), { ...r, key: newKey() }, ...rs.slice(i + 1)])}
+                      onRemove={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}
+                    />
+                  ))}
+                </ol>
+              )}
+              {rows.length && listDrag ? (
+                <p className="mx-5 mb-3 rounded-xl border-2 border-dashed border-accent bg-accent/[0.05] px-4 py-3 text-center text-sm text-accent">Hier loslassen = neue Position · auf eine Position ziehen = als Baustein ergänzen</p>
+              ) : null}
+            </div>
             <div className="flex flex-wrap gap-2 border-t border-ink/[0.06] px-5 py-3.5">
               <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => addFree()}>
                 <Plus className="size-4" aria-hidden /> Freie Position
@@ -560,6 +705,7 @@ function CatalogBar({ catalog, onPick, onFree }: { catalog: CatalogService[]; on
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const favorites = catalog.filter((s) => s.is_favorite).slice(0, 10);
+  const [showAll, setShowAll] = useState(false);
   const results = useMemo(() => {
     const t = q.trim().toLowerCase();
     return (t ? catalog.filter((s) => `${s.name} ${s.category ?? ""} ${s.description ?? ""}`.toLowerCase().includes(t)) : catalog).slice(0, 40);
@@ -597,6 +743,8 @@ function CatalogBar({ catalog, onPick, onFree }: { catalog: CatalogService[]; on
               <button
                 key={s.id}
                 type="button"
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData(DND_SERVICE, s.id)}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onPick(s);
@@ -605,15 +753,16 @@ function CatalogBar({ catalog, onPick, onFree }: { catalog: CatalogService[]; on
                 }}
                 className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-ink/[0.04]"
               >
-                {s.is_favorite ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden /> : <span className="size-3.5 shrink-0" />}
+                {s.is_favorite ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden /> : <CalcTypeIcon type={s.calc_type} className="size-3.5 shrink-0 text-stone" />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm">{s.name}</span>
                   {s.category ? <span className="block text-xs text-stone-dark">{s.category}</span> : null}
                 </span>
                 <span className="shrink-0 text-right text-xs tabular-nums">
-                  <span className="block font-medium">{formatEuro(s.price_net)} netto</span>
+                  <span className="block font-medium">{priceLabel(s)} netto</span>
                   <span className="block text-stone-dark">
-                    {formatEuro(grossFromNet(s.price_net, s.vat_rate))} brutto / {s.unit}
+                    {s.components.length ? `${s.components.length} Bausteine · ` : ""}
+                    {calcTypeInfo[s.calc_type].label}
                   </span>
                 </span>
               </button>
@@ -635,22 +784,23 @@ function CatalogBar({ catalog, onPick, onFree }: { catalog: CatalogService[]; on
           </div>
         ) : null}
       </div>
-      {favorites.length ? (
-        <div className="flex flex-wrap gap-1.5">
-          <span className="mr-1 self-center text-xs text-stone-dark">Häufig:</span>
-          {favorites.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onPick(s)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink/[0.04] px-3 text-[0.8rem] transition-colors hover:bg-accent hover:text-white"
-              title={`${formatEuro(s.price_net)} netto · ${formatEuro(grossFromNet(s.price_net, s.vat_rate))} brutto`}
-            >
-              <Plus className="size-3.5" aria-hidden /> {s.name}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {favorites.length ? <span className="mr-1 self-center text-xs text-stone-dark">Häufig:</span> : null}
+        {favorites.map((s) => (
+          <ServiceChip key={s.id} service={s} compact onClick={() => onPick(s)} />
+        ))}
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="ml-1 inline-flex h-8 items-center gap-1 rounded-full px-3 text-[0.78rem] text-accent hover:bg-accent/5" aria-expanded={showAll}>
+          <Puzzle className="size-3.5" aria-hidden /> {showAll ? "Weniger" : "Alle Bausteine"}
+        </button>
+      </div>
+      {showAll ? (
+        <div className="rounded-xl bg-ink/[0.025] p-3">
+          <ServicePalette catalog={catalog} onPick={onPick} compact limit={60} placeholder="Leistung oder Material suchen …" />
         </div>
       ) : null}
+      <p className="text-xs text-stone-dark">
+        Tipp: Leistungen per Drag &amp; Drop in die Liste ziehen – oder direkt auf eine Position, um sie zu kombinieren (z. B. Folie + Laminat auf eine Dibond-Platte).
+      </p>
     </div>
   );
 }
@@ -659,25 +809,34 @@ function ItemRow({
   index,
   row,
   count,
+  catalog,
   smallBusiness,
   onChange,
   onMove,
+  onMoveTo,
+  onAddPart,
   onDuplicate,
   onRemove,
 }: {
   index: number;
   row: Row;
   count: number;
+  catalog: CatalogService[];
   smallBusiness: boolean;
   onChange: (patch: Partial<Row>) => void;
   onMove: (d: -1 | 1) => void;
+  onMoveTo: (fromKey: string) => void;
+  onAddPart: (s: CatalogService) => void;
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
   const [saving, startSaving] = useTransition();
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<"part" | "row" | null>(null);
+  const [draggable, setDraggable] = useState(false);
   const net = rowNet(row);
-  const total = lineNet({ quantity: parseDecimal(row.quantity) ?? 0, unit_price: net });
+  const item = toItem(row);
+  const total = lineNet(item);
   const price = parseDecimal(row.price) ?? 0;
   const other = row.price_mode === "netto" ? grossFromNet(price, row.vat_rate) : net;
 
@@ -691,7 +850,16 @@ function ItemRow({
 
   const saveToCatalog = () =>
     startSaving(async () => {
-      const res = await addServiceFromEditor({ name: row.description, description: row.details, unit: row.unit, price_net: net, vat_rate: row.vat_rate, favorite: true });
+      const res = await addServiceFromEditor({
+        name: row.description,
+        description: row.details,
+        unit: row.unit,
+        price_net: net,
+        vat_rate: row.vat_rate,
+        favorite: true,
+        calc_type: row.price_per > 1 ? "menge" : calcTypeFromUnit(row.unit),
+        price_per: row.price_per,
+      });
       if ("id" in res && res.id) {
         onChange({ service_id: res.id, saved: true });
         setSaveMsg("Im Katalog gespeichert");
@@ -699,9 +867,62 @@ function ItemRow({
     });
 
   return (
-    <li className="group px-5 py-4">
-      <div className="flex items-start gap-3">
-        <span className="mt-2.5 w-6 shrink-0 text-xs tabular-nums text-stone">{String(index + 1).padStart(2, "0")}</span>
+    <li
+      draggable={draggable}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DND_ROW, row.key);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => setDraggable(false)}
+      onDragOver={(e) => {
+        const types = Array.from(e.dataTransfer.types);
+        if (types.includes(DND_SERVICE)) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "copy";
+          setDropHint("part");
+        } else if (types.includes(DND_ROW)) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setDropHint("row");
+        }
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHint(null);
+      }}
+      onDrop={(e) => {
+        setDropHint(null);
+        const sid = e.dataTransfer.getData(DND_SERVICE);
+        const rk = e.dataTransfer.getData(DND_ROW);
+        if (sid) {
+          e.preventDefault();
+          e.stopPropagation();
+          const sv = catalog.find((c) => c.id === sid);
+          if (sv) onAddPart(sv);
+        } else if (rk) {
+          e.preventDefault();
+          onMoveTo(rk);
+        }
+      }}
+      className={cn(
+        "group relative px-3 py-4 transition-colors sm:px-5",
+        dropHint === "part" && "bg-accent/[0.05] ring-2 ring-inset ring-accent",
+        dropHint === "row" && "shadow-[inset_0_3px_0_0_var(--color-accent)]",
+      )}
+    >
+      {dropHint === "part" ? (
+        <span className="pointer-events-none absolute right-5 top-2 z-10 rounded-full bg-accent px-2.5 py-0.5 text-xs text-white">Als Baustein hinzufügen</span>
+      ) : null}
+      <div className="flex items-start gap-2 sm:gap-3">
+        <span
+          className="mt-2 flex w-5 shrink-0 cursor-grab items-center text-xs tabular-nums text-stone active:cursor-grabbing sm:w-7"
+          onMouseDown={() => setDraggable(true)}
+          onMouseUp={() => setDraggable(false)}
+          title="Ziehen zum Sortieren"
+        >
+          <GripVertical className="hidden size-3.5 opacity-0 transition-opacity group-hover:opacity-100 sm:block" aria-hidden />
+          {String(index + 1).padStart(2, "0")}
+        </span>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="grid gap-2 md:grid-cols-12">
             <input
@@ -709,60 +930,76 @@ function ItemRow({
               value={row.description}
               onChange={(e) => onChange({ description: e.target.value })}
               placeholder="Bezeichnung der Leistung"
-              className="adm-input font-medium md:col-span-12"
+              className={cn("adm-input font-medium", row.calc ? "md:col-span-9" : "md:col-span-12")}
             />
-            <div className="grid grid-cols-2 gap-2 md:col-span-4">
-              <input aria-label="Menge" inputMode="decimal" value={row.quantity} onChange={(e) => onChange({ quantity: e.target.value })} className="adm-input text-right" />
-              <select aria-label="Einheit" value={row.unit} onChange={(e) => onChange({ unit: e.target.value })} className="adm-input">
-                {[...new Set([row.unit, ...units])].map((u) => (
-                  <option key={u}>{u}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2 md:col-span-5">
-              <div className="relative flex-1">
-                <input
-                  aria-label={`Einzelpreis ${row.price_mode}`}
-                  inputMode="decimal"
-                  value={row.price}
-                  onChange={(e) => onChange({ price: e.target.value })}
-                  placeholder="0,00"
-                  className="adm-input pr-8 text-right"
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-stone">€</span>
-              </div>
-              <div className="flex h-10 shrink-0 rounded-[0.6rem] bg-ink/[0.05] p-0.5 text-xs" role="group" aria-label="Preisart">
-                {(["netto", "brutto"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => switchMode(m)}
-                    aria-pressed={row.price_mode === m}
-                    className={cn("rounded-lg px-2.5 capitalize", row.price_mode === m ? "bg-white font-medium shadow-sm" : "text-stone-dark hover:text-ink")}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <select
-              aria-label="Umsatzsteuer"
-              value={row.vat_rate}
-              disabled={smallBusiness}
-              onChange={(e) => {
-                const rate = Number(e.target.value) as VatRate;
-                // Bei Brutto-Eingabe bleibt der Bruttopreis gleich, sonst der Nettopreis
-                onChange({ vat_rate: rate });
-              }}
-              className="adm-input md:col-span-3"
-            >
-              {vatRates.map((v) => (
-                <option key={v} value={v}>
-                  {v} % USt.
-                </option>
-              ))}
-            </select>
+            {row.calc ? (
+              <VatSelect value={row.vat_rate} disabled={smallBusiness} onChange={(v) => onChange({ vat_rate: v })} className="md:col-span-3" />
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2 md:col-span-4">
+                  <input
+                    aria-label="Menge"
+                    inputMode="decimal"
+                    value={row.quantity}
+                    onChange={(e) => onChange({ quantity: e.target.value })}
+                    placeholder={row.unit === "Std." ? "1:30" : "1"}
+                    title={row.unit === "Std." ? "Stunden – auch als 1:30 möglich" : undefined}
+                    className="adm-input text-right"
+                  />
+                  <select aria-label="Einheit" value={row.unit} onChange={(e) => onChange({ unit: e.target.value, price_per: e.target.value === "Stk." ? row.price_per : 1 })} className="adm-input">
+                    {[...new Set([row.unit, ...units])].map((u) => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 md:col-span-5">
+                  <div className="relative flex-1">
+                    <input
+                      aria-label={`Einzelpreis ${row.price_mode}`}
+                      inputMode="decimal"
+                      value={row.price}
+                      onChange={(e) => onChange({ price: e.target.value })}
+                      placeholder="0,00"
+                      className="adm-input pr-8 text-right"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-stone">€</span>
+                  </div>
+                  {row.unit === "Stk." ? (
+                    <select
+                      aria-label="Preis gilt je"
+                      title="Preis gilt je … Stück"
+                      value={row.price_per}
+                      onChange={(e) => onChange({ price_per: Number(e.target.value) })}
+                      className="adm-input w-[5.5rem] shrink-0 px-2 text-xs"
+                    >
+                      {[...new Set([row.price_per, ...pricePerOptions])].sort((a, b) => a - b).map((o) => (
+                        <option key={o} value={o}>
+                          je {formatQty(o)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <div className="flex h-10 shrink-0 rounded-[0.6rem] bg-ink/[0.05] p-0.5 text-xs" role="group" aria-label="Preisart">
+                    {(["netto", "brutto"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => switchMode(m)}
+                        aria-pressed={row.price_mode === m}
+                        className={cn("rounded-lg px-2.5 capitalize", row.price_mode === m ? "bg-white font-medium shadow-sm" : "text-stone-dark hover:text-ink")}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <VatSelect value={row.vat_rate} disabled={smallBusiness} onChange={(v) => onChange({ vat_rate: v })} className="md:col-span-3" />
+              </>
+            )}
           </div>
+
+          {row.calc ? <CalcEditor calc={row.calc} catalog={catalog} onChange={(calc) => onChange({ calc })} onAddPart={onAddPart} vat={row.vat_rate} /> : null}
+
           {row.showDetails ? (
             <textarea
               aria-label="Beschreibung"
@@ -774,15 +1011,27 @@ function ItemRow({
             />
           ) : null}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-dark">
-            <span className="tabular-nums">
-              {row.price_mode === "netto" ? "Brutto" : "Netto"}: {formatEuro(other)} / {row.unit}
-            </span>
+            {row.calc ? (
+              <span className="tabular-nums">
+                {formatQty(item.quantity)} {item.unit} × {formatEuro(item.unit_price)} netto
+              </span>
+            ) : (
+              <span className="tabular-nums">
+                {row.price_mode === "netto" ? "Brutto" : "Netto"}: {formatEuro(other)} / {row.price_per > 1 ? `${formatQty(row.price_per)} ` : ""}
+                {row.unit}
+              </span>
+            )}
             {!row.showDetails ? (
               <button type="button" className="hover:text-accent" onClick={() => onChange({ showDetails: true })}>
                 + Beschreibung
               </button>
             ) : null}
-            {!row.service_id && row.description.trim() ? (
+            {!row.calc ? (
+              <button type="button" className="inline-flex items-center gap-1 hover:text-accent" onClick={() => onChange({ calc: rowToCalc(row) })}>
+                <Puzzle className="size-3.5" aria-hidden /> Bausteine / Maße
+              </button>
+            ) : null}
+            {!row.service_id && !row.calc && row.description.trim() ? (
               <button type="button" className="inline-flex items-center gap-1 hover:text-accent" onClick={saveToCatalog} disabled={saving}>
                 {saving ? <Loader2 className="size-3 animate-spin" aria-hidden /> : <BookmarkPlus className="size-3.5" aria-hidden />} In Katalog speichern
               </button>
@@ -791,7 +1040,7 @@ function ItemRow({
             {saveMsg ? <span className="text-emerald-700">{saveMsg}</span> : null}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
           <span className="mt-2 text-sm font-semibold tabular-nums">{formatEuro(total)}</span>
           <div className="flex gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
             <IconBtn label="Nach oben" onClick={() => onMove(-1)} disabled={index === 0}>
@@ -809,7 +1058,210 @@ function ItemRow({
           </div>
         </div>
       </div>
+      <div className="mt-2 flex items-center justify-between border-t border-ink/[0.06] pt-2 sm:hidden">
+        <div className="flex gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+            <IconBtn label="Nach oben" onClick={() => onMove(-1)} disabled={index === 0}>
+              <ArrowUp className="size-3.5" />
+            </IconBtn>
+            <IconBtn label="Nach unten" onClick={() => onMove(1)} disabled={index === count - 1}>
+              <ArrowDown className="size-3.5" />
+            </IconBtn>
+            <IconBtn label="Duplizieren" onClick={onDuplicate}>
+              <Copy className="size-3.5" />
+            </IconBtn>
+            <IconBtn label="Entfernen" onClick={onRemove} danger>
+              <Trash2 className="size-3.5" />
+            </IconBtn>
+          </div>
+        <span className="text-sm font-semibold tabular-nums">{formatEuro(total)}</span>
+      </div>
     </li>
+  );
+}
+
+function VatSelect({ value, disabled, onChange, className }: { value: VatRate; disabled: boolean; onChange: (v: VatRate) => void; className?: string }) {
+  return (
+    <select aria-label="Umsatzsteuer" value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value) as VatRate)} className={cn("adm-input", className)}>
+      {vatRates.map((v) => (
+        <option key={v} value={v}>
+          {v} % USt.
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Zahlenfeld mit deutscher Eingabe ("1,5", "1:30"); behält die Eingabe beim Tippen */
+function NumField({
+  value,
+  onChange,
+  className,
+  label,
+  placeholder,
+  allowTime,
+}: {
+  value: number | null;
+  onChange: (n: number | null) => void;
+  className?: string;
+  label: string;
+  placeholder?: string;
+  allowTime?: boolean;
+}) {
+  const fmt = (n: number | null) => (n === null ? "" : formatQty(n).replace(/\./g, ""));
+  const [text, setText] = useState(fmt(value));
+  const [focused, setFocused] = useState(false);
+  const shown = focused ? text : fmt(value);
+  return (
+    <input
+      aria-label={label}
+      inputMode="decimal"
+      placeholder={placeholder}
+      value={shown}
+      onFocus={() => {
+        setText(fmt(value));
+        setFocused(true);
+      }}
+      onBlur={() => setFocused(false)}
+      onChange={(e) => {
+        setText(e.target.value);
+        const n = allowTime ? parseQtyInput(e.target.value) : parseDecimal(e.target.value);
+        onChange(e.target.value.trim() === "" ? null : n);
+      }}
+      className={cn("adm-input text-right tabular-nums", className)}
+    />
+  );
+}
+
+/** Rechner: Anzahl, Format und Bausteine – Mengen werden automatisch berechnet */
+function CalcEditor({
+  calc,
+  catalog,
+  vat,
+  onChange,
+  onAddPart,
+}: {
+  calc: ItemCalc;
+  catalog: CatalogService[];
+  vat: VatRate;
+  onChange: (c: ItemCalc) => void;
+  onAddPart: (s: CatalogService) => void;
+}) {
+  const [palette, setPalette] = useState(false);
+  const needsFormat = calcNeedsFormat(calc);
+  const area = calcArea(calc);
+  const totalNet = calc.parts.reduce((s, p) => s + partTotal(p, calc), 0);
+  const setPart = (i: number, patch: Partial<CalcPart>) => onChange({ ...calc, parts: calc.parts.map((p, j) => (j === i ? { ...p, ...patch } : p)) });
+  const removePart = (i: number) => onChange({ ...calc, parts: calc.parts.filter((_, j) => j !== i) });
+  const movePart = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= calc.parts.length) return;
+    const parts = [...calc.parts];
+    [parts[i], parts[j]] = [parts[j], parts[i]];
+    onChange({ ...calc, parts });
+  };
+
+  return (
+    <div className="-mx-1 rounded-xl bg-[#f7f5f1] p-2 ring-1 ring-ink/[0.06] sm:mx-0 sm:p-3">
+      {/* Anzahl & Format */}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-24">
+          <span className="adm-label">Anzahl</span>
+          <NumField label="Anzahl" value={calc.count} onChange={(n) => onChange({ ...calc, count: Math.max(0, n ?? 0) })} />
+        </div>
+        {needsFormat ? (
+          <>
+            <div className="w-24">
+              <span className="adm-label">Breite (cm)</span>
+              <NumField label="Breite in cm" placeholder="z. B. 120" value={calc.width_cm} onChange={(n) => onChange({ ...calc, width_cm: n && n > 0 ? n : null })} />
+            </div>
+            <span className="pb-2.5 text-stone">×</span>
+            <div className="w-24">
+              <span className="adm-label">Höhe (cm)</span>
+              <NumField label="Höhe in cm" placeholder="z. B. 80" value={calc.height_cm} onChange={(n) => onChange({ ...calc, height_cm: n && n > 0 ? n : null })} />
+            </div>
+            <span className="pb-2.5 text-sm tabular-nums text-stone-dark">{area !== null ? `= ${formatQty(area)} m²` : "Maße eingeben"}</span>
+          </>
+        ) : null}
+      </div>
+
+      {/* Bausteine */}
+      <ul className="mt-3 space-y-1.5">
+        {calc.parts.map((p, i) => {
+          const qty = partQty(p, calc);
+          const autoOn = p.auto && canAuto(p, calc);
+          const unit = calcTypeInfo[p.calc_type].unit;
+          return (
+            <li key={i} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg bg-white px-2 py-2 ring-1 sm:px-2.5 ring-ink/[0.06] sm:grid-cols-[auto_minmax(0,1fr)_7.5rem_9rem_5.5rem_auto]">
+              <span className="grid size-7 place-items-center rounded-md bg-ink/[0.04]" title={calcTypeInfo[p.calc_type].label}>
+                <CalcTypeIcon type={p.calc_type} className="size-3.5 text-stone-dark" />
+              </span>
+              <input aria-label="Baustein" value={p.name} onChange={(e) => setPart(i, { name: e.target.value })} className="adm-input h-8 min-w-0 border-transparent bg-transparent px-1.5 text-sm font-medium shadow-none" />
+              <span className="text-right text-sm font-semibold tabular-nums sm:hidden">{formatEuro(partTotal(p, calc))}</span>
+
+              <div className="col-span-3 grid grid-cols-[1fr_1fr_auto] items-center gap-1.5 sm:contents">
+              <div className="flex items-center gap-1">
+                <NumField
+                  label={`Menge ${p.name}`}
+                  allowTime={p.calc_type === "stunde"}
+                  value={qty}
+                  onChange={(n) => setPart(i, { qty: Math.max(0, n ?? 0), auto: false })}
+                  className={cn("h-8 min-w-0 flex-1 px-2 text-sm", autoOn && "bg-emerald-50/60 text-emerald-900")}
+                />
+                <span className="shrink-0 text-xs text-stone-dark sm:w-9">{unit === "Pauschal" ? "x" : unit}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <NumField label={`Preis ${p.name}`} value={p.price_net} onChange={(n) => setPart(i, { price_net: n ?? 0 })} className="h-8 min-w-0 flex-1 px-2 text-sm" />
+                <span className="shrink-0 whitespace-nowrap text-xs text-stone-dark">€{p.price_per > 1 ? `/${formatQty(p.price_per)}` : p.calc_type === "pauschal" ? "" : `/${unit}`}</span>
+              </div>
+              <span className="hidden text-right text-sm font-semibold tabular-nums sm:block">{formatEuro(partTotal(p, calc))}</span>
+              <div className="flex items-center justify-end gap-0.5">
+                {!autoOn && canAuto(p, calc) ? (
+                  <button type="button" onClick={() => setPart(i, { auto: true })} title="Menge wieder automatisch berechnen" className="grid size-6 place-items-center rounded text-stone-dark hover:bg-ink/[0.06] hover:text-accent">
+                    <RotateCcw className="size-3.5" />
+                  </button>
+                ) : null}
+                <button type="button" aria-label="Nach oben" disabled={i === 0} onClick={() => movePart(i, -1)} className="hidden size-6 place-items-center rounded text-stone-dark hover:bg-ink/[0.06] disabled:opacity-30 sm:grid">
+                  <ArrowUp className="size-3.5" />
+                </button>
+                <button type="button" aria-label="Baustein entfernen" onClick={() => removePart(i)} className="grid size-6 place-items-center rounded text-stone-dark hover:bg-red-50 hover:text-red-700">
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Baustein hinzufügen */}
+      <div className="mt-2">
+        {palette ? (
+          <div className="rounded-lg border-2 border-dashed border-ink/10 bg-white/60 p-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-xs text-stone-dark">Baustein anklicken oder auf die Position ziehen:</span>
+              <button type="button" onClick={() => setPalette(false)} className="text-xs text-stone-dark hover:text-ink">
+                Schließen
+              </button>
+            </div>
+            <ServicePalette catalog={catalog} onPick={onAddPart} compact limit={24} />
+          </div>
+        ) : (
+          <button type="button" onClick={() => setPalette(true)} className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-ink/10 py-2 text-sm text-stone-dark transition-colors hover:border-accent hover:text-accent">
+            <Plus className="size-4" aria-hidden /> Baustein hinzufügen (oder hierher ziehen)
+          </button>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-dark">
+        <span>
+          <span className="mr-1 inline-block size-2 rounded-full bg-emerald-400 align-middle" /> grün = automatisch aus Anzahl/Maßen berechnet · Stunden auch als „1:30“
+        </span>
+        <span className="tabular-nums">
+          Summe {formatEuro(totalNet)} netto · {formatEuro(grossFromNet(totalNet, vat))} brutto
+          {calc.count > 1 ? ` · ${formatEuro(totalNet / calc.count)} netto je Stück` : ""}
+        </span>
+      </div>
+    </div>
   );
 }
 

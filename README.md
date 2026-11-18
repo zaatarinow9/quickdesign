@@ -86,6 +86,12 @@ Projekt entfernt. Der vollständige alte Code bleibt in der Git-Historie erhalte
 | Benutzer | Mitarbeiter einladen (Rollen Administrator/Mitarbeiter), sperren, löschen |
 | Protokoll | Aktivitäten und E-Mail-Versand |
 
+### Preisberechnung im Leistungskatalog
+
+Jede Leistung hat eine **Berechnungsart**: pro Stück, pro Menge (z. B. 130 € je 1.000 Visitenkarten), pro m² (Breite × Höhe × Anzahl), pro lfm, pro Stunde (Eingabe auch als `1:30`) oder pauschal.
+Leistungen lassen sich per **Drag & Drop zu Bausteinen** kombinieren (z. B. „Schild“ = Alu-Dibond + Digitaldruck + Laminat). Im Angebots-/Rechnungseditor werden Maße und Anzahl einmal eingegeben, die Mengen aller Bausteine automatisch berechnet (manuell überschreibbar) und jede Leistung kann auf eine bestehende Position gezogen werden, um sie zu ergänzen.
+Migration: `supabase/migrations/20261118120000_service_pricing.sql` (im Projekt bereits eingespielt).
+
 ### Einrichtung
 
 1. **Datenbank:** Migration `supabase/migrations/20261112100000_admin_crm.sql` ist im Supabase-Projekt **QuickDesign** bereits eingespielt.

@@ -1,5 +1,7 @@
 /** Angebote & Rechnungen: Typen, Bezeichnungen, Berechnung (client- und serverseitig nutzbar). */
 
+import type { ItemCalc } from "./calc";
+
 export type DocumentKind = "angebot" | "rechnung";
 export type VatRate = 0 | 7 | 19;
 export const vatRates: VatRate[] = [19, 7, 0];
@@ -16,6 +18,10 @@ export type DocItem = {
   vat_rate: VatRate;
   /** Wie der Preis eingegeben wurde (nur Anzeige im Editor) */
   price_mode?: "netto" | "brutto";
+  /** Einzelpreis gilt je … Einheiten (z. B. 1000 bei Visitenkarten); Standard 1 */
+  price_per?: number;
+  /** Rechner-Daten (Format, Bausteine) – nur für die erneute Bearbeitung */
+  calc?: ItemCalc;
 };
 
 export const units = ["Stk.", "Pauschal", "Std.", "m²", "lfm", "Satz", "Tag", "Auflage", "Seite", "km"] as const;
@@ -64,8 +70,15 @@ export const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
 export const netFromGross = (gross: number, rate: number) => Math.round(((Number(gross) || 0) / (1 + rate / 100)) * 10000) / 10000;
 export const grossFromNet = (net: number, rate: number) => round2((Number(net) || 0) * (1 + rate / 100));
 
-export function lineNet(item: Pick<DocItem, "quantity" | "unit_price">) {
-  return round2((Number(item.quantity) || 0) * (Number(item.unit_price) || 0));
+export function lineNet(item: Pick<DocItem, "quantity" | "unit_price" | "price_per">) {
+  const per = Number(item.price_per) > 0 ? Number(item.price_per) : 1;
+  return round2(((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)) / per);
+}
+
+/** "130,00 €" bzw. "130,00 € / 1.000" */
+export function formatUnitPrice(item: Pick<DocItem, "unit_price" | "price_per">) {
+  const per = Number(item.price_per) > 0 ? Number(item.price_per) : 1;
+  return per > 1 ? `${formatEuro(item.unit_price)} / ${formatQty(per)}` : formatEuro(item.unit_price);
 }
 
 export type Totals = {

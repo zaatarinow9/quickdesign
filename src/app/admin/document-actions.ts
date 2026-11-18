@@ -45,6 +45,29 @@ const itemSchema = z.object({
   unit_price: z.number({ error: "Ungültiger Preis." }).min(-1_000_000).max(1_000_000),
   vat_rate: z.union([z.literal(19), z.literal(7), z.literal(0)]),
   price_mode: z.enum(["netto", "brutto"]).optional(),
+  price_per: z.number().int().min(1).max(100_000).optional(),
+  calc: z
+    .object({
+      count: z.number().min(0).max(1_000_000),
+      width_cm: z.number().min(0).max(100_000).nullable(),
+      height_cm: z.number().min(0).max(100_000).nullable(),
+      user_details: z.string().max(1500).optional(),
+      parts: z
+        .array(
+          z.object({
+            service_id: uuid.nullable(),
+            name: z.string().trim().min(1, { error: "Jeder Baustein braucht eine Bezeichnung." }).max(200),
+            calc_type: z.enum(["pauschal", "stueck", "menge", "stunde", "flaeche", "laenge"]),
+            price_net: z.number().min(-1_000_000).max(1_000_000),
+            price_per: z.number().int().min(1).max(100_000),
+            qty: z.number().min(0).max(1_000_000),
+            auto: z.boolean(),
+          }),
+        )
+        .min(1)
+        .max(30),
+    })
+    .optional(),
 });
 
 const docSchema = z.object({
@@ -117,7 +140,7 @@ async function ensureCustomer(data: z.infer<typeof docSchema>, actor: string): P
 }
 
 async function bumpServiceUsage(items: DocItem[]) {
-  const ids = [...new Set(items.map((i) => i.service_id).filter((v): v is string => !!v))];
+  const ids = [...new Set(items.flatMap((i) => [i.service_id, ...(i.calc?.parts ?? []).map((p) => p.service_id)]).filter((v): v is string => !!v))];
   if (!ids.length) return;
   const client = db();
   const { data } = await client.from("service_catalog").select("id, usage_count").in("id", ids);
@@ -146,6 +169,8 @@ export async function saveDocument(_prev: ActionState, fd: FormData): Promise<Ac
           unit_price: parseDecimal(i.unit_price as string) ?? Number.NaN,
           vat_rate: Number(i.vat_rate ?? 19),
           price_mode: i.price_mode === "brutto" ? ("brutto" as const) : ("netto" as const),
+          price_per: Number(i.price_per) > 0 ? Math.round(Number(i.price_per)) : 1,
+          calc: i.calc && typeof i.calc === "object" ? (i.calc as DocItem["calc"]) : undefined,
         }))
         .filter((i) => i.description.trim() || i.unit_price)
     : [];
@@ -184,7 +209,13 @@ export async function saveDocument(_prev: ActionState, fd: FormData): Promise<Ac
   if (data.due_date && data.due_date < data.doc_date) return { error: "Das Fälligkeitsdatum liegt vor dem Rechnungsdatum." };
 
   const settings = await getSettings();
-  const cleanItems: DocItem[] = data.items.map((i) => ({ ...i, details: i.details || undefined, vat_rate: settings.tax.smallBusiness ? 0 : i.vat_rate }));
+  const cleanItems: DocItem[] = data.items.map((i) => ({
+    ...i,
+    details: i.details || undefined,
+    price_per: i.price_per && i.price_per > 1 ? i.price_per : undefined,
+    calc: i.calc ?? undefined,
+    vat_rate: settings.tax.smallBusiness ? 0 : i.vat_rate,
+  }));
   const t = computeTotals(cleanItems, data.discount_percent, settings.tax.smallBusiness);
   const client = db();
 

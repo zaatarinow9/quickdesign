@@ -2,6 +2,8 @@ import { BookOpen, Star, Trash2 } from "lucide-react";
 import { requireFullAccess } from "@/lib/auth";
 import { listCatalog } from "@/lib/documents/queries";
 import { formatEuro, grossFromNet } from "@/lib/documents/format";
+import { calcTypeInfo, priceLabel } from "@/lib/documents/calc";
+import { CalcTypeIcon } from "@/components/admin/pricing";
 import { deleteService, toggleServiceFlag } from "@/app/admin/service-actions";
 import { ServiceForm } from "@/components/admin/ServiceForm";
 import { ConfirmSubmit } from "@/components/admin/documents/panels";
@@ -18,10 +20,10 @@ export default async function ServicesPage() {
     <>
       <PageHeader
         title="Leistungskatalog"
-        description="Vordefinierte Leistungen mit Netto- und Bruttopreis. Favoriten erscheinen im Angebots- und Rechnungseditor als Schnellauswahl; die Sortierung passt sich automatisch an die Nutzung an."
+        description="Leistungen und Materialien mit ihrer Berechnungsart (Stück, Menge wie 1.000 Stk., m², lfm, Stunde, pauschal). Bausteine lassen sich per Drag & Drop zu Vorlagen kombinieren – im Angebot werden Mengen und Preise dann automatisch berechnet."
       />
       <Card title="Neue Leistung">
-        <ServiceForm categories={categories} />
+        <ServiceForm categories={categories} catalog={services} />
       </Card>
 
       <Card className="mt-6" title={`${services.length} Leistungen`} padded={false}>
@@ -39,22 +41,32 @@ export default async function ServicesPage() {
                         <Star className={`size-4 ${s.is_favorite ? "fill-amber-400 text-amber-400" : "text-stone-light"}`} aria-hidden />
                       </button>
                     </form>
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ink/[0.04]" title={calcTypeInfo[s.calc_type].label}>
+                      <CalcTypeIcon type={s.calc_type} className="size-4 text-stone-dark" />
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{s.name}</span>
                       <span className="block truncate text-xs text-stone-dark">
-                        {[s.category, s.unit, s.usage_count ? `${s.usage_count}× verwendet` : null].filter(Boolean).join(" · ")}
+                        {[
+                          s.category,
+                          calcTypeInfo[s.calc_type].label,
+                          s.components.length ? `${s.components.length} Bausteine` : null,
+                          s.usage_count ? `${s.usage_count}× verwendet` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     </span>
                     {!s.active ? <Badge>inaktiv</Badge> : null}
                     <span className="text-right text-sm tabular-nums">
-                      <span className="block font-semibold">{formatEuro(s.price_net)} netto</span>
+                      <span className="block font-semibold">{priceLabel(s)} netto</span>
                       <span className="block text-xs text-stone-dark">
                         {formatEuro(grossFromNet(s.price_net, s.vat_rate))} brutto · {s.vat_rate} %
                       </span>
                     </span>
                   </summary>
                   <div className="border-t border-ink/[0.06] bg-[#fbfaf8] px-5 py-5">
-                    <ServiceForm service={s} categories={categories} />
+                    <ServiceForm service={s} categories={categories} catalog={services} />
                     <form action={deleteService} className="mt-4 border-t border-ink/[0.06] pt-4">
                       <input type="hidden" name="id" value={s.id} />
                       <ConfirmSubmit className="adm-btn adm-btn-danger adm-btn-sm" message={`„${s.name}“ aus dem Katalog löschen? Bestehende Angebote/Rechnungen bleiben unverändert.`}>

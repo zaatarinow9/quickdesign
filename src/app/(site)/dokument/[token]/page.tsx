@@ -4,7 +4,7 @@ import { Download, FileText } from "lucide-react";
 import { getAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { getDocumentByToken } from "@/lib/documents/queries";
-import { computeTotals, displayStatus, formatDateDE, formatEuro, formatQty, kindLabels, lineNet, todayBerlin } from "@/lib/documents/format";
+import { computeTotals, displayStatus, formatDateDE, formatEuro, formatQty, formatUnitPrice, kindLabels, lineNet, todayBerlin } from "@/lib/documents/format";
 import { getSettings } from "@/lib/settings/server";
 import { logDocumentEvent } from "@/lib/admin/log";
 import OfferResponse from "@/components/documents/OfferResponse";
@@ -60,7 +60,7 @@ export default async function PublicDocumentPage({ params }: { params: Promise<{
                       <p className="font-medium">{it.description}</p>
                       {it.details ? <p className="mt-1 whitespace-pre-line text-sm text-stone-dark">{it.details}</p> : null}
                       <p className="mt-1 text-sm text-stone">
-                        {formatQty(it.quantity)} {it.unit} × {formatEuro(it.unit_price)}
+                        {formatQty(it.quantity)} {it.unit} × {formatUnitPrice(it)}
                         {!settings.tax.smallBusiness ? ` · ${it.vat_rate} % USt.` : ""}
                       </p>
                     </div>
