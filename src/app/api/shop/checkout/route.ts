@@ -40,7 +40,8 @@ export async function POST(request: Request) {
   const items = price.lines;
   const sh = store.settings.shipping;
   const base = origin(request);
-  const variantName = (l: (typeof items)[number]) => [l.color?.name.de, l.variant.label.de].filter(Boolean).join(" – ");
+  const L = lang === "ar" ? "ar" : "de";
+  const variantName = (l: (typeof items)[number]) => [l.color?.name[L] || l.color?.name.de, l.variant.label[L] || l.variant.label.de].filter(Boolean).join(" – ");
   const days = (d: string) => {
     const [a, b] = d.split(/[–-]/).map((x) => parseInt(x, 10));
     return Number.isFinite(a) ? { minimum: { unit: "business_day", value: a }, maximum: { unit: "business_day", value: Number.isFinite(b) ? b : a } } : undefined;
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
           currency: "eur",
           unit_amount: l.unitCents,
           product_data: {
-            name: `${l.product.name.de} – ${variantName(l)}`,
+            name: `${l.product.name[L] || l.product.name.de} – ${variantName(l)}`,
             description: l.unitPct ? `${l.product.tagline.de || l.product.name.de} · ${l.unitOffer?.de ?? "Rabatt"} (−${l.unitPct} %)` : l.product.tagline.de || undefined,
             metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id },
           },
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
         {
           shipping_rate_data: {
             type: "fixed_amount",
-            display_name: standard.cents ? `Standardversand (${sh.deliveryDays} Werktage)` : `Standardversand – kostenlos (${sh.deliveryDays} Werktage)`,
+            display_name: L === "ar" ? `شحن عادي${standard.cents ? "" : " – مجاني"} (${sh.deliveryDays} أيام عمل)` : standard.cents ? `Standardversand (${sh.deliveryDays} Werktage)` : `Standardversand – kostenlos (${sh.deliveryDays} Werktage)`,
             fixed_amount: { amount: standard.cents, currency: "eur" },
             delivery_estimate: days(sh.deliveryDays),
           },
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
               {
                 shipping_rate_data: {
                   type: "fixed_amount",
-                  display_name: `Express – bevorzugte Produktion (${sh.express.days} Werktage)`,
+                  display_name: L === "ar" ? `شحن سريع – Express (${sh.express.days} أيام عمل)` : `Express – bevorzugte Produktion (${sh.express.days} Werktage)`,
                   fixed_amount: { amount: sh.express.cents, currency: "eur" },
                   delivery_estimate: days(sh.express.days),
                 },
@@ -98,16 +99,22 @@ export async function POST(request: Request) {
             ]
           : []),
         ...(sh.pickup.enabled
-          ? [{ shipping_rate_data: { type: "fixed_amount", display_name: "Kostenlose Abholung – QuickDesign, Saarbrücken", fixed_amount: { amount: 0, currency: "eur" } } }]
+          ? [{ shipping_rate_data: { type: "fixed_amount", display_name: L === "ar" ? "استلام مجاني – Abholung QuickDesign, Saarbrücken" : "Kostenlose Abholung – QuickDesign, Saarbrücken", fixed_amount: { amount: 0, currency: "eur" } } }]
           : []),
       ],
       phone_number_collection: { enabled: true },
       billing_address_collection: "auto",
       locale: lang === "de" ? "de" : "auto",
-      custom_text: {
-        submit: { message: "Mit Ihrer Bestellung akzeptieren Sie unsere AGB und die Widerrufsbelehrung (shop.quickdesign24.de/de/agb)." },
-        shipping_address: { message: "Versand nur innerhalb Deutschlands. Bei Abholung in Saarbrücken bitte trotzdem Ihre Anschrift angeben." },
-      },
+      custom_text:
+        L === "ar"
+          ? {
+              submit: { message: "بإتمام الطلب توافق على الشروط العامة وسياسة الإرجاع (shop.quickdesign24.de/ar/agb)." },
+              shipping_address: { message: "الشحن داخل ألمانيا فقط. عند اختيار الاستلام من زاربروكن يرجى إدخال عنوانك أيضاً." },
+            }
+          : {
+              submit: { message: "Mit Ihrer Bestellung akzeptieren Sie unsere AGB und die Widerrufsbelehrung (shop.quickdesign24.de/de/agb)." },
+              shipping_address: { message: "Versand nur innerhalb Deutschlands. Bei Abholung in Saarbrücken bitte trotzdem Ihre Anschrift angeben." },
+            },
       metadata: {
         lang,
         items: items.map((l) => `${l.qty}x ${l.product.id}/${l.color?.id ?? "-"}/${l.variant.id}`).join("; ").slice(0, 490),

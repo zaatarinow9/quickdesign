@@ -1,20 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { useShop } from "./ShopProvider";
 import { cn } from "@/lib/utils";
 
 export function ShopHeader() {
-  const { t, href, lang, count, setOpen } = useShop();
-  const pathname = usePathname() ?? "";
+  const { t, href, count, setOpen } = useShop();
   const clear = false;
 
-  // Gleiche Seite in der anderen Sprache
-  const other = lang === "de" ? "ar" : "de";
-  const switchHref = /\/(de|ar)(\/|$)/.test(pathname) ? pathname.replace(/\/(de|ar)(\/|$)/, `/${other}$2`) : href().replace(`/${lang}`, `/${other}`);
   const link = cn("rounded-full px-3 py-2 transition-colors", clear ? "text-white/80 hover:text-white" : "text-[var(--muted)] hover:text-[var(--ink)]");
 
   return (
@@ -35,9 +30,6 @@ export function ShopHeader() {
           <a href={`${href()}#geschichte`} className={link}>{t.nav.story}</a>
         </nav>
         <div className="ms-auto flex items-center gap-1 md:ms-3">
-          <Link href={switchHref} hrefLang={other} lang={other} className={cn(link, "text-sm")}>
-            {t.langSwitch}
-          </Link>
           <button
             type="button"
             onClick={() => setOpen(true)}
