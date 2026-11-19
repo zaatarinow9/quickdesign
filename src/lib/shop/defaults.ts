@@ -135,8 +135,15 @@ export const defaultStore: ShopStore = {
     },
     slides: [
       {
-        image: "/shop/photos/umayyaden-moschee-2024.webp",
+        image: "/shop/photos/saahat-al-umawiyin.webp",
         title: { de: "Syrien ist frei.", ar: "سوريا حرّة." },
+        text: { de: "Die Kollektion zum zweiten Jahrestag der Befreiung", ar: "مجموعة الذكرى الثانية للتحرير" },
+        link: "",
+        credit: "",
+      },
+      {
+        image: "/shop/photos/umayyaden-moschee-2024.webp",
+        title: { de: "Zwei Jahre Freiheit", ar: "عامان من الحرية" },
         text: { de: "Zwei Jahre seit dem 8. Dezember 2024", ar: "عامان على الثامن من كانون الأول 2024" },
         link: "",
         credit: "Foto: Wikimedia Commons (gemeinfrei)",
