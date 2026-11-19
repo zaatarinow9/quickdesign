@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    // Produktbilder aus der Shop-Verwaltung (Supabase Storage, öffentlicher Bucket „shop“)
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "https://sdayndvgwhqjsroyqxlg.supabase.co").hostname,
+        pathname: "/storage/v1/object/public/shop/**",
+      },
+    ],
   },
   async redirects() {
     return [

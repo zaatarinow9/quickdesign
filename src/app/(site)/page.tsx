@@ -9,11 +9,13 @@ import FAQ from "@/components/sections/FAQ";
 import FaqJsonLd from "@/components/sections/FaqJsonLd";
 import ColorStory from "@/components/sections/home/ColorStory";
 import PrintlyShowcase from "@/components/sections/PrintlyShowcase";
+import ShopBanner from "@/components/sections/home/ShopBanner";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
+      <ShopBanner />
       <CapabilityBand />
       <ServicesIndex />
       <SelectedWork />

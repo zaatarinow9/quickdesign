@@ -335,3 +335,12 @@
     border-bottom: 0;
   }
 }
+
+/* Tag der Befreiung – Hinweise auf der Hauptseite */
+@keyframes qd-shine { 0%, 60% { transform: translateX(0); } 100% { transform: translateX(400%); } }
+.qd-shine { animation: qd-shine 4.5s ease-in-out infinite; }
+@keyframes qd-float { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-14px) rotate(var(--r, 0deg)); } }
+.qd-float { animation: qd-float 7s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .qd-shine, .qd-float { animation: none; }
+}
