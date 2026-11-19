@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { useLenis } from "@/components/motion/MotionProvider";
 import { services } from "@/content/services";
 import { navigation, printly, site } from "@/content/site";
+import { LiberationChip } from "./LiberationChip";
 import { cn } from "@/lib/utils";
 
 /** Text that rolls upward on hover — the duplicate slides in from below. */
@@ -206,7 +207,7 @@ export default function Header() {
 
           <nav aria-label="Hauptnavigation" className="hidden lg:block">
             <ul className="flex items-center gap-0.5">
-              {navigation.map((item) =>
+              {navigation.filter((item) => !item.href.startsWith("http")).map((item) =>
                 item.href === "/leistungen" ? (
                   <ServicesMenu key={item.href} active={isActive(item.href)} pathname={pathname} />
                 ) : (
@@ -234,6 +235,7 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <LiberationChip className="hidden md:flex" />
             <a
               href={printly.url}
               target="_blank"

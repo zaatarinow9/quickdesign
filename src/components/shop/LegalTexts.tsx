@@ -4,7 +4,7 @@
  * TODO(Inhaber): Kleinunternehmer (§ 19 UStG) ja/nein – Preisangabe in § 4 entsprechend.
  */
 import { site } from "@/content/site";
-import { shipping } from "@/lib/shop/config";
+import type { ShopSettings } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 
 const L = site.legal;
@@ -14,7 +14,8 @@ function H({ children }: { children: React.ReactNode }) {
   return <h2 className="mt-10 text-xl font-semibold text-[var(--ink)]">{children}</h2>;
 }
 
-export function AgbText({ smallBusiness }: { smallBusiness: boolean }) {
+export function AgbText({ smallBusiness, s }: { smallBusiness: boolean; s: ShopSettings }) {
+  const shipping = s.shipping;
   return (
     <>
       <H>§ 1 Geltungsbereich</H>
@@ -36,8 +37,10 @@ export function AgbText({ smallBusiness }: { smallBusiness: boolean }) {
         {smallBusiness
           ? "Alle Preise sind Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet und ausgewiesen."
           : "Alle Preise sind Endpreise und enthalten die gesetzliche Umsatzsteuer."}{" "}
-        Zusätzlich fallen Versandkosten von {money(shipping.standardCents)} innerhalb Deutschlands an; ab einem Warenwert von {money(shipping.freeFromCents)} liefern wir versandkostenfrei. Die
-        Abholung in unserem Ladengeschäft in Saarbrücken ist kostenlos.
+        Zusätzlich fallen Versandkosten von {money(shipping.standardCents)} innerhalb Deutschlands an
+        {shipping.freeFromCents ? <>; ab einem Warenwert von {money(shipping.freeFromCents)} liefern wir versandkostenfrei</> : null}.
+        {shipping.express.enabled ? <> Expressversand mit bevorzugter Produktion kostet {money(shipping.express.cents)} ({shipping.express.days} Werktage).</> : null}
+        {shipping.pickup.enabled ? " Die Abholung in unserem Ladengeschäft in Saarbrücken ist kostenlos." : null}
       </p>
       <H>§ 5 Lieferung</H>
       <p>
@@ -112,7 +115,8 @@ export function WiderrufText() {
   );
 }
 
-export function VersandText({ smallBusiness }: { smallBusiness: boolean }) {
+export function VersandText({ smallBusiness, s }: { smallBusiness: boolean; s: ShopSettings }) {
+  const shipping = s.shipping;
   return (
     <>
       <H>Versandgebiet</H>
@@ -120,16 +124,15 @@ export function VersandText({ smallBusiness }: { smallBusiness: boolean }) {
       <H>Versandkosten</H>
       <ul className="list-disc space-y-1 ps-5">
         <li>Versand innerhalb Deutschlands: {money(shipping.standardCents)}</li>
-        <li>Ab {money(shipping.freeFromCents)} Warenwert: versandkostenfrei</li>
-        <li>
-          Abholung: kostenlos bei QuickDesign, {shipping.pickup.street}, {shipping.pickup.city}
-        </li>
+        {shipping.freeFromCents ? <li>Ab {money(shipping.freeFromCents)} Warenwert: versandkostenfrei</li> : null}
+        {shipping.express.enabled ? <li>Express mit bevorzugter Produktion: {money(shipping.express.cents)} ({shipping.express.days} Werktage)</li> : null}
+        {shipping.pickup.enabled ? <li>Abholung: kostenlos bei {shipping.pickup.address}</li> : null}
       </ul>
       <p className="mt-3">{smallBusiness ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet." : "Alle Preise inkl. gesetzlicher Umsatzsteuer."}</p>
       <H>Lieferzeit</H>
       <p>
         Jedes Teil wird nach Ihrer Bestellung bedruckt. Die Lieferzeit beträgt in der Regel {shipping.deliveryDays} Werktage nach Zahlungseingang. Für eine Lieferung vor dem 8. Dezember
-        bestellen Sie bitte bis zum 2. Dezember.
+        bestellen Sie bitte bis zum {s.campaign.lastOrderDay.split("-").reverse().join(".")}.
       </p>
       <H>Zahlungsarten</H>
       <p>Die Zahlung erfolgt sicher über Stripe. Je nach Verfügbarkeit: Kredit-/Debitkarte, Apple Pay, Google Pay, PayPal und Klarna. Ihre Zahlungsdaten werden ausschließlich von Stripe verarbeitet.</p>

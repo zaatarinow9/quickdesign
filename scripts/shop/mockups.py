@@ -151,6 +151,21 @@ def drop_shadow(bg, mask, soft=22, contact=5, off=(10, 16), amount=(0.30, 0.32))
     return bg * (1 - np.clip(sh, 0, 0.85))[..., None]
 
 
+def place_fit(design, cx, top, maxw, maxh, size=None):
+    """Motiv auf Inhalt zuschneiden und in Box (zentriert, oben bündig) einpassen → (Ebene, Box)"""
+    size = size or S
+    a = design[..., 3]
+    ys, xs = np.where(a > 0.02)
+    d = design[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    sc = min(maxw / d.shape[1], maxh / d.shape[0])
+    w, h = int(d.shape[1] * sc), int(d.shape[0] * sc)
+    d = cv2.resize(d, (w, h), interpolation=cv2.INTER_AREA)
+    canvas = np.zeros((size, size, 4), np.float32)
+    x0, y0 = int(cx - w / 2), int(top)
+    canvas[y0:y0 + h, x0:x0 + w] = d
+    return canvas, (x0, y0, x0 + w, y0 + h)
+
+
 def load_design(name):
     im = Image.open(os.path.join(DESIGNS, f"{name}.png")).convert("RGBA")
     return np.asarray(im, np.float32) / 255.0
@@ -277,7 +292,7 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
         stitches = [path([(298, 872), (500, 880), (702, 872)], K), path([(298, 862), (500, 870), (702, 862)], K),
                     path([(132, 360), (220, 414)], K), path([(868, 360), (780, 414)], K),
                     path([((412, 160), (434, 232), (470, 256), (500, 256)), ((500, 256), (530, 256), (566, 232), (588, 160))], K)]
-        print_box = (500 * K - 165 * K, 292 * K, 330 * K)
+        print_box = (500 * K, 262 * K, 390 * K, 390 * K)
     else:
         face = [((404, 176), (420, 230), (462, 276), (500, 282)), ((500, 282), (538, 276), (580, 230), (596, 176)),
                 ((596, 176), (580, 128), (540, 108), (500, 106)), ((500, 106), (460, 108), (420, 128), (404, 176))]
@@ -300,14 +315,14 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
         for a, b in (((340, 600), (300, 784)), ((660, 600), (700, 784))):
             col *= (1 - line_mask(path([a, b], K), 12, blur_px=5) * 0.28)[..., None]
         stitches = [path([(344, 612), (656, 612)], K), path([(300, 790), (700, 790)], K)]
-        print_box = (500 * K - 125 * K, 384 * K, 250 * K)
+        print_box = (500 * K, 352 * K, 300 * K, 232 * K)
 
     for st in stitches:
         col *= (1 + (seam_tone - 1) * dashed(st, 3.0, 12, 8))[..., None]
 
     # --- Druck (Plastisol/DTF): folgt den Falten, leichte Stoffstruktur
     if design_name:
-        pr = place(load_design(design_name), print_box)
+        pr, pbox = place_fit(load_design(design_name), *print_box)
         gy, gx = np.gradient(H)
         pr = remap(pr, gx * 2.0, gy * 2.0)
         a = pr[..., 3] * mask * np.clip(0.93 + knit * 0.05, 0, 1)
@@ -329,15 +344,29 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
             cv2.circle(ring, (int(x0 * K), int((y0 - 6) * K)), int(12 * K), 1, int(5 * K))
             ring = blur(ring, 1)
             col = col * (1 - ring[..., None]) + ring[..., None] * hex2rgb("#a9a59c")
-    return np.clip(col, 0, 1), mask
+    return np.clip(col, 0, 1), mask, (pbox if design_name else None)
 
 
-def product_shot(kind, fabric, design, name, seed=1, bg="#ece8e0"):
-    col, mask = garment(kind, fabric, design, seed)
+def product_shot(kind, fabric, design, name, seed=1, bg="#ece8e0", angle=-6.0):
+    col, mask, pbox = garment(kind, fabric, design, seed)
+    # Nahaufnahme des Motivs (ungedreht, volle Auflösung)
     back = surface("linen", bg)
-    back = drop_shadow(back, mask, soft=26, contact=5, off=(8, 14), amount=(0.22, 0.30))
-    out = back * (1 - mask[..., None]) + col * mask[..., None]
-    out = zoom(out, 0.9, bg)
+    flat = drop_shadow(back, mask, soft=26, contact=5, off=(8, 14), amount=(0.22, 0.30))
+    flat = flat * (1 - mask[..., None]) + col * mask[..., None]
+    if pbox:
+        x0, y0, x1, y1 = pbox
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        half = max(x1 - x0, y1 - y0) * 0.66
+        a, b = int(max(0, cx - half)), int(max(0, cy - half))
+        crop = flat[b:int(min(S, cy + half)), a:int(min(S, cx + half))]
+        save(cv2.resize(crop, (S, S), interpolation=cv2.INTER_CUBIC), f"{name}-detail")
+    # Hauptbild: leicht gedreht, natürlich gelegt
+    M = cv2.getRotationMatrix2D((S / 2, S / 2), angle, 1.04)
+    col_r = cv2.warpAffine(col, M, (S, S), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+    mask_r = cv2.warpAffine(mask, M, (S, S), flags=cv2.INTER_LINEAR)
+    back = surface("linen", bg)
+    back = drop_shadow(back, mask_r, soft=30, contact=5, off=(14, 22), amount=(0.24, 0.30))
+    out = back * (1 - mask_r[..., None]) + col_r * mask_r[..., None]
     save(out, name)
 
 
@@ -352,14 +381,13 @@ def zoom(img, f, bg="#ece8e0"):
 
 # ----------------------------------------------------------------------------- Fahne
 
-def flag_shot(name="fahne", bg="#ebe6dc"):
+def flag_shot(name="fahne", bg="#ebe6dc", W=1400, x0=360, y0=430, pole_r=18, pole_top=300, knob=True):
     global rng
     rng = np.random.default_rng(5)
     d = load_design("fahne")
-    W, Hh = 1400, 933
+    Hh = int(W * 2 / 3)
     flag = cv2.resize(d, (W, Hh), interpolation=cv2.INTER_AREA)
     canvas = np.zeros((S, S, 4), np.float32)
-    x0, y0 = 360, 430
     canvas[y0:y0 + Hh, x0:x0 + W] = flag
     yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
     u = np.clip((xx - x0) / W, 0, 1.2)
@@ -378,19 +406,71 @@ def flag_shot(name="fahne", bg="#ebe6dc"):
     back = drop_shadow(back, a, soft=40, off=(30, 60), amount=(0.22, 0.0))
     out = back * (1 - a[..., None]) + np.clip(col, 0, 1) * a[..., None]
     # Mast
-    px = x0 - 26
+    px = x0 - pole_r - 8
     pole = np.zeros((S, S), np.float32)
-    pole[300:1900, px - 18:px + 18] = 1
+    pole[pole_top:1900, px - pole_r:px + pole_r] = 1
     pole = blur(pole, 1.2)
-    cyl = np.clip(np.cos((np.arange(S, dtype=np.float32) - px) / 18 * 1.3), 0, 1)
+    cyl = np.clip(np.cos((np.arange(S, dtype=np.float32) - px) / pole_r * 1.3), 0, 1)
     pcol = hex2rgb("#8a6a43")[None, None, :] * (0.55 + 0.6 * cyl[None, :, None]) + (cyl[None, :, None] ** 12) * 0.25
     back2 = drop_shadow(out, pole, soft=14, off=(18, 10), amount=(0.25, 0.0))
     out = back2 * (1 - pole[..., None]) + pcol * pole[..., None]
-    knob = np.zeros((S, S), np.float32)
-    cv2.circle(knob, (px, 296), 28, 1, -1)
-    knob = blur(knob, 1.2)
-    out = out * (1 - knob[..., None]) + knob[..., None] * hex2rgb("#c9a24f") * 1.05
+    if knob:
+        kn = np.zeros((S, S), np.float32)
+        cv2.circle(kn, (px, pole_top - 4), int(pole_r * 1.55), 1, -1)
+        kn = blur(kn, 1.2)
+        out = out * (1 - kn[..., None]) + kn[..., None] * hex2rgb("#c9a24f") * 1.05
     save(out, name)
+
+
+def flag_wall_shot(name="fahne-gross"):
+    """Große Fahne mit Ösen an der Wand"""
+    global rng
+    rng = np.random.default_rng(13)
+    d = load_design("fahne")
+    W = 1760
+    Hh = int(W * 2 / 3)
+    f = cv2.resize(d, (W, Hh), interpolation=cv2.INTER_AREA)[..., :3]
+    wall = surface("paper", "#e9e5dd")
+    wall *= (1 + noise((S, S), 2) * 0.02 + noise((S, S), 12) * 0.015)[..., None]
+    x0, y0 = (S - W) // 2, (S - Hh) // 2
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    u = np.clip((xx - x0) / W, 0, 1)
+    v = np.clip((yy - y0) / Hh, 0, 1)
+    # leichte Stofffalten zwischen den Aufhängepunkten
+    hgt = np.sin(u * np.pi * 6) * 0.6 * (v ** 1.3) + np.sin(v * np.pi * 3 + u * 2) * 0.25
+    dy = hgt * 6
+    canvas = np.zeros((S, S, 3), np.float32)
+    canvas[y0:y0 + Hh, x0:x0 + W] = f
+    mask = np.zeros((S, S), np.float32)
+    mask[y0:y0 + Hh, x0:x0 + W] = 1
+    canvas = remap(canvas, np.zeros_like(dy), dy)
+    mask = blur(remap(mask, np.zeros_like(dy), dy), 1)
+    gy, gx = np.gradient(hgt)
+    shade = 1 + (gx * 40 + gy * 20) * 0.5
+    weave = noise((S, S), 0.7) * 0.02
+    col = canvas * shade[..., None] * (1 + weave[..., None])
+    wall = drop_shadow(wall, mask, soft=24, off=(12, 20), amount=(0.26, 0.2))
+    out = wall * (1 - mask[..., None]) + np.clip(col, 0, 1) * mask[..., None]
+    for ex, ey in [(x0 + 36, y0 + 36), (x0 + W // 2, y0 + 36), (x0 + W - 36, y0 + 36)]:
+        ring = np.zeros((S, S), np.float32)
+        cv2.circle(ring, (ex, ey), 17, 1, 7)
+        ring = blur(ring, 0.8)
+        hole = np.zeros((S, S), np.float32)
+        cv2.circle(hole, (ex, ey), 11, 1, -1)
+        out = out * (1 - hole[..., None]) + hole[..., None] * hex2rgb("#cfc9be") * 0.85
+        metal = 0.62 + 0.38 * np.clip(-((xx - ex) + (yy - ey)) / 24, -1, 1)
+        out = out * (1 - ring[..., None]) + ring[..., None] * (hex2rgb("#c4c4c0") * metal[..., None])
+    save(out, name)
+
+
+def crop_detail(src, name, box):
+    """Quadratische Nahaufnahme aus einem fertigen Bild (box: Mitte x, Mitte y, Kantenlänge – Anteile 0–1)"""
+    im = np.asarray(Image.open(os.path.join(OUT, f"{src}.webp")).convert("RGB"), np.float32) / 255
+    h, w = im.shape[:2]
+    cx, cy, size = box
+    x0, y0 = int((cx - size / 2) * w), int((cy - size / 2) * h)
+    x1, y1 = x0 + int(size * w), y0 + int(size * h)
+    save(cv2.resize(im[y0:y1, x0:x1], (S, S), interpolation=cv2.INTER_CUBIC), name)
 
 
 # ----------------------------------------------------------------------------- Banner
@@ -532,12 +612,17 @@ if __name__ == "__main__":
     only = sys.argv[1:]
     for i, (n, k, f, d) in enumerate(TEXTILES):
         if not only or n in only:
-            product_shot(k, f, d, n, seed=i + 1)
+            product_shot(k, f, d, n, seed=i + 1, angle=(-7, 6, -5, 7, -6, 5, -8)[i % 7])
     if not only or "fahne" in only:
         flag_shot()
+        flag_shot("fahne-hand", W=1000, x0=640, y0=560, pole_r=8, pole_top=470, knob=False)
+        flag_wall_shot()
     if not only or "banner" in only:
         banner_shot()
     if not only or "folie" in only:
         foil_shot()
     if not only or "sticker" in only:
         sticker_shot()
+    if not only or "details" in only:
+        crop_detail("banner", "banner-detail", (0.62, 0.5, 0.42))
+        crop_detail("folie", "folie-detail", (0.5, 0.5, 0.56))

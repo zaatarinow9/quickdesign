@@ -70,7 +70,12 @@ Der Shop liegt im selben Projekt unter `src/app/shop/[lang]/…` (Deutsch `/de`,
   PayPal, Klarna) werden im Stripe-Dashboard aktiviert. Ohne Schlüssel zeigt der Warenkorb einen Hinweis „Zahlung nicht aktiviert“.
 - **Webhook**: `https://shop.quickdesign24.de/api/stripe/webhook` mit den Events `checkout.session.completed` und
   `checkout.session.async_payment_succeeded` → Bestellung in `shop_orders`, E-Mail an Inhaber und Kunde.
-- **Verwaltung**: `/admin/shop`.
+- **Shop-Verwaltung (getrennt von /admin)**: `shop.quickdesign24.de/admin` (in Previews `/shop-admin`).
+  Eigener Zugang: Supabase-Konto mit `app_metadata.shop_admin = true` (E-Mail steht zusätzlich in `auth_allowlist`).
+  Produkte, Größen/Formate mit Preis und Bild, Farben, Galerie, Angebote (Pakete, 2 + 1, Mengenrabatt, Aktionen),
+  Versand/Express/Abholung, Vorbestellrabatt, Hero- und Geschichte-Inhalte, Bestellungen.
+- **Daten**: `public.shop_store` (ein geprüftes JSON-Dokument, Verlauf in `shop_store_history`), Bilder im Supabase-Bucket `shop`.
+  Solange nichts gespeichert ist, gelten die Startdaten aus `src/lib/shop/defaults.ts`.
 - **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (als „Sensitive“ in Vercel, nie im Code).
 - **DNS**: `shop` CNAME → `cname.vercel-dns.com` (bei Hostinger), Domain im Vercel-Projekt hinzufügen.
 

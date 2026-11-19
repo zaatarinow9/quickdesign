@@ -58,5 +58,5 @@ export const navigation = [
   { href: "/ueber-uns", label: "Über uns" },
   { href: "/kontakt", label: "Kontakt" },
   // Shop läuft auf eigener Subdomain (gleiches Projekt, siehe src/proxy.ts)
-  { href: "https://shop.quickdesign24.de", label: "Shop" },
+  { href: "https://shop.quickdesign24.de", label: "8.12. Shop" },
 ] as const;

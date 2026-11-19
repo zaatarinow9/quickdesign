@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveLine } from "@/lib/shop/catalog";
-import { isLang, offers, shipping, SHOP_HOSTS, SHOP_URL, shopLimits } from "@/lib/shop/config";
+import { isLang, SHOP_HOSTS, SHOP_URL } from "@/lib/shop/config";
+import { resolveLine } from "@/lib/shop/schema";
+import { getStore } from "@/lib/shop/store";
+import { priceCart } from "@/lib/shop/pricing";
 import { createCheckoutSession, createCoupon, isStripeConfigured } from "@/lib/shop/stripe";
-import { priceLines } from "@/lib/shop/pricing";
 import { clientIpHash, rateLimit } from "@/lib/security";
 
 const schema = z.object({
   lang: z.string(),
   items: z
-    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(20), qty: z.number().int().min(1).max(shopLimits.maxQtyPerLine) }))
+    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(30), qty: z.number().int().min(1).max(1000) }))
     .min(1)
-    .max(shopLimits.maxLines),
+    .max(40),
 });
 
 /** Rückkehr-Adresse: Shop-Subdomain in Produktion, sonst aktuelle Vorschau-Domain + /shop */
@@ -23,7 +24,7 @@ function origin(request: Request) {
   return `${proto}://${host}${SHOP_HOSTS.includes(bare) ? "" : "/shop"}`;
 }
 
-/** Stripe-Checkout erstellen – Preise ausschließlich aus dem Katalog */
+/** Stripe-Checkout erstellen – Preise und Angebote ausschließlich aus dem Shop-Stand des Servers */
 export async function POST(request: Request) {
   if (!isStripeConfigured()) return NextResponse.json({ error: "disabled" }, { status: 503 });
   const ip = await clientIpHash();
@@ -32,22 +33,35 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const lang = isLang(parsed.data.lang) ? parsed.data.lang : "de";
-  const lines = parsed.data.items.map(resolveLine);
-  if (lines.some((l) => !l)) return NextResponse.json({ error: "invalid" }, { status: 400 });
-  const price = priceLines(lines.filter((l): l is NonNullable<typeof l> => !!l));
+  const store = await getStore();
+  const resolved = parsed.data.items.map((l) => resolveLine(store, l));
+  if (resolved.some((l) => !l)) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  const price = priceCart(store, resolved.filter((l): l is NonNullable<typeof l> => !!l));
   const items = price.lines;
-  const shippingCents = price.shippingCents;
+  const sh = store.settings.shipping;
   const base = origin(request);
   const variantName = (l: (typeof items)[number]) => [l.color?.name.de, l.variant.label.de].filter(Boolean).join(" – ");
+  const days = (d: string) => {
+    const [a, b] = d.split(/[–-]/).map((x) => parseInt(x, 10));
+    return Number.isFinite(a) ? { minimum: { unit: "business_day", value: a }, maximum: { unit: "business_day", value: Number.isFinite(b) ? b : a } } : undefined;
+  };
 
   try {
-    // Angebot 2 + 1 als einmaliger Rabatt (Mengenrabatte stecken bereits im Stückpreis)
-    const coupon = price.bundleCents
-      ? await createCoupon({ amount_off: price.bundleCents, currency: "eur", duration: "once", max_redemptions: 1, name: `Angebot 2 + 1 (${price.bundleItems}× ${offers.bundle.pct} %)` })
+    // Paket- und Vorbestellrabatte als einmaliger Gutschein (Stückpreis-Rabatte stecken bereits im Preis)
+    const coupon = price.cartDiscountCents
+      ? await createCoupon({
+          amount_off: price.cartDiscountCents,
+          currency: "eur",
+          duration: "once",
+          max_redemptions: 1,
+          name: price.discounts.map((d) => d.label.de).join(" + ").slice(0, 40),
+        })
       : null;
+
+    const standard = price.shipping.find((x) => x.id === "standard")!;
     const session = await createCheckoutSession({
-      discounts: coupon ? [{ coupon: coupon.id }] : undefined,
       mode: "payment",
+      discounts: coupon ? [{ coupon: coupon.id }] : undefined,
       // Zahlarten (Karte, Apple Pay, Google Pay, PayPal, Klarna …) kommen aus dem Stripe-Dashboard
       line_items: items.map((l) => ({
         quantity: l.qty,
@@ -56,28 +70,36 @@ export async function POST(request: Request) {
           unit_amount: l.unitCents,
           product_data: {
             name: `${l.product.name.de} – ${variantName(l)}`,
-            description: l.tierPct ? `${l.product.tagline.de} · Mengenrabatt ${l.tierPct} %` : l.product.tagline.de,
-            metadata: { slug: l.product.slug, color: l.color?.id ?? "", size: l.variant.id },
+            description: l.unitPct ? `${l.product.tagline.de || l.product.name.de} · ${l.unitOffer?.de ?? "Rabatt"} (−${l.unitPct} %)` : l.product.tagline.de || undefined,
+            metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id },
           },
         },
       })),
-      shipping_address_collection: { allowed_countries: [...shipping.countries] },
+      shipping_address_collection: { allowed_countries: ["DE"] },
       shipping_options: [
         {
           shipping_rate_data: {
             type: "fixed_amount",
-            display_name: shippingCents ? "Versand innerhalb Deutschlands" : "Versand innerhalb Deutschlands (kostenlos)",
-            fixed_amount: { amount: shippingCents, currency: "eur" },
-            delivery_estimate: { minimum: { unit: "business_day", value: 3 }, maximum: { unit: "business_day", value: 5 } },
+            display_name: standard.cents ? `Standardversand (${sh.deliveryDays} Werktage)` : `Standardversand – kostenlos (${sh.deliveryDays} Werktage)`,
+            fixed_amount: { amount: standard.cents, currency: "eur" },
+            delivery_estimate: days(sh.deliveryDays),
           },
         },
-        {
-          shipping_rate_data: {
-            type: "fixed_amount",
-            display_name: "Kostenlose Abholung – QuickDesign, Saarbrücken",
-            fixed_amount: { amount: 0, currency: "eur" },
-          },
-        },
+        ...(sh.express.enabled
+          ? [
+              {
+                shipping_rate_data: {
+                  type: "fixed_amount",
+                  display_name: `Express – bevorzugte Produktion (${sh.express.days} Werktage)`,
+                  fixed_amount: { amount: sh.express.cents, currency: "eur" },
+                  delivery_estimate: days(sh.express.days),
+                },
+              },
+            ]
+          : []),
+        ...(sh.pickup.enabled
+          ? [{ shipping_rate_data: { type: "fixed_amount", display_name: "Kostenlose Abholung – QuickDesign, Saarbrücken", fixed_amount: { amount: 0, currency: "eur" } } }]
+          : []),
       ],
       phone_number_collection: { enabled: true },
       billing_address_collection: "auto",
@@ -88,8 +110,8 @@ export async function POST(request: Request) {
       },
       metadata: {
         lang,
-        items: items.map((l) => `${l.qty}x ${l.product.slug}/${l.color?.id ?? "-"}/${l.variant.id}`).join("; ").slice(0, 490),
-        bundle_cents: String(price.bundleCents),
+        items: items.map((l) => `${l.qty}x ${l.product.id}/${l.color?.id ?? "-"}/${l.variant.id}`).join("; ").slice(0, 490),
+        discounts: price.discounts.map((d) => `${d.id}:${d.cents}`).join(";").slice(0, 490),
       },
       success_url: `${base}/${lang}/danke?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/${lang}`,

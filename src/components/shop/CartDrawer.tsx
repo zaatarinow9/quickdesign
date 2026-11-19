@@ -5,15 +5,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, Minus, Plus, X } from "lucide-react";
-import { imageOf, resolveLine, type ResolvedLine } from "@/lib/shop/catalog";
-import { offers, whatsappNumber } from "@/lib/shop/config";
+import { imageOf, resolveLine, type ResolvedLine } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
-import { priceLines } from "@/lib/shop/pricing";
+import { priceCart } from "@/lib/shop/pricing";
 import { useShop } from "./ShopProvider";
 
 export function CartDrawer() {
-  const { t, lang, lines, open, setOpen, setQty, remove, href } = useShop();
+  const { t, lang, lines, open, setOpen, setQty, remove, href, store } = useShop();
   const [state, setState] = useState<"idle" | "loading" | "disabled" | "error">("idle");
 
   useEffect(() => {
@@ -28,12 +27,13 @@ export function CartDrawer() {
   }, [open, setOpen]);
 
   const rows = useMemo(
-    () => lines.map((l, i) => ({ i, l, r: resolveLine(l) })).filter((x): x is { i: number; l: (typeof lines)[number]; r: ResolvedLine } => !!x.r),
-    [lines],
+    () => lines.map((l, i) => ({ i, l, r: resolveLine(store, l) })).filter((x): x is { i: number; l: (typeof lines)[number]; r: ResolvedLine } => !!x.r),
+    [lines, store],
   );
-  const price = useMemo(() => priceLines(rows.map((x) => x.r)), [rows]);
-  const progress = Math.min(100, (price.total / (price.total + price.freeShippingMissing || 1)) * 100);
-  const textileCount = rows.filter((x) => x.r.product.category === "textil").reduce((s, x) => s + x.r.qty, 0);
+  // eslint-disable-next-line react-hooks/purity -- Aktionen hängen vom aktuellen Datum ab
+  const price = useMemo(() => priceCart(store, rows.map((x) => x.r), Date.now()), [rows, store]);
+  const missing = price.freeShippingMissing;
+  const progress = missing === null ? 0 : Math.min(100, (price.total / (price.total + missing || 1)) * 100);
 
   const checkout = async () => {
     setState("loading");
@@ -55,7 +55,7 @@ export function CartDrawer() {
   };
 
   const describe = (r: ResolvedLine) => [r.color?.name[lang], r.variant.label[lang]].filter(Boolean).join(" · ");
-  const waText = encodeURIComponent(`${t.groups.message}\n\n${rows.map(({ r }) => `• ${r.qty}× ${r.product.name[lang]} – ${describe(r)}`).join("\n")}`);
+  const waText = encodeURIComponent(`${t.product.whatsappMsg}\n\n${rows.map(({ r }) => `• ${r.qty}× ${r.product.name[lang]} – ${describe(r)}`).join("\n")}`);
   const side = lang === "ar" ? "-100%" : "100%";
 
   return (
@@ -88,25 +88,28 @@ export function CartDrawer() {
             {rows.length ? (
               <>
                 <div className="space-y-2 border-b border-[var(--line)] px-5 py-4 text-sm">
-                  <p className="text-[var(--muted)]">{price.freeShippingMissing ? fill(t.cart.freeHint, { amount: money(price.freeShippingMissing) }) : t.cart.freeReached}</p>
-                  <div className="h-1 overflow-hidden rounded-full bg-[var(--line)]">
-                    <div className="h-full rounded-full bg-[var(--green)] transition-[width] duration-500" style={{ width: `${progress}%` }} />
-                  </div>
-                  {textileCount > 0 && price.textileToNext > 0 ? (
-                    <p className="pt-1 text-[var(--muted)]">
-                      <span className="ltr-num me-1.5 rounded bg-[var(--green)] px-1.5 py-0.5 text-xs font-medium text-white">2 + 1</span>
-                      {fill(price.textileToNext === 1 ? t.cart.bundleHint : t.cart.bundleHintMany, { n: price.textileToNext, pct: offers.bundle.pct })}
-                    </p>
+                  {missing !== null ? (
+                    <>
+                      <p className="text-[var(--muted)]">{missing ? fill(t.cart.freeHint, { amount: money(missing) }) : t.cart.freeReached}</p>
+                      <div className="h-1 overflow-hidden rounded-full bg-[var(--line)]">
+                        <div className="h-full rounded-full bg-[var(--green)] transition-[width] duration-500" style={{ width: `${progress}%` }} />
+                      </div>
+                    </>
                   ) : null}
+                  {price.hints.map((h) => (
+                    <p key={h.label.de} className="pt-1 text-[var(--green)]">
+                      {fill(t.cart.hint, { n: h.missing, offer: h.label[lang] || h.label.de })}
+                    </p>
+                  ))}
                 </div>
 
                 <ul className="flex-1 divide-y divide-[var(--line)] overflow-y-auto px-5">
                   {rows.map(({ i, r }, k) => {
                     const pl = price.lines[k];
                     return (
-                      <li key={`${r.product.slug}-${r.color?.id}-${r.variant.id}`} className="flex gap-4 py-4">
-                        <Link href={href(`/produkt/${r.product.slug}`)} onClick={() => setOpen(false)} className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-[var(--paper-2)]">
-                          <Image src={imageOf(r.product, r.color?.id)} alt="" fill sizes="80px" className="object-cover" />
+                      <li key={`${r.product.id}-${r.color?.id}-${r.variant.id}`} className="flex gap-4 py-4">
+                        <Link href={href(`/produkt/${r.product.id}`)} onClick={() => setOpen(false)} className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-[var(--paper-2)]">
+                          <Image src={imageOf(r.product, r.color?.id, r.product.category === "textil" ? undefined : r.variant.id)} alt="" fill sizes="80px" className="object-cover" />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-3">
@@ -127,7 +130,7 @@ export function CartDrawer() {
                               </button>
                             </div>
                             <p className="flex items-baseline gap-2 text-sm">
-                              {pl.tierPct ? <span className="ltr-num text-[var(--muted)] line-through">{money(pl.listCents * r.qty)}</span> : null}
+                              {pl.unitPct ? <span className="ltr-num text-[var(--muted)] line-through">{money(pl.listCents * r.qty)}</span> : null}
                               <span className="ltr-num">{money(pl.unitCents * r.qty)}</span>
                             </p>
                           </div>
@@ -143,21 +146,21 @@ export function CartDrawer() {
                       <dt className="text-[var(--muted)]">{t.cart.subtotal}</dt>
                       <dd className="ltr-num">{money(price.listTotal)}</dd>
                     </div>
-                    {price.tierSavings ? (
-                      <div className="flex justify-between text-[var(--green)]">
-                        <dt>{t.cart.tierSavings}</dt>
-                        <dd className="ltr-num">−{money(price.tierSavings)}</dd>
+                    {price.unitSavings ? (
+                      <div className="flex justify-between gap-4 text-[var(--green)]">
+                        <dt>{t.cart.unitSavings}</dt>
+                        <dd className="ltr-num">−{money(price.unitSavings)}</dd>
                       </div>
                     ) : null}
-                    {price.bundleCents ? (
-                      <div className="flex justify-between text-[var(--green)]">
-                        <dt>{t.cart.bundle}</dt>
-                        <dd className="ltr-num">−{money(price.bundleCents)}</dd>
+                    {price.discounts.map((d) => (
+                      <div key={d.id} className="flex justify-between gap-4 text-[var(--green)]">
+                        <dt>{d.label[lang] || d.label.de}</dt>
+                        <dd className="ltr-num shrink-0">−{money(d.cents)}</dd>
                       </div>
-                    ) : null}
-                    <div className="flex justify-between">
+                    ))}
+                    <div className="flex justify-between gap-4">
                       <dt className="text-[var(--muted)]">{t.cart.shipping}</dt>
-                      <dd className="text-[var(--muted)]">{price.shippingCents ? t.cart.shippingCalc : t.cart.freeReached}</dd>
+                      <dd className="text-end text-xs text-[var(--muted)]">{t.cart.shippingCalc}</dd>
                     </div>
                     <div className="flex justify-between border-t border-[var(--line)] pt-2.5 text-base font-medium">
                       <dt>{t.cart.total}</dt>
@@ -168,7 +171,7 @@ export function CartDrawer() {
                   {state === "disabled" || state === "error" ? (
                     <div className="mt-4 rounded-xl bg-[var(--card)] p-4 text-sm leading-relaxed ring-1 ring-[var(--line)]">
                       <p>{state === "disabled" ? t.cart.disabled : t.cart.error}</p>
-                      <a href={`https://wa.me/${whatsappNumber}?text=${waText}`} target="_blank" rel="noopener" className="mt-2 inline-block font-medium text-[var(--green)] underline underline-offset-4">
+                      <a href={`https://wa.me/${store.settings.whatsapp}?text=${waText}`} target="_blank" rel="noopener" className="mt-2 inline-block font-medium text-[var(--green)] underline underline-offset-4">
                         WhatsApp
                       </a>
                     </div>

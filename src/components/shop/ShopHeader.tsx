@@ -1,40 +1,56 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { useShop } from "./ShopProvider";
+import { cn } from "@/lib/utils";
 
 export function ShopHeader() {
   const { t, href, lang, count, setOpen } = useShop();
   const pathname = usePathname() ?? "";
+  const isHome = /^(\/shop)?\/(de|ar)\/?$/.test(pathname);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 40);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
+  const clear = isHome && !scrolled;
+
   // Gleiche Seite in der anderen Sprache
   const other = lang === "de" ? "ar" : "de";
   const switchHref = /\/(de|ar)(\/|$)/.test(pathname) ? pathname.replace(/\/(de|ar)(\/|$)/, `/${other}$2`) : href().replace(`/${lang}`, `/${other}`);
-  const link = "rounded-full px-3 py-2 text-[var(--muted)] transition-colors hover:text-[var(--ink)]";
+  const link = cn("rounded-full px-3 py-2 transition-colors", clear ? "text-white/80 hover:text-white" : "text-[var(--muted)] hover:text-[var(--ink)]");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/90 backdrop-blur-md">
+    <header
+      className={cn(
+        "sticky top-0 z-40 transition-[background-color,border-color,color] duration-500",
+        clear ? "border-b border-transparent bg-transparent text-white" : "border-b border-[var(--line)] bg-[var(--paper)]/90 text-[var(--ink)] backdrop-blur-md",
+      )}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link href={href()} className="flex shrink-0 items-center gap-3 text-[var(--ink)]" aria-label="QuickDesign Shop">
+        <Link href={href()} className="flex shrink-0 items-center gap-3" aria-label="QuickDesign Shop">
           <Logo className="w-[104px]" />
-          <span className="hidden h-5 w-px bg-[var(--line)] sm:block" />
-          <span className="ltr-num hidden text-sm text-[var(--muted)] sm:block">8.12.</span>
+          <span className={cn("hidden h-5 w-px sm:block", clear ? "bg-white/30" : "bg-[var(--line)]")} />
+          <span className={cn("ltr-num hidden text-sm sm:block", clear ? "text-white/80" : "text-[var(--muted)]")}>8.12.</span>
         </Link>
         <nav className="ms-auto hidden items-center text-[0.95rem] md:flex" aria-label="Shop">
-          <a href={`${href()}#textil`} className={link}>{t.nav.textil}</a>
-          <a href={`${href()}#druck`} className={link}>{t.nav.druck}</a>
-          <a href={`${href()}#gruppen`} className={link}>{t.nav.groups}</a>
+          <a href={`${href()}#kollektion`} className={link}>{t.nav.collection}</a>
+          <a href={`${href()}#geschichte`} className={link}>{t.nav.story}</a>
         </nav>
         <div className="ms-auto flex items-center gap-1 md:ms-3">
-          <Link href={switchHref} hrefLang={other} lang={other} className="rounded-full px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+          <Link href={switchHref} hrefLang={other} lang={other} className={cn(link, "text-sm")}>
             {t.langSwitch}
           </Link>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="relative grid size-10 place-items-center rounded-full text-[var(--ink)] transition-colors hover:bg-[var(--paper-2)]"
+            className={cn("relative grid size-10 place-items-center rounded-full transition-colors", clear ? "hover:bg-white/10" : "hover:bg-[var(--paper-2)]")}
             aria-label={`${t.nav.cart} (${count})`}
           >
             <ShoppingBag className="size-5" strokeWidth={1.6} aria-hidden />

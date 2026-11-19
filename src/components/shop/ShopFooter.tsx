@@ -3,16 +3,19 @@ import { Logo } from "@/components/brand/Logo";
 import type { Lang } from "@/lib/shop/config";
 import type { ShopDict } from "@/lib/shop/i18n";
 
-export function ShopFooter({ t, base, lang }: { t: ShopDict; base: string; lang: Lang }) {
+export function ShopFooter({ t, base, lang, whatsapp }: { t: ShopDict; base: string; lang: Lang; whatsapp: string }) {
   const h = (p: string) => `${base}/${lang}${p}`;
   const main = "https://quickdesign24.de";
   const a = "hover:text-[var(--ink)]";
   return (
-    <footer className="mt-24 border-t border-[var(--line)] text-sm text-[var(--muted)]">
+    <footer className="border-t border-[var(--line)] text-sm text-[var(--muted)]">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo className="w-[120px] text-[var(--ink)]" />
           <p className="mt-4 max-w-xs">{t.footer.note}</p>
+          <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--green)] px-4 py-2 text-white hover:brightness-110">
+            {t.footer.special}
+          </a>
         </div>
         <div>
           <p className="mb-3 font-medium text-[var(--ink)]">{t.footer.legal}</p>
