@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return {
     title: p.name[lang],
     description: p.description[lang],
-    alternates: { canonical: `/${lang}/produkt/${slug}`, languages: { de: `/de/produkt/${slug}`, ar: `/ar/produkt/${slug}` } },
+    alternates: { canonical: `/ar/produkt/${slug}` },
     openGraph: { images: imageOf(p) ? [{ url: imageOf(p), width: 1200, height: 1200 }] : [] },
   };
 }

@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const ship = session.collected_information?.shipping_details ?? session.shipping_details ?? null;
   const rate = session.shipping_cost?.shipping_rate;
   const shippingMethod = typeof rate === "object" && rate?.display_name ? rate.display_name : (session.shipping_cost?.amount_total ? "Versand" : "Abholung / kostenloser Versand");
-  const pickup = /abholung/i.test(shippingMethod);
+  const pickup = /abholung|استلام/i.test(shippingMethod);
   const lang = session.metadata?.lang === "ar" ? "ar" : "de";
   const items = (session.line_items?.data ?? []).map((l) => ({ description: l.description, quantity: l.quantity, amount: l.amount_total }));
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { dirOf, isLang, langs, SHOP_URL } from "@/lib/shop/config";
+import { notFound, redirect } from "next/navigation";
+import { dirOf, isLang, SHOP_URL } from "@/lib/shop/config";
 import { dict, fill } from "@/lib/shop/i18n";
 import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
@@ -13,8 +13,9 @@ import { ShopFooter } from "@/components/shop/ShopFooter";
 import { CartDrawer } from "@/components/shop/CartDrawer";
 import "../shop.css";
 
+/** Der Shop ist nur auf Arabisch (Deutsch-Texte bleiben im Code als Reserve) */
 export function generateStaticParams() {
-  return langs.map((lang) => ({ lang }));
+  return [{ lang: "ar" }];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     metadataBase: new URL(SHOP_URL),
     title: { default: t.meta.title, template: `%s | QuickDesign Shop` },
     description: t.meta.description,
-    alternates: { canonical: `/${lang}`, languages: { de: "/de", ar: "/ar", "x-default": "/de" } },
+    alternates: { canonical: "/ar" },
     openGraph: {
       type: "website",
       locale: lang === "ar" ? "ar_SY" : "de_DE",
@@ -45,6 +46,7 @@ export default async function ShopLayout({ children, params }: { children: React
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const [base, store] = await Promise.all([shopBase(), getStore()]);
+  if (lang !== "ar") redirect(`${base}/ar`);
   const t = dict[lang];
   const pre = store.settings.preorder;
   const showPre = preorderLive(store.settings, nowMs());

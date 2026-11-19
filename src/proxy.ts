@@ -5,13 +5,6 @@ import { MAIN_HOSTS, SHOP_HOSTS, SHOP_URL } from "@/lib/shop/config";
 /* ------------------------------ Shop (Subdomain) ------------------------------ */
 
 const hostOf = (request: NextRequest) => (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0].toLowerCase();
-const preferredLang = (request: NextRequest) => {
-  const al = (request.headers.get("accept-language") ?? "").toLowerCase();
-  // Arabisch nur, wenn es vor Deutsch/Englisch bevorzugt wird
-  const ar = al.search(/(^|,)\s*ar\b/);
-  const other = al.search(/(^|,)\s*(de|en)\b/);
-  return ar !== -1 && (other === -1 || ar < other) ? "ar" : "de";
-};
 
 /**
  * shop.quickdesign24.de/…  → intern /shop/…  (Rewrite, Adresse bleibt sauber)
@@ -30,9 +23,11 @@ function shopRouting(request: NextRequest): NextResponse | null {
     if (pathname === "/shop" || pathname.startsWith("/shop/")) {
       return NextResponse.redirect(new URL(`${pathname.slice(5) || "/"}${search}`, request.url), 308);
     }
-    if (pathname === "/") return NextResponse.redirect(new URL(`/${preferredLang(request)}${search}`, request.url));
+    // Der Shop ist nur auf Arabisch: alte /de-Links und Pfade ohne Sprache → /ar
+    if (pathname === "/") return NextResponse.redirect(new URL(`/ar${search}`, request.url));
     const first = pathname.split("/")[1];
-    if (first !== "de" && first !== "ar") return NextResponse.redirect(new URL(`/de${pathname}${search}`, request.url));
+    if (first === "de") return NextResponse.redirect(new URL(`/ar${pathname.slice(3)}${search}`, request.url), 308);
+    if (first !== "ar") return NextResponse.redirect(new URL(`/ar${pathname}${search}`, request.url));
     const url = request.nextUrl.clone();
     url.pathname = `/shop${pathname}`;
     return NextResponse.rewrite(url);
@@ -44,8 +39,9 @@ function shopRouting(request: NextRequest): NextResponse | null {
   if (pathname === "/shop" || pathname.startsWith("/shop/")) {
     const rest = pathname.slice(5);
     if (MAIN_HOSTS.includes(host)) return NextResponse.redirect(new URL(`${SHOP_URL}${rest || "/"}${search}`), 308);
-    // Vorschau / lokal: Sprache ergänzen
-    if (!rest || rest === "/") return NextResponse.redirect(new URL(`/shop/${preferredLang(request)}${search}`, request.url));
+    // Vorschau / lokal: nur Arabisch
+    if (!rest || rest === "/") return NextResponse.redirect(new URL(`/shop/ar${search}`, request.url));
+    if (rest === "/de" || rest.startsWith("/de/")) return NextResponse.redirect(new URL(`/shop/ar${rest.slice(3)}${search}`, request.url), 308);
     return NextResponse.next();
   }
   return null;

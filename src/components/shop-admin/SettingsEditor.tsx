@@ -118,8 +118,8 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
             <LField label="Text" value={s.hero.text} onChange={(v) => up((x) => ({ ...x, hero: { ...x.hero, text: v } }))} multiline />
           </div>
           <div>
-            <ImageField label="Hintergrundbild (optional)" value={s.hero.image} onChange={(image) => up((x) => ({ ...x, hero: { ...x.hero, image } }))} />
-            <p className="mt-2 text-xs text-stone-dark">Ohne Bild zeigt der Shop die animierte, wehende Fahne. Ideal: Querformat, mindestens 2400 px breit.</p>
+            <ImageField label="Großes Bild (optional)" value={s.hero.image} onChange={(image) => up((x) => ({ ...x, hero: { ...x.hero, image } }))} />
+            <p className="mt-2 text-xs text-stone-dark">Optional: großes Bild unter dem Titel (z. B. Foto vom Laden oder von einer Feier). Ideal: Querformat, mindestens 2400 px breit.</p>
           </div>
         </div>
       </Card>

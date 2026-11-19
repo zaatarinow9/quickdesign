@@ -8,10 +8,10 @@ import { WavingFlag } from "@/components/brand/WavingFlag";
 
 const SHOP = "https://shop.quickdesign24.de";
 const items = [
-  { src: "/shop/tshirt-hurriya-weiss.webp", label: "T-Shirts", href: `${SHOP}/de#kollektion` },
-  { src: "/shop/hoodie-wahid-schwarz.webp", label: "Hoodies", href: `${SHOP}/de#kollektion` },
-  { src: "/shop/fahne.webp", label: "Fahnen & Banner", href: `${SHOP}/de/produkt/fahne-revolution` },
-  { src: "/shop/sticker.webp", label: "Sticker", href: `${SHOP}/de/produkt/sticker-set` },
+  { src: "/shop/tshirt-hurriya-weiss.webp", label: "T-Shirts", href: `${SHOP}/ar#kollektion` },
+  { src: "/shop/hoodie-wahid-schwarz.webp", label: "Hoodies", href: `${SHOP}/ar#kollektion` },
+  { src: "/shop/fahne.webp", label: "Fahnen & Banner", href: `${SHOP}/ar/produkt/fahne-revolution` },
+  { src: "/shop/sticker.webp", label: "Sticker", href: `${SHOP}/ar/produkt/sticker-set` },
 ];
 
 export default function ShopBanner() {
