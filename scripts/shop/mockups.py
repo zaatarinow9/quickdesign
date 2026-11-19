@@ -519,7 +519,7 @@ def banner_shot(name="banner"):
 
 # ----------------------------------------------------------------------------- Folie (Heckscheibe)
 
-def foil_shot(name="folie"):
+def foil_shot(name="folie", design="folie", W=1100, top=760, vinyl_hex="#f4f4f2"):
     global rng
     rng = np.random.default_rng(9)
     yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
@@ -544,11 +544,10 @@ def foil_shot(name="folie"):
     glass = glass * (1 - fr[..., None]) + fr[..., None] * hex2rgb("#0b0c0d")
     out = paint * (1 - gm[..., None]) + glass * gm[..., None]
     # Folienbeschriftung
-    d = load_design("folie")
-    W = 1100
-    pr = place(d, ((S - W) // 2, 760, W))
+    d = load_design(design)
+    pr = place(d, ((S - W) // 2, top, W))
     a = pr[..., 3] * np.clip(gm * 1.2, 0, 1)
-    vinyl = hex2rgb("#f4f4f2") * (0.9 + refl[..., None] * 0.8)
+    vinyl = hex2rgb(vinyl_hex) * (0.9 + refl[..., None] * 0.8) + np.clip(refl[..., None] - 0.05, 0, None) * 0.6
     out = out * (1 - a[..., None]) + vinyl * a[..., None]
     # Gummidichtung
     edge = np.clip(blur(gm, 3) - blur(gm, 14), 0, 1) * 2
@@ -623,6 +622,11 @@ if __name__ == "__main__":
         foil_shot()
     if not only or "sticker" in only:
         sticker_shot()
+    if not only or "nisr" in only:
+        foil_shot("folie-nisr-gold", design="nisr-gold", W=820, top=640, vinyl_hex="#bca475")
+        foil_shot("folie-nisr-weiss", design="nisr-weiss", W=820, top=640)
+        crop_detail("folie-nisr-gold", "folie-nisr-gold-detail", (0.5, 0.5, 0.5))
+        crop_detail("folie-nisr-weiss", "folie-nisr-weiss-detail", (0.5, 0.5, 0.5))
     if not only or "details" in only:
         crop_detail("banner", "banner-detail", (0.62, 0.5, 0.42))
         crop_detail("folie", "folie-detail", (0.5, 0.5, 0.56))

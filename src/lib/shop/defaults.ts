@@ -115,6 +115,33 @@ export const defaultStore: ShopStore = {
         },
       ],
       images: [],
+      image: "/shop/banner-fahnen.webp",
     },
+    slides: [
+      {
+        image: "/shop/banner-tshirts.webp",
+        title: { de: "Syrien ist frei.", ar: "سوريا حرّة." },
+        text: { de: "Die Kollektion zum zweiten Jahrestag", ar: "مجموعة الذكرى الثانية للتحرير" },
+        link: "/qism/tshirts",
+      },
+      {
+        image: "/shop/banner-fahnen.webp",
+        title: { de: "Hisst die Fahne", ar: "ارفع علمك عالياً" },
+        text: { de: "Fahnen in drei Größen, Banner und Folien", ar: "أعلام بثلاثة أحجام ولافتات وملصقات" },
+        link: "/qism/flags",
+      },
+      {
+        image: "/shop/banner-hoodies.webp",
+        title: { de: "Warm durch den Dezember", ar: "دفء كانون الأول" },
+        text: { de: "Hoodies mit Motiven der Freiheit", ar: "هوديات بتصاميم الحرية" },
+        link: "/qism/hoodies",
+      },
+    ],
+    sections: [
+      { slug: "tshirts", title: { de: "T-Shirts", ar: "تيشرتات" }, text: { de: "Sechs Motive zum Jahrestag", ar: "تصاميم الذكرى الثانية" }, image: "/shop/banner-tshirts.webp" },
+      { slug: "hoodies", title: { de: "Hoodies", ar: "هوديات" }, text: { de: "Schwer, weich, warm", ar: "ثقيلة وناعمة ودافئة" }, image: "/shop/banner-hoodies.webp" },
+      { slug: "flags", title: { de: "Fahnen & Banner", ar: "أعلام ولافتات" }, text: { de: "Für Balkon, Auto und Feier", ar: "للشرفة والسيارة والاحتفال" }, image: "/shop/banner-fahnen.webp" },
+      { slug: "stickers", title: { de: "Sticker & Autoaufkleber", ar: "ستيكرات وملصقات" }, text: { de: "Mit dem syrischen Adler", ar: "مع النسر السوري" }, image: "/shop/banner-sticker.webp" },
+    ],
   },
 };

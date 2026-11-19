@@ -181,7 +181,7 @@ export function CartDrawer() {
                     type="button"
                     onClick={checkout}
                     disabled={state === "loading"}
-                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--ink)] font-medium text-white transition hover:bg-black disabled:opacity-70"
+                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--green)] font-medium text-white transition hover:bg-[var(--green-2)] disabled:opacity-70"
                   >
                     {state === "loading" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
                     {state === "loading" ? t.cart.loading : t.cart.checkout}

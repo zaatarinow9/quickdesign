@@ -119,7 +119,7 @@ export function ProductView({
               style={zoom ? { transform: "scale(2)", transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
             />
           ) : null}
-          {prePct ? <span className="ltr-num absolute start-4 top-4 rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-medium text-white">−{prePct} %</span> : null}
+          {prePct ? <span className="ltr-num absolute start-4 top-4 rounded-full bg-[var(--green)] px-3 py-1 text-xs font-medium text-white">−{prePct} %</span> : null}
           <span className="pointer-events-none absolute bottom-3 end-3 hidden rounded-full bg-white/85 px-3 py-1 text-xs text-[var(--muted)] backdrop-blur sm:block">{t.product.zoom}</span>
         </div>
         {images.length > 1 ? (
@@ -250,7 +250,7 @@ export function ProductView({
         {/* Hinzufügen */}
         <div className="mt-8 flex gap-3">
           {!textile ? <Stepper value={qty} max={p.maxQty} label={t.product.qty} onChange={(n) => setQty(Math.max(1, n))} /> : null}
-          <button type="button" onClick={onAdd} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--ink)] px-5 font-medium text-white transition hover:bg-black">
+          <button type="button" onClick={onAdd} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--green)] px-5 font-medium text-white transition hover:bg-[var(--green-2)]">
             {added ? <Check className="size-4" aria-hidden /> : null}
             {added ? t.product.added : textile && totalPieces > 0 ? fill(t.product.addN, { n: totalPieces }) : t.product.add}
             {totalPieces > 0 && !added ? <span className="ltr-num text-white/70">· {money(prePct ? reduce(sumCents) : sumCents)}</span> : null}

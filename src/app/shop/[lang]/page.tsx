@@ -1,21 +1,25 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BadgePercent, ChevronDown, Gift, MapPin, Printer, ShieldCheck, Store, Truck, Zap } from "lucide-react";
 import { daysUntilAnniversary, isLang } from "@/lib/shop/config";
 import { dict, fill } from "@/lib/shop/i18n";
 import { dateLong, money } from "@/lib/shop/format";
 import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
-import { activeProducts, offerLive, preorderLive } from "@/lib/shop/schema";
-import { WavingFlag } from "@/components/brand/WavingFlag";
-import { imageOf } from "@/lib/shop/schema";
+import { activeProducts, categoryKinds, offerLive, preorderLive } from "@/lib/shop/schema";
+import { HeroSlider } from "@/components/shop/HeroSlider";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Reveal } from "@/components/shop/Reveal";
+import { categoryIcon } from "@/components/shop/ShopIcons";
+import { WavingFlag } from "@/components/brand/WavingFlag";
 
 const nowMs = () => Date.now();
 
 export default async function ShopHome({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
+  const ar = lang === "ar";
   const t = dict[lang];
   const [base, store] = await Promise.all([shopBase(), getStore()]);
   const href = (p = "") => `${base}/${lang}${p}`;
@@ -25,203 +29,198 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
   const live = store.offers.filter((o) => offerLive(o, now));
   const pre = preorderLive(s, now);
   const products = activeProducts(store);
-  const textil = products.filter((p) => p.category === "textil");
-  const druck = products.filter((p) => p.category === "druck");
+  const featured = [...products.filter((p) => p.featured), ...products.filter((p) => !p.featured)].slice(0, 8);
+  const sections = s.sections.filter((x) => products.some((p) => categoryKinds[x.slug].includes(p.kind)));
 
-  const ticker = [
-    days > 0 ? fill(t.hero.days, { days }) : t.hero.today,
-    pre ? fill(t.preorder.bar, { pct: s.preorder.pct, date: dateLong(s.preorder.until, lang) }) : null,
-    ...live.map((o) => o.name[lang]),
-    s.shipping.express.enabled ? fill(t.hero.express, { days: s.shipping.express.days }) : null,
-    s.campaign.lastOrderDay && days > 6 ? fill(t.hero.lastOrder, { date: dateLong(s.campaign.lastOrderDay, lang) }) : null,
-  ].filter(Boolean) as string[];
+  // Laufband: Angebote und Vorteile
+  const promos = [
+    pre ? { icon: BadgePercent, text: fill(t.preorder.bar, { pct: s.preorder.pct, date: dateLong(s.preorder.until, lang) }) } : null,
+    ...live.map((o) => ({ icon: Gift, text: o.name[lang] || o.name.de })),
+    s.shipping.express.enabled ? { icon: Zap, text: fill(t.hero.express, { days: s.shipping.express.days }) } : null,
+    s.shipping.freeFromCents ? { icon: Truck, text: ar ? `شحن مجاني للطلبات فوق ${money(s.shipping.freeFromCents)}` : `Kostenloser Versand ab ${money(s.shipping.freeFromCents)}` } : null,
+    s.shipping.pickup.enabled ? { icon: Store, text: ar ? "استلام مجاني من محلنا في زاربروكن" : "Kostenlose Abholung in Saarbrücken" } : null,
+  ].filter(Boolean) as { icon: typeof Gift; text: string }[];
 
-  const offerCards = [
-    ...(pre
-      ? [{ key: "pre", big: `−${s.preorder.pct} %`, title: lang === "ar" ? "طلب مسبق" : "Vorbestellung", text: fill(t.preorder.bar, { pct: s.preorder.pct, date: dateLong(s.preorder.until, lang) }), dark: true }]
-      : []),
-    ...live.map((o) => ({
-      key: o.id,
-      big: o.badge[lang] || (o.kind === "percent" ? `−${o.percent} %` : "%"),
-      title: o.name[lang],
-      text:
-        o.kind === "tiers"
-          ? (o.tiers ?? []).map((x) => (lang === "ar" ? `من ${x.min}: ⁦−${x.pct}%⁩` : `ab ${x.min} Stück −${x.pct} %`)).join(" · ")
-          : o.kind === "bundle" && o.bundle?.mode === "price"
-            ? lang === "ar"
-              ? `${o.bundle.qty} قطع بـ ⁦${money(o.bundle.value)}⁩`
-              : `${o.bundle.qty} Teile für ${money(o.bundle.value)}`
-            : "",
-      dark: false,
-    })),
-    ...(s.shipping.express.enabled
-      ? [{ key: "express", big: lang === "ar" ? `${s.shipping.express.days} أيام` : `${s.shipping.express.days} Tage`, title: lang === "ar" ? "شحن سريع" : "Express", text: fill(t.product.shippingExpress, { price: money(s.shipping.express.cents), days: s.shipping.express.days }), dark: false }]
-      : []),
-  ].slice(0, 4);
+  const slides = (s.slides.length ? s.slides : [{ image: "/shop/banner-tshirts.webp", title: s.hero.title, text: s.hero.text, link: "" }]).map((sl) => ({
+    image: sl.image,
+    title: sl.title[lang] || sl.title.de,
+    text: sl.text[lang] || sl.text.de,
+    href: sl.link?.startsWith("http") ? sl.link : href(sl.link || "#produkte"),
+  }));
 
-  // Kacheln: je Art das erste sichtbare Produkt
-  const pick = (kinds: string[]) => kinds.map((k) => products.find((p) => p.kind === k)).find(Boolean);
-  const tiles = [
-    { p: pick(["tshirt"]), label: lang === "ar" ? "تيشرتات" : "T-Shirts", to: "#textil" },
-    { p: pick(["hoodie"]), label: lang === "ar" ? "هوديات" : "Hoodies", to: "#textil" },
-    { p: pick(["flag", "banner"]), label: lang === "ar" ? "أعلام ولافتات" : "Fahnen & Banner", to: "#druck" },
-    { p: pick(["sticker", "foil"]), label: lang === "ar" ? "ستيكرات وملصقات" : "Sticker & Folien", to: "#druck" },
-  ].filter((x) => x.p && imageOf(x.p));
+  const stats = [
+    { icon: Printer, big: "100%", text: ar ? "طباعة في زاربروكن" : "in Saarbrücken gedruckt" },
+    s.shipping.express.enabled ? { icon: Zap, big: s.shipping.express.days, text: ar ? "أيام عمل للشحن السريع" : "Werktage Express" } : null,
+    s.shipping.freeFromCents ? { icon: Truck, big: money(s.shipping.freeFromCents), text: ar ? "شحن مجاني فوق هذا المبلغ" : "ab hier versandkostenfrei" } : null,
+    { icon: ShieldCheck, big: "14", text: ar ? "يوماً لحق الإرجاع" : "Tage Widerrufsrecht" },
+  ].filter(Boolean) as { icon: typeof Printer; big: string; text: string }[];
+
+  const faq = ar
+    ? [
+        { q: "ما هي طرق الدفع المتاحة؟", a: "يمكنك الدفع بالبطاقة البنكية أو Apple Pay أو Google Pay أو PayPal أو Klarna – بشكل آمن عبر Stripe." },
+        {
+          q: "كم تستغرق عملية التوصيل؟",
+          a: `الشحن العادي ${s.shipping.deliveryDays} أيام عمل داخل ألمانيا${s.shipping.express.enabled ? `، والشحن السريع ${s.shipping.express.days} أيام عمل مقابل ${money(s.shipping.express.cents)}` : ""}.${s.campaign.lastOrderDay ? ` ليصلك الطلب قبل 8 كانون الأول اطلب قبل ${dateLong(s.campaign.lastOrderDay, lang)}.` : ""}`,
+        },
+        { q: "هل يمكنني استلام الطلب بنفسي؟", a: s.shipping.pickup.enabled ? `نعم، الاستلام مجاني من محلنا: ${s.shipping.pickup.address}. سنبلغك فور جهوز طلبك.` : "حالياً نرسل الطلبات بالشحن فقط." },
+        { q: "هل يمكنني إرجاع أو استبدال المنتج؟", a: "لديك حق الإرجاع خلال 14 يوماً من الاستلام. لا يشمل ذلك الطلبات المصممة خصيصاً باسمك أو شعارك." },
+        { q: "هل يمكن طلب تصميم خاص أو كمية كبيرة؟", a: "طبعاً – راسلنا على واتساب ونطبع لك باسم جمعيتك أو شعارك بالكمية التي تريدها." },
+      ]
+    : [
+        { q: "Welche Zahlungsarten gibt es?", a: "Karte, Apple Pay, Google Pay, PayPal und Klarna – sicher über Stripe." },
+        { q: "Wie lange dauert die Lieferung?", a: `Standard ${s.shipping.deliveryDays} Werktage, Express ${s.shipping.express.days} Werktage.` },
+        { q: "Kann ich abholen?", a: s.shipping.pickup.enabled ? `Ja, kostenlos: ${s.shipping.pickup.address}.` : "Derzeit nur Versand." },
+        { q: "Kann ich zurückgeben?", a: "Sie haben 14 Tage Widerrufsrecht, ausgenommen individuell gestaltete Bestellungen." },
+        { q: "Sonderwünsche?", a: "Schreiben Sie uns per WhatsApp." },
+      ];
 
   return (
     <>
-      {/* Einstieg: ruhige, helle Karte */}
-      <section className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-10">
-        <div className="rounded-[2rem] bg-[var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.02),0_20px_60px_-30px_rgba(0,0,0,0.15)] ring-1 ring-[var(--line)] sm:p-10 md:p-14">
-          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-xl">
-              <p className="rise flex items-center gap-2.5 text-sm text-[var(--muted)]" style={{ animationDelay: "80ms" }}>
-                <WavingFlag className="h-4 w-auto" amp={4} dur={3} />
-                {s.hero.eyebrow[lang]}
-              </p>
-              <h1 className="rise mt-4 text-4xl leading-tight sm:text-5xl" style={{ animationDelay: "180ms" }}>
-                {s.hero.title[lang]}
-              </h1>
-              <p className="rise mt-4 leading-relaxed text-[var(--muted)]" style={{ animationDelay: "280ms" }}>
-                {s.hero.text[lang]}
-              </p>
-            </div>
-            <a href="#kollektion" className="rise inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full bg-[var(--ink)] px-6 font-medium text-white transition-colors hover:bg-[var(--green)] md:self-auto" style={{ animationDelay: "380ms" }}>
-              {t.hero.cta} <span aria-hidden className="rtl:rotate-180">→</span>
-            </a>
-          </div>
-
-          {s.hero.image ? (
-            <div className="relative mt-10 aspect-[16/7] overflow-hidden rounded-2xl bg-[var(--paper-2)]">
-              <Image src={s.hero.image} alt="" fill priority sizes="(min-width: 1152px) 1050px, 100vw" className="object-cover" />
-            </div>
-          ) : null}
-
-          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-            {tiles.map((x, i) => (
-              <li key={x.label} className="rise" style={{ animationDelay: `${450 + i * 90}ms` }}>
-                <a href={x.to} className="group block">
-                  <span className="relative block aspect-square overflow-hidden rounded-2xl bg-[var(--paper-2)]">
-                    <Image src={imageOf(x.p!)} alt={x.label} fill priority={i < 2} sizes="(min-width: 768px) 260px, 45vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
-                  </span>
-                  <span className="mt-3 block text-sm text-[var(--muted)] transition-colors group-hover:text-[var(--ink)]">{x.label}</span>
-                </a>
-              </li>
+      {/* Laufband */}
+      {promos.length ? (
+        <div className="overflow-hidden border-b border-[var(--line)] bg-white py-3 text-sm text-[var(--ink)]">
+          <div className="marquee flex w-max gap-12 whitespace-nowrap ps-12">
+            {[...promos, ...promos, ...promos].map((p, i) => (
+              <span key={i} className="flex items-center gap-2">
+                <p.icon className="size-4 text-[var(--green)]" strokeWidth={1.7} aria-hidden />
+                {p.text}
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
-      </section>
+      ) : null}
 
-      {/* Laufband mit Terminen und Angeboten */}
-      <div className="mt-8 overflow-hidden border-y border-[var(--line)] py-3 text-sm text-[var(--muted)]">
-        <div className="marquee flex w-max gap-10 whitespace-nowrap ps-10">
-          {[...ticker, ...ticker].map((x, i) => (
-            <span key={i} className="flex items-center gap-10">
-              {x}
-              <span className="text-[var(--red)]" aria-hidden>★</span>
-            </span>
+      {/* Zahlarten */}
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-2xl border border-[var(--line)] bg-[var(--paper-2)] px-5 py-3.5 text-sm">
+          <span className="font-medium">{ar ? "ادفع بأمان عبر" : "Sicher bezahlen mit"}</span>
+          {["Apple Pay", "Google Pay", "PayPal", "Klarna", ar ? "بطاقة بنكية" : "Karte"].map((m) => (
+            <span key={m} className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium ring-1 ring-[var(--line)]">{m}</span>
           ))}
         </div>
       </div>
 
-      {/* Angebote */}
-      {offerCards.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6 sm:pt-16">
-          <Reveal>
-            <h2 className="text-sm text-[var(--muted)]">{t.sections.offers}</h2>
-          </Reveal>
-          <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${offerCards.length > 2 ? "lg:grid-cols-4" : ""}`}>
-            {offerCards.map((o, i) => (
-              <Reveal key={o.key} delay={i * 90}>
-                <div className={`flex h-full flex-col justify-between rounded-2xl p-6 ${o.dark ? "bg-[var(--green)] text-white" : "bg-[var(--card)] ring-1 ring-[var(--line)]"}`}>
-                  <p className={`ltr-num text-4xl font-medium tracking-tight ${o.dark ? "text-white" : "text-[var(--green)]"}`}>{o.big}</p>
-                  <div className="mt-8">
-                    <p className="font-medium">{o.title}</p>
-                    {o.text ? <p className={`mt-1 text-sm leading-relaxed ${o.dark ? "text-white/80" : "text-[var(--muted)]"}`}>{o.text}</p> : null}
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* Slider */}
+      <div className="mt-6">
+        <HeroSlider slides={slides} cta={t.hero.cta} />
+      </div>
 
-      {/* Kollektion */}
-      <section id="kollektion" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6 sm:pt-24">
-        <Reveal>
-          <p className="text-sm text-[var(--muted)]">{t.sections.collection.eyebrow}</p>
-          <h2 className="mt-2 text-4xl sm:text-5xl">{t.sections.collection.title}</h2>
-        </Reveal>
-        {textil.length ? (
-          <div id="textil" className="scroll-mt-20">
-            <h3 className="mt-12 text-xl">{t.sections.textil}</h3>
-            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-              {textil.map((p, i) => (
-                <Reveal key={p.id} delay={(i % 4) * 80}>
-                  <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} now={now} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {druck.length ? (
-          <div id="druck" className="scroll-mt-20">
-            <h3 className="mt-20 text-xl">{t.sections.druck}</h3>
-            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-              {druck.map((p, i) => (
-                <Reveal key={p.id} delay={(i % 4) * 80}>
-                  <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} now={now} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        ) : null}
+      {/* Countdown-Zeile */}
+      <div className="bg-[var(--green)] py-3 text-center text-sm text-white">
+        <span className="inline-flex items-center gap-2.5">
+          <WavingFlag className="h-3.5 w-auto" amp={4} dur={3} />
+          {days > 0 ? fill(t.hero.days, { days }) : t.hero.today}
+          {s.campaign.lastOrderDay && days > 6 ? <span className="hidden text-white/75 sm:inline">· {fill(t.hero.lastOrder, { date: dateLong(s.campaign.lastOrderDay, lang) })}</span> : null}
+        </span>
+      </div>
+
+      {/* Bereiche */}
+      <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
+        <h2 className="text-2xl">{ar ? "الأقسام" : "Bereiche"}</h2>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          {sections.map((x, i) => {
+            const Icon = categoryIcon[x.slug];
+            return (
+              <Reveal key={x.slug} delay={i * 70}>
+                <Link
+                  href={href(`/qism/${x.slug}`)}
+                  className="group flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--line)] bg-white px-4 py-7 text-center transition hover:-translate-y-0.5 hover:border-[var(--green)] hover:shadow-[0_12px_30px_-18px_rgba(5,66,57,0.45)]"
+                >
+                  <Icon className="size-11 text-[var(--gold)] transition-colors group-hover:text-[var(--green)]" />
+                  <span className="font-medium">{x.title[lang] || x.title.de}</span>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
       </section>
 
-      {/* Geschichte – hell */}
-      <section id="geschichte" className="mx-auto mt-28 max-w-6xl scroll-mt-20 px-4 pb-24 sm:px-6">
-        <div className="rounded-[2rem] bg-[var(--card)] p-6 ring-1 ring-[var(--line)] sm:p-10 md:p-14">
-          <Reveal>
-            <p className="ltr-num flex items-center gap-2.5 text-sm text-[var(--muted)]">
-              <WavingFlag className="h-4 w-auto" amp={4} dur={3} />
-              {s.story.eyebrow[lang]}
-            </p>
-            <h2 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-6xl">{s.story.title[lang]}</h2>
-          </Reveal>
-
-          {s.story.images.length ? (
-            <div className="mt-12 grid auto-rows-[200px] grid-cols-2 gap-3 sm:auto-rows-[240px] lg:grid-cols-4">
-              {s.story.images.slice(0, 6).map((im, i) => (
-                <Reveal key={im.url} as="figure" delay={i * 100} className={`group relative overflow-hidden rounded-2xl bg-[var(--paper-2)] ${i === 0 ? "col-span-2 row-span-2" : ""} ${i === 3 ? "lg:col-span-2" : ""}`}>
-                  <Image src={im.url} alt={im.caption[lang] || ""} fill sizes={i === 0 ? "(min-width:1024px) 50vw, 100vw" : "(min-width:1024px) 25vw, 50vw"} className="object-cover transition duration-[1.4s] ease-out group-hover:scale-105" />
-                  {im.caption[lang] || im.credit ? (
-                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-10 text-sm text-white">
-                      {im.caption[lang] ? <span className="block">{im.caption[lang]}</span> : null}
-                      {im.credit ? <span className="mt-1 block text-[0.68rem] text-white/60">{im.credit}</span> : null}
-                    </figcaption>
-                  ) : null}
-                </Reveal>
-              ))}
+      {/* Bereichs-Banner */}
+      <section className="mt-14">
+        {sections.map((x) => (
+          <Link key={x.slug} href={href(`/qism/${x.slug}`)} className="group relative block h-[220px] overflow-hidden sm:h-[300px]">
+            {x.image ? <Image src={x.image} alt="" fill sizes="100vw" className="object-cover transition-transform duration-[1.4s] ease-out group-hover:scale-105" /> : null}
+            <div className="absolute inset-0 bg-[linear-gradient(270deg,rgba(5,40,35,0.8)_0%,rgba(5,40,35,0.4)_55%,rgba(5,40,35,0.1)_100%)] ltr:bg-[linear-gradient(90deg,rgba(5,40,35,0.8)_0%,rgba(5,40,35,0.4)_55%,rgba(5,40,35,0.1)_100%)]" />
+            <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center px-4 text-white sm:px-6">
+              <h2 className="text-3xl sm:text-4xl">{x.title[lang] || x.title.de}</h2>
+              <p className="mt-2 text-white/80">{x.text[lang] || x.text.de}</p>
+              <span className="mt-5 inline-flex w-fit items-center gap-2 text-sm text-[var(--mint)] transition-transform group-hover:-translate-x-1 ltr:group-hover:translate-x-1">
+                {ar ? "تسوّق القسم" : "Ansehen"} <span aria-hidden className="ltr:rotate-180">←</span>
+              </span>
             </div>
-          ) : null}
+          </Link>
+        ))}
+      </section>
 
-          <div className="mt-12 grid gap-10 md:grid-cols-[1.3fr_1fr] md:gap-16">
-            <div className="space-y-5 text-lg leading-relaxed text-[#3d3a35]">
-              {s.story.paragraphs.map((p, i) => (
-                <Reveal key={i} delay={i * 120}>
-                  <p>{p[lang]}</p>
-                </Reveal>
-              ))}
-            </div>
-            <Reveal delay={200}>
-              <blockquote className="border-s-2 border-[var(--red)] ps-6 text-2xl leading-snug sm:text-3xl">{s.story.quote[lang]}</blockquote>
-              <div className="mt-8 flex items-baseline gap-4">
-                <span className="ltr-num text-6xl font-medium text-[var(--green)]">8.12</span>
-                <span className="ltr-num text-[var(--muted)]">2024 – 2026</span>
-              </div>
+      {/* Produkte */}
+      <section id="produkte" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-16 sm:px-6">
+        <h2 className="text-2xl">{ar ? "منتجات مختارة" : "Ausgewählte Produkte"}</h2>
+        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
+          {featured.map((p, i) => (
+            <Reveal key={p.id} delay={(i % 4) * 70}>
+              <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} now={now} />
             </Reveal>
-          </div>
+          ))}
         </div>
+      </section>
+
+      {/* Geschichte */}
+      <section className="mx-auto max-w-6xl px-4 pt-20 sm:px-6">
+        <Reveal>
+          <div className="grid overflow-hidden rounded-3xl bg-[var(--green)] text-white md:grid-cols-2">
+            <div className="flex flex-col justify-center p-8 sm:p-12">
+              <p className="ltr-num flex items-center gap-2 text-sm text-[var(--mint)]">
+                <WavingFlag className="h-3.5 w-auto" amp={4} dur={3} />
+                {s.story.eyebrow[lang] || s.story.eyebrow.de}
+              </p>
+              <h2 className="mt-4 text-4xl leading-tight sm:text-5xl">{s.story.title[lang] || s.story.title.de}</h2>
+              <p className="mt-4 leading-relaxed text-white/80">{s.story.paragraphs[0]?.[lang]}</p>
+              <Link href={href("/hikaya")} className="mt-7 inline-flex h-11 w-fit items-center rounded-full bg-white px-6 font-medium text-[var(--green)] transition-colors hover:bg-[var(--mint)]">
+                {ar ? "اقرأ الحكاية" : "Zur Geschichte"}
+              </Link>
+            </div>
+            <div className="relative min-h-[240px]">
+              {s.story.image || s.story.images[0]?.url ? (
+                <Image src={s.story.image || s.story.images[0].url} alt="" fill sizes="(min-width: 768px) 576px, 100vw" className="object-cover" />
+              ) : null}
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* Zahlen */}
+      <section className="mt-20 bg-[var(--paper-2)]">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-4 py-14 text-center sm:px-6 md:grid-cols-4">
+          {stats.map((x) => (
+            <Reveal key={x.text}>
+              <x.icon className="mx-auto size-8 text-[var(--gold)]" strokeWidth={1.4} />
+              <p className="ltr-num mt-3 text-3xl font-bold text-[var(--green)] sm:text-4xl">{x.big}</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">{x.text}</p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* Häufige Fragen */}
+      <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+        <h2 className="text-center text-3xl">{ar ? "الأسئلة الشائعة" : "Häufige Fragen"}</h2>
+        <div className="mt-8 space-y-3">
+          {faq.map((f) => (
+            <details key={f.q} className="group rounded-2xl border border-[var(--line)] bg-white px-5 py-4 open:border-[var(--green)]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
+                {f.q}
+                <ChevronDown className="size-4 shrink-0 text-[var(--muted)] transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 leading-relaxed text-[var(--muted)]">{f.a}</p>
+            </details>
+          ))}
+        </div>
+        {s.shipping.pickup.enabled ? (
+          <p className="mt-8 text-center text-sm text-[var(--muted)]">
+            <MapPin className="me-1 inline size-4 text-[var(--gold)]" />
+            {s.shipping.pickup.address}
+          </p>
+        ) : null}
       </section>
     </>
   );
