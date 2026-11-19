@@ -6,7 +6,8 @@ import { dateLong, money } from "@/lib/shop/format";
 import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
 import { activeProducts, offerLive, preorderLive } from "@/lib/shop/schema";
-import { HeroFlag } from "@/components/shop/HeroFlag";
+import { WavingFlag } from "@/components/brand/WavingFlag";
+import { imageOf } from "@/lib/shop/schema";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Reveal } from "@/components/shop/Reveal";
 
@@ -58,65 +59,85 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
       : []),
   ].slice(0, 4);
 
+  // Kacheln: je Art das erste sichtbare Produkt
+  const pick = (kinds: string[]) => kinds.map((k) => products.find((p) => p.kind === k)).find(Boolean);
+  const tiles = [
+    { p: pick(["tshirt"]), label: lang === "ar" ? "تيشرتات" : "T-Shirts", to: "#textil" },
+    { p: pick(["hoodie"]), label: lang === "ar" ? "هوديات" : "Hoodies", to: "#textil" },
+    { p: pick(["flag", "banner"]), label: lang === "ar" ? "أعلام ولافتات" : "Fahnen & Banner", to: "#druck" },
+    { p: pick(["sticker", "foil"]), label: lang === "ar" ? "ستيكرات وملصقات" : "Sticker & Folien", to: "#druck" },
+  ].filter((x) => x.p && imageOf(x.p));
+
   return (
     <>
-      {/* Hero */}
-      <section className="relative -mt-16 flex min-h-[100svh] items-end overflow-hidden bg-black text-white">
-        <div className="shop-flag-fallback absolute inset-0 opacity-60" aria-hidden />
-        {s.hero.image ? (
-          <Image src={s.hero.image} alt="" fill priority sizes="100vw" className="ken object-cover" />
-        ) : (
-          <HeroFlag />
-        )}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.45)_0%,rgba(0,0,0,0.05)_35%,rgba(0,0,0,0.55)_70%,rgba(0,0,0,0.9)_100%)]" aria-hidden />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.55),transparent_60%)] rtl:bg-[linear-gradient(270deg,rgba(0,0,0,0.55),transparent_60%)]" aria-hidden />
-
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-24 pt-32 sm:px-6 sm:pb-28">
-          <p className="rise text-sm tracking-wide text-white/80 sm:text-base" style={{ animationDelay: "150ms" }}>
-            {s.hero.eyebrow[lang]}
-          </p>
-          <h1 className="rise mt-4 max-w-4xl text-[3.4rem] leading-[0.98] sm:text-[6rem] lg:text-[7.5rem]" style={{ animationDelay: "300ms" }}>
-            {s.hero.title[lang]}
-          </h1>
-          <p className="rise mt-6 max-w-xl text-lg leading-relaxed text-white/80 sm:text-xl" style={{ animationDelay: "500ms" }}>
-            {s.hero.text[lang]}
-          </p>
-          <div className="rise mt-9 flex flex-wrap gap-3" style={{ animationDelay: "700ms" }}>
-            <a href="#kollektion" className="inline-flex h-13 items-center rounded-full bg-white px-7 py-3.5 font-medium text-black transition hover:bg-[#e9f2ec]">
-              {t.hero.cta}
-            </a>
-            <a href="#geschichte" className="inline-flex h-13 items-center rounded-full px-7 py-3.5 font-medium text-white ring-1 ring-white/40 backdrop-blur-sm transition hover:bg-white/10">
-              {t.hero.story}
+      {/* Einstieg: ruhige, helle Karte */}
+      <section className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-10">
+        <div className="rounded-[2rem] bg-[var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.02),0_20px_60px_-30px_rgba(0,0,0,0.15)] ring-1 ring-[var(--line)] sm:p-10 md:p-14">
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-xl">
+              <p className="rise flex items-center gap-2.5 text-sm text-[var(--muted)]" style={{ animationDelay: "80ms" }}>
+                <WavingFlag className="h-4 w-auto" amp={4} dur={3} />
+                {s.hero.eyebrow[lang]}
+              </p>
+              <h1 className="rise mt-4 text-4xl leading-tight sm:text-5xl" style={{ animationDelay: "180ms" }}>
+                {s.hero.title[lang]}
+              </h1>
+              <p className="rise mt-4 leading-relaxed text-[var(--muted)]" style={{ animationDelay: "280ms" }}>
+                {s.hero.text[lang]}
+              </p>
+            </div>
+            <a href="#kollektion" className="rise inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full bg-[var(--ink)] px-6 font-medium text-white transition-colors hover:bg-[var(--green)] md:self-auto" style={{ animationDelay: "380ms" }}>
+              {t.hero.cta} <span aria-hidden className="rtl:rotate-180">→</span>
             </a>
           </div>
-        </div>
 
-        <div className="absolute bottom-0 inset-x-0 z-10 overflow-hidden border-t border-white/15 bg-black/40 py-3 text-sm text-white/85 backdrop-blur-sm">
-          <div className="marquee flex w-max gap-10 whitespace-nowrap ps-10">
-            {[...ticker, ...ticker].map((x, i) => (
-              <span key={i} className="flex items-center gap-10">
-                {x}
-                <span className="text-[var(--red)]" aria-hidden>★</span>
-              </span>
+          {s.hero.image ? (
+            <div className="relative mt-10 aspect-[16/7] overflow-hidden rounded-2xl bg-[var(--paper-2)]">
+              <Image src={s.hero.image} alt="" fill priority sizes="(min-width: 1152px) 1050px, 100vw" className="object-cover" />
+            </div>
+          ) : null}
+
+          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+            {tiles.map((x, i) => (
+              <li key={x.label} className="rise" style={{ animationDelay: `${450 + i * 90}ms` }}>
+                <a href={x.to} className="group block">
+                  <span className="relative block aspect-square overflow-hidden rounded-2xl bg-[var(--paper-2)]">
+                    <Image src={imageOf(x.p!)} alt={x.label} fill priority={i < 2} sizes="(min-width: 768px) 260px, 45vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
+                  </span>
+                  <span className="mt-3 block text-sm text-[var(--muted)] transition-colors group-hover:text-[var(--ink)]">{x.label}</span>
+                </a>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
+      {/* Laufband mit Terminen und Angeboten */}
+      <div className="mt-8 overflow-hidden border-y border-[var(--line)] py-3 text-sm text-[var(--muted)]">
+        <div className="marquee flex w-max gap-10 whitespace-nowrap ps-10">
+          {[...ticker, ...ticker].map((x, i) => (
+            <span key={i} className="flex items-center gap-10">
+              {x}
+              <span className="text-[var(--red)]" aria-hidden>★</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Angebote */}
       {offerCards.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 sm:pt-20">
+        <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6 sm:pt-16">
           <Reveal>
             <h2 className="text-sm text-[var(--muted)]">{t.sections.offers}</h2>
           </Reveal>
           <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${offerCards.length > 2 ? "lg:grid-cols-4" : ""}`}>
             {offerCards.map((o, i) => (
               <Reveal key={o.key} delay={i * 90}>
-                <div className={`flex h-full flex-col justify-between rounded-2xl p-6 ${o.dark ? "bg-[var(--ink)] text-white" : "bg-[var(--card)] ring-1 ring-[var(--line)]"}`}>
+                <div className={`flex h-full flex-col justify-between rounded-2xl p-6 ${o.dark ? "bg-[var(--green)] text-white" : "bg-[var(--card)] ring-1 ring-[var(--line)]"}`}>
                   <p className={`ltr-num text-4xl font-medium tracking-tight ${o.dark ? "text-white" : "text-[var(--green)]"}`}>{o.big}</p>
                   <div className="mt-8">
                     <p className="font-medium">{o.title}</p>
-                    {o.text ? <p className={`mt-1 text-sm leading-relaxed ${o.dark ? "text-white/70" : "text-[var(--muted)]"}`}>{o.text}</p> : null}
+                    {o.text ? <p className={`mt-1 text-sm leading-relaxed ${o.dark ? "text-white/80" : "text-[var(--muted)]"}`}>{o.text}</p> : null}
                   </div>
                 </div>
               </Reveal>
@@ -126,25 +147,25 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
       ) : null}
 
       {/* Kollektion */}
-      <section id="kollektion" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6 sm:pt-28">
+      <section id="kollektion" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6 sm:pt-24">
         <Reveal>
           <p className="text-sm text-[var(--muted)]">{t.sections.collection.eyebrow}</p>
           <h2 className="mt-2 text-4xl sm:text-5xl">{t.sections.collection.title}</h2>
         </Reveal>
         {textil.length ? (
-          <>
+          <div id="textil" className="scroll-mt-20">
             <h3 className="mt-12 text-xl">{t.sections.textil}</h3>
             <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
               {textil.map((p, i) => (
                 <Reveal key={p.id} delay={(i % 4) * 80}>
-                  <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} priority={i < 2} now={now} />
+                  <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} now={now} />
                 </Reveal>
               ))}
             </div>
-          </>
+          </div>
         ) : null}
         {druck.length ? (
-          <>
+          <div id="druck" className="scroll-mt-20">
             <h3 className="mt-20 text-xl">{t.sections.druck}</h3>
             <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
               {druck.map((p, i) => (
@@ -153,39 +174,39 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
                 </Reveal>
               ))}
             </div>
-          </>
+          </div>
         ) : null}
       </section>
 
-      {/* Geschichte */}
-      <section id="geschichte" className="mt-28 scroll-mt-16 bg-[#0c0c0c] text-white">
-        <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
+      {/* Geschichte – hell */}
+      <section id="geschichte" className="mx-auto mt-28 max-w-6xl scroll-mt-20 px-4 pb-24 sm:px-6">
+        <div className="rounded-[2rem] bg-[var(--card)] p-6 ring-1 ring-[var(--line)] sm:p-10 md:p-14">
           <Reveal>
-            <p className="ltr-num text-sm text-white/60">{s.story.eyebrow[lang]}</p>
-            <h2 className="mt-4 max-w-4xl text-5xl leading-[1.02] sm:text-7xl">{s.story.title[lang]}</h2>
+            <p className="ltr-num flex items-center gap-2.5 text-sm text-[var(--muted)]">
+              <WavingFlag className="h-4 w-auto" amp={4} dur={3} />
+              {s.story.eyebrow[lang]}
+            </p>
+            <h2 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-6xl">{s.story.title[lang]}</h2>
           </Reveal>
 
           {s.story.images.length ? (
-            <div className="mt-16 grid auto-rows-[220px] grid-cols-2 gap-3 sm:auto-rows-[260px] lg:grid-cols-4">
+            <div className="mt-12 grid auto-rows-[200px] grid-cols-2 gap-3 sm:auto-rows-[240px] lg:grid-cols-4">
               {s.story.images.slice(0, 6).map((im, i) => (
-                <Reveal
-                  key={im.url}
-                  as="figure"
-                  delay={i * 100}
-                  className={`group relative overflow-hidden rounded-xl bg-white/5 ${i === 0 ? "col-span-2 row-span-2" : ""} ${i === 3 ? "lg:col-span-2" : ""}`}
-                >
-                  <Image src={im.url} alt={im.caption[lang] || ""} fill sizes={i === 0 ? "(min-width:1024px) 50vw, 100vw" : "(min-width:1024px) 25vw, 50vw"} className="object-cover grayscale-[35%] transition duration-[1.6s] ease-out group-hover:scale-105 group-hover:grayscale-0" />
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12 text-sm">
-                    {im.caption[lang] ? <span className="block text-white/90">{im.caption[lang]}</span> : null}
-                    {im.credit ? <span className="mt-1 block text-[0.68rem] text-white/50">{im.credit}</span> : null}
-                  </figcaption>
+                <Reveal key={im.url} as="figure" delay={i * 100} className={`group relative overflow-hidden rounded-2xl bg-[var(--paper-2)] ${i === 0 ? "col-span-2 row-span-2" : ""} ${i === 3 ? "lg:col-span-2" : ""}`}>
+                  <Image src={im.url} alt={im.caption[lang] || ""} fill sizes={i === 0 ? "(min-width:1024px) 50vw, 100vw" : "(min-width:1024px) 25vw, 50vw"} className="object-cover transition duration-[1.4s] ease-out group-hover:scale-105" />
+                  {im.caption[lang] || im.credit ? (
+                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-10 text-sm text-white">
+                      {im.caption[lang] ? <span className="block">{im.caption[lang]}</span> : null}
+                      {im.credit ? <span className="mt-1 block text-[0.68rem] text-white/60">{im.credit}</span> : null}
+                    </figcaption>
+                  ) : null}
                 </Reveal>
               ))}
             </div>
           ) : null}
 
-          <div className="mt-16 grid gap-12 md:grid-cols-[1.3fr_1fr] md:gap-20">
-            <div className="space-y-6 text-lg leading-relaxed text-white/75 sm:text-xl">
+          <div className="mt-12 grid gap-10 md:grid-cols-[1.3fr_1fr] md:gap-16">
+            <div className="space-y-5 text-lg leading-relaxed text-[#3d3a35]">
               {s.story.paragraphs.map((p, i) => (
                 <Reveal key={i} delay={i * 120}>
                   <p>{p[lang]}</p>
@@ -193,18 +214,13 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
               ))}
             </div>
             <Reveal delay={200}>
-              <blockquote className="border-s-2 border-[var(--red)] ps-6 text-3xl leading-snug text-white sm:text-4xl">{s.story.quote[lang]}</blockquote>
-              <div className="mt-10 flex items-baseline gap-4">
-                <span className="ltr-num text-6xl font-medium text-[#3fbf7a] sm:text-7xl">8.12</span>
-                <span className="text-white/50">2024 – 2026</span>
+              <blockquote className="border-s-2 border-[var(--red)] ps-6 text-2xl leading-snug sm:text-3xl">{s.story.quote[lang]}</blockquote>
+              <div className="mt-8 flex items-baseline gap-4">
+                <span className="ltr-num text-6xl font-medium text-[var(--green)]">8.12</span>
+                <span className="ltr-num text-[var(--muted)]">2024 – 2026</span>
               </div>
             </Reveal>
           </div>
-          <Reveal className="mt-20">
-            <a href="#kollektion" className="inline-flex h-13 items-center rounded-full bg-white px-7 py-3.5 font-medium text-black transition hover:bg-[#e9f2ec]">
-              {t.hero.cta}
-            </a>
-          </Reveal>
         </div>
       </section>
     </>

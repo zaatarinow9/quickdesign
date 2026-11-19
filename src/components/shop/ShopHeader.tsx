@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -11,15 +10,7 @@ import { cn } from "@/lib/utils";
 export function ShopHeader() {
   const { t, href, lang, count, setOpen } = useShop();
   const pathname = usePathname() ?? "";
-  const isHome = /^(\/shop)?\/(de|ar)\/?$/.test(pathname);
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 40);
-    on();
-    window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
-  }, []);
-  const clear = isHome && !scrolled;
+  const clear = false;
 
   // Gleiche Seite in der anderen Sprache
   const other = lang === "de" ? "ar" : "de";
