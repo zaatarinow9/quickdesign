@@ -34,8 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       title: t.meta.title,
       description: t.meta.description,
       url: `${SHOP_URL}/${lang}`,
-      images: [{ url: "/shop/fahne.webp", width: 1200, height: 1200 }],
+      images: [{ url: "/shop/og-sticker.jpg", width: 1200, height: 1200, alt: "سوريا حرّة – عيد التحرير 8.12" }],
     },
+    twitter: { card: "summary", images: ["/shop/og-sticker.jpg"] },
   };
 }
 
