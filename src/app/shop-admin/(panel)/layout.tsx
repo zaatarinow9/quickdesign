@@ -13,7 +13,7 @@ export default async function ShopPanelLayout({ children }: { children: React.Re
   const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(":")[0];
   const shopUrl = SHOP_HOSTS.includes(host) ? "/de" : host.includes("quickdesign24.de") ? SHOP_URL : "/shop/de";
   return (
-    <div className="min-h-dvh lg:pl-[17rem]">
+    <div className="min-h-dvh lg:pr-[17rem]">
       <style>{`.shop-tricolor-adm{background:linear-gradient(90deg,#0b6b3a 0 33.3%,#fff 33.3% 66.6%,#111 66.6%)}`}</style>
       <ShopSidebar base={base} email={admin.email} openOrders={count ?? 0} shopUrl={shopUrl} signOut={shopSignOut} />
       <main className="mx-auto w-full max-w-[80rem] px-4 py-7 sm:px-7 lg:px-10 lg:py-10">{children}</main>

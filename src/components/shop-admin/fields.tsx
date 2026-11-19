@@ -24,34 +24,21 @@ export function LField({
   rows?: number;
   hint?: string;
 }) {
+  // Der Shop ist nur auf Arabisch – es wird nur der arabische Text bearbeitet
   const Comp = multiline ? "textarea" : "input";
   return (
-    <div>
-      <p className="adm-label">{label}</p>
-      <div className="grid gap-2 md:grid-cols-2">
-        <label className="relative block">
-          <span className="pointer-events-none absolute end-2 top-2 rounded bg-ink/[0.06] px-1.5 text-[0.65rem] font-semibold text-stone-dark">DE</span>
-          <Comp
-            className={cn("adm-input w-full pe-10", multiline && "min-h-[5rem] py-2 leading-relaxed")}
-            rows={multiline ? rows : undefined}
-            value={value.de}
-            onChange={(e) => onChange({ ...value, de: e.target.value })}
-          />
-        </label>
-        <label className="relative block">
-          <span className="pointer-events-none absolute start-2 top-2 rounded bg-ink/[0.06] px-1.5 text-[0.65rem] font-semibold text-stone-dark">AR</span>
-          <Comp
-            dir="rtl"
-            lang="ar"
-            className={cn("adm-input w-full ps-10", multiline && "min-h-[5rem] py-2 leading-relaxed")}
-            rows={multiline ? rows : undefined}
-            value={value.ar}
-            onChange={(e) => onChange({ ...value, ar: e.target.value })}
-          />
-        </label>
-      </div>
-      {hint ? <p className="mt-1 text-xs text-stone-dark">{hint}</p> : null}
-    </div>
+    <label className="block">
+      <span className="adm-label">{label}</span>
+      <Comp
+        dir="rtl"
+        lang="ar"
+        className={cn("adm-input w-full", multiline && "min-h-[5rem] py-2 leading-relaxed")}
+        rows={multiline ? rows : undefined}
+        value={value.ar}
+        onChange={(e) => onChange({ ...value, ar: e.target.value })}
+      />
+      {hint ? <span className="mt-1 block text-xs text-stone-dark">{hint}</span> : null}
+    </label>
   );
 }
 
@@ -68,7 +55,7 @@ export function MoneyInput({ cents, onChange, className }: { cents: number; onCh
     <label className={cn("relative block", className)}>
       <input
         inputMode="decimal"
-        className="adm-input w-full pe-7 text-end tabular-nums"
+        className="adm-input w-full ps-7 text-start tabular-nums" dir="ltr"
         value={text}
         onChange={(e) => {
           setText(e.target.value);
@@ -81,7 +68,7 @@ export function MoneyInput({ cents, onChange, className }: { cents: number; onCh
         }}
         onBlur={() => setText((cents / 100).toFixed(2).replace(".", ","))}
       />
-      <span className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-sm text-stone-dark">€</span>
+      <span className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-sm text-stone-dark">€</span>
     </label>
   );
 }
@@ -174,10 +161,10 @@ export function ImageField({
       const signed = await signImageUpload({ name: file.name, type });
       if (!signed.ok) throw new Error(signed.error);
       const { error: upErr } = await storage().uploadToSignedUrl(signed.path, signed.token, blob, { contentType: type, cacheControl: "31536000" });
-      if (upErr) throw new Error("Upload fehlgeschlagen.");
+      if (upErr) throw new Error("فشل رفع الصورة.");
       onChange(signed.publicUrl);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : "فشل رفع الصورة.");
     } finally {
       setBusy(false);
     }
@@ -217,19 +204,19 @@ export function ImageField({
             <Loader2 className="size-6 animate-spin text-[#0b6b3a]" />
           </div>
         ) : null}
-        <button type="button" onClick={() => input.current?.click()} className="absolute inset-0" aria-label="Bild hochladen" />
+        <button type="button" onClick={() => input.current?.click()} className="absolute inset-0" aria-label="رفع صورة" />
       </div>
       <div className={cn("flex flex-wrap items-center gap-1.5", size === "sm" ? "" : "mt-2")}>
         <button type="button" onClick={() => input.current?.click()} className="adm-btn adm-btn-ghost adm-btn-sm" disabled={busy}>
-          <ImagePlus className="size-3.5" /> {value ? "Ersetzen" : "Hochladen"}
+          <ImagePlus className="size-3.5" /> {value ? "استبدال" : "رفع صورة"}
         </button>
         {fallback && value !== fallback ? (
-          <button type="button" onClick={() => onChange(fallback)} className="adm-btn adm-btn-ghost adm-btn-sm" title="Standardbild wiederherstellen">
+          <button type="button" onClick={() => onChange(fallback)} className="adm-btn adm-btn-ghost adm-btn-sm" title="استعادة الصورة الأصلية">
             <RotateCcw className="size-3.5" />
           </button>
         ) : null}
         {value ? (
-          <button type="button" onClick={() => onChange("")} className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" title="Entfernen">
+          <button type="button" onClick={() => onChange("")} className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" title="حذف">
             <Trash2 className="size-3.5" />
           </button>
         ) : null}
@@ -247,15 +234,15 @@ export function SaveBar({ onSave, dirty, extra }: { onSave: () => Promise<Result
   const save = async () => {
     setState({ busy: true, msg: "", ok: true });
     const r = await onSave();
-    setState({ busy: false, ok: r.ok, msg: r.ok ? (r.message ?? "Gespeichert.") : r.error });
+    setState({ busy: false, ok: r.ok, msg: r.ok ? (r.message ?? "تم الحفظ.") : r.error });
   };
   return (
     <div className="sticky bottom-0 z-20 -mx-4 mt-8 border-t border-ink/10 bg-white/90 px-4 py-3 backdrop-blur sm:-mx-7 sm:px-7 lg:-mx-10 lg:px-10">
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={save} disabled={state.busy} className="adm-btn h-11 bg-[#0b6b3a] px-6 text-white hover:bg-[#0a5c32] disabled:opacity-60">
-          {state.busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} Speichern
+          {state.busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} حفظ
         </button>
-        {dirty && !state.busy ? <span className="text-sm text-amber-700">Ungespeicherte Änderungen</span> : null}
+        {dirty && !state.busy ? <span className="text-sm text-amber-700">تعديلات غير محفوظة</span> : null}
         {state.msg ? <span className={cn("text-sm", state.ok ? "text-emerald-700" : "text-red-700")}>{state.msg}</span> : null}
         <span className="ms-auto">{extra}</span>
       </div>

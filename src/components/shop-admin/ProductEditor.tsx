@@ -8,7 +8,7 @@ import { kinds, type Product } from "@/lib/shop/schema";
 import { Card } from "@/components/admin/ui";
 import { ImageField, LField, MoneyInput, NumberInput, SaveBar, Toggle } from "./fields";
 
-const kindLabel: Record<string, string> = { tshirt: "T-Shirt", hoodie: "Hoodie", flag: "Fahne", banner: "Banner", foil: "Folie / Aufkleber", sticker: "Sticker", other: "Sonstiges" };
+const kindLabel: Record<string, string> = { tshirt: "تيشرت", hoodie: "هودي", flag: "علم", banner: "لافتة", foil: "ملصق فينيل / سيارة", sticker: "ستيكر", other: "أخرى" };
 const SIZE_PRESET = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
 const empty = { de: "", ar: "" };
 
@@ -37,21 +37,21 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
 
   return (
     <div className="space-y-6">
-      <Card title="Grunddaten">
+      <Card title="البيانات الأساسية">
         <div className="space-y-5">
-          <LField label="Name" value={p.name} onChange={(name) => up({ name })} />
-          <LField label="Kurzbeschreibung (unter dem Namen)" value={p.tagline} onChange={(tagline) => up({ tagline })} />
-          <LField label="Beschreibung" value={p.description} onChange={(description) => up({ description })} multiline rows={4} />
+          <LField label="اسم المنتج" value={p.name} onChange={(name) => up({ name })} />
+          <LField label="وصف قصير (تحت الاسم)" value={p.tagline} onChange={(tagline) => up({ tagline })} />
+          <LField label="الوصف" value={p.description} onChange={(description) => up({ description })} multiline rows={4} />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="adm-label">Kategorie</label>
+              <label className="adm-label">النوع الرئيسي</label>
               <select className="adm-input w-full" value={p.category} onChange={(e) => up({ category: e.target.value as Product["category"] })}>
-                <option value="textil">Textilien (Größen)</option>
-                <option value="druck">Druck (Formate)</option>
+                <option value="textil">ملابس (مقاسات)</option>
+                <option value="druck">مطبوعات (أحجام)</option>
               </select>
             </div>
             <div>
-              <label className="adm-label">Art</label>
+              <label className="adm-label">الصنف</label>
               <select className="adm-input w-full" value={p.kind} onChange={(e) => up({ kind: e.target.value as Product["kind"] })}>
                 {kinds.map((k) => (
                   <option key={k} value={k}>{kindLabel[k]}</option>
@@ -59,32 +59,32 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
               </select>
             </div>
             <div>
-              <label className="adm-label">Adresse (URL-Kennung)</label>
-              <input className="adm-input w-full font-mono text-sm" value={p.id} onChange={(e) => up({ id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 60) })} />
-              <p className="mt-1 text-xs text-stone-dark">/produkt/{p.id}</p>
+              <label className="adm-label">رابط المنتج</label>
+              <input dir="ltr" className="adm-input w-full font-mono text-sm" value={p.id} onChange={(e) => up({ id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 60) })} />
+              <p className="ltr mt-1 text-xs text-stone-dark">/produkt/{p.id}</p>
             </div>
             <div>
-              <label className="adm-label">Max. Menge je Bestellung</label>
+              <label className="adm-label">أقصى كمية بالطلب</label>
               <NumberInput value={p.maxQty} onChange={(maxQty) => up({ maxQty })} min={1} max={1000} />
             </div>
           </div>
           <div className="flex flex-wrap gap-8">
-            <Toggle checked={p.active} onChange={(active) => up({ active })} label="Im Shop sichtbar" />
-            <Toggle checked={p.featured} onChange={(featured) => up({ featured })} label="Hervorheben" />
+            <Toggle checked={p.active} onChange={(active) => up({ active })} label="ظاهر في المتجر" />
+            <Toggle checked={p.featured} onChange={(featured) => up({ featured })} label="منتج مميز" />
           </div>
         </div>
       </Card>
 
       {/* Bilder */}
       <Card
-        title={p.colors.length ? "Farben & Bilder" : "Bilder"}
+        title={p.colors.length ? "الألوان والصور" : "الصور"}
         action={
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm"
-            onClick={() => up({ colors: [...p.colors, { id: `farbe-${p.colors.length + 1}`, name: { ...empty }, hex: "#1d1d1f", image: "", detail: "" }] })}
+            onClick={() => up({ colors: [...p.colors, { id: `farbe-${Date.now().toString(36)}`, name: { ...empty }, hex: "#1d1d1f", image: "", detail: "" }] })}
           >
-            <Plus className="size-3.5" /> Farbe
+            <Plus className="size-3.5" /> لون
           </button>
         }
       >
@@ -96,15 +96,14 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
                 <div key={i} className="rounded-xl border border-ink/10 p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <input type="color" value={c.hex} onChange={(e) => set({ hex: e.target.value })} className="size-9 cursor-pointer rounded-lg border border-ink/10" />
-                    <input className="adm-input flex-1" placeholder="Farbe (DE)" value={c.name.de} onChange={(e) => set({ name: { ...c.name, de: e.target.value }, id: c.id.startsWith("farbe-") ? e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || c.id : c.id })} />
-                    <input className="adm-input w-28" dir="rtl" placeholder="اللون" value={c.name.ar} onChange={(e) => set({ name: { ...c.name, ar: e.target.value } })} />
-                    <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => up({ colors: p.colors.filter((_, j) => j !== i) })} title="Farbe entfernen">
+                    <input className="adm-input flex-1" dir="rtl" placeholder="اسم اللون" value={c.name.ar} onChange={(e) => set({ name: { ...c.name, ar: e.target.value } })} />
+                    <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => up({ colors: p.colors.filter((_, j) => j !== i) })} title="حذف اللون">
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <ImageField label="Hauptbild" value={c.image} onChange={(image) => set({ image })} fallback={fallbackColor(c.id)?.image} />
-                    <ImageField label="Nahaufnahme (Motiv)" value={c.detail} onChange={(detail) => set({ detail })} fallback={fallbackColor(c.id)?.detail} />
+                    <ImageField label="الصورة الرئيسية" value={c.image} onChange={(image) => set({ image })} fallback={fallbackColor(c.id)?.image} />
+                    <ImageField label="صورة قريبة للتصميم" value={c.detail} onChange={(detail) => set({ detail })} fallback={fallbackColor(c.id)?.detail} />
                   </div>
                 </div>
               );
@@ -112,15 +111,15 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
           </div>
         ) : (
           <div className="grid max-w-md grid-cols-2 gap-4">
-            <ImageField label="Produktbild" value={p.image} onChange={(image) => up({ image })} fallback={defaults?.image} />
-            <ImageField label="Nahaufnahme" value={p.detail} onChange={(detail) => up({ detail })} fallback={defaults?.detail} />
+            <ImageField label="صورة المنتج" value={p.image} onChange={(image) => up({ image })} fallback={defaults?.image} />
+            <ImageField label="صورة قريبة" value={p.detail} onChange={(detail) => up({ detail })} fallback={defaults?.detail} />
           </div>
         )}
         <div className="mt-6 border-t border-ink/[0.06] pt-5">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-medium">Weitere Bilder (Galerie)</p>
+            <p className="text-sm font-medium">صور إضافية (معرض)</p>
             <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => up({ gallery: [...p.gallery, ""] })}>
-              <Plus className="size-3.5" /> Bild
+              <Plus className="size-3.5" /> صورة
             </button>
           </div>
           {p.gallery.length ? (
@@ -130,28 +129,28 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
               ))}
             </div>
           ) : (
-            <p className="text-sm text-stone-dark">Z. B. echte Fotos, Detailaufnahmen oder Fotos vom Tragen.</p>
+            <p className="text-sm text-stone-dark">مثلاً صور حقيقية للقطعة، أو صور قريبة، أو صور أثناء اللبس.</p>
           )}
         </div>
       </Card>
 
       {/* Größen / Formate */}
       <Card
-        title={textile ? "Größen & Preise" : "Formate, Preise & Bilder"}
+        title={textile ? "المقاسات والأسعار" : "الأحجام والأسعار والصور"}
         action={
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm"
             onClick={() => up({ variants: [...p.variants, { id: `v${p.variants.length + 1}`, label: { ...empty }, priceCents: p.variants.at(-1)?.priceCents ?? 0, image: "", active: true }] })}
           >
-            <Plus className="size-3.5" /> {textile ? "Größe" : "Format"}
+            <Plus className="size-3.5" /> {textile ? "مقاس" : "حجم"}
           </button>
         }
       >
         {textile ? (
           <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl bg-ink/[0.03] p-3">
             <div>
-              <p className="adm-label">Größen schnell hinzufügen</p>
+              <p className="adm-label">إضافة سريعة للمقاسات</p>
               <div className="flex flex-wrap gap-1.5">
                 {SIZE_PRESET.map((s) => {
                   const has = p.variants.some((v) => v.id === s);
@@ -176,11 +175,11 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
             </div>
             <div className="flex items-end gap-2">
               <div className="w-32">
-                <p className="adm-label">Preis für alle</p>
+                <p className="adm-label">سعر موحّد للكل</p>
                 <MoneyInput cents={allPrice} onChange={setAllPrice} />
               </div>
               <button type="button" className="adm-btn adm-btn-ghost" onClick={() => up({ variants: p.variants.map((v) => ({ ...v, priceCents: allPrice })) })}>
-                Übernehmen
+                تطبيق
               </button>
             </div>
           </div>
@@ -189,12 +188,11 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
           <table className="adm-table w-full min-w-[640px]">
             <thead>
               <tr>
-                <th>Kennung</th>
-                <th>Bezeichnung (DE)</th>
-                <th>Bezeichnung (AR)</th>
-                <th className="w-32">Preis</th>
-                {!textile ? <th>Bild</th> : null}
-                <th>Aktiv</th>
+                <th>المعرّف</th>
+                <th>الاسم</th>
+                <th className="w-32">السعر</th>
+                {!textile ? <th>الصورة</th> : null}
+                <th>فعّال</th>
                 <th />
               </tr>
             </thead>
@@ -203,9 +201,8 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
                 const set = (patch: Partial<typeof v>) => up({ variants: p.variants.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
                 return (
                   <tr key={i}>
-                    <td><input className="adm-input w-24 font-mono text-sm" value={v.id} onChange={(e) => set({ id: e.target.value.replace(/\s/g, "").slice(0, 30) })} /></td>
-                    <td><input className="adm-input w-full" value={v.label.de} onChange={(e) => set({ label: { ...v.label, de: e.target.value } })} /></td>
-                    <td><input className="adm-input w-full" dir="rtl" value={v.label.ar} onChange={(e) => set({ label: { ...v.label, ar: e.target.value } })} /></td>
+                    <td><input dir="ltr" className="adm-input w-24 font-mono text-sm" value={v.id} onChange={(e) => set({ id: e.target.value.replace(/\s/g, "").slice(0, 30) })} /></td>
+                                        <td><input className="adm-input w-full" dir="rtl" value={v.label.ar} onChange={(e) => set({ label: { ...v.label, ar: e.target.value } })} /></td>
                     <td><MoneyInput cents={v.priceCents} onChange={(priceCents) => set({ priceCents })} /></td>
                     {!textile ? (
                       <td><ImageField size="sm" value={v.image} onChange={(image) => set({ image })} fallback={fallbackVariant(v.id)} /></td>
@@ -222,22 +219,22 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
             </tbody>
           </table>
         </div>
-        {!textile ? <p className="mt-3 text-xs text-stone-dark">Tipp: Jedes Format kann ein eigenes Bild haben (z. B. Handfahne, 90 × 150, Großfahne). Ohne eigenes Bild wird das Produktbild gezeigt.</p> : null}
+        {!textile ? <p className="mt-3 text-xs text-stone-dark">ملاحظة: كل حجم ممكن تكون إله صورة خاصة (مثلاً علم يدوي، 90 × 150، علم كبير). بدون صورة خاصة تظهر صورة المنتج.</p> : null}
       </Card>
 
       {textile ? (
         <Card
-          title="Maßtabelle (cm)"
+          title="جدول المقاسات (سم)"
           action={
             <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => up({ sizeChart: [...p.sizeChart, { size: "", width: 0, length: 0 }] })}>
-              <Plus className="size-3.5" /> Zeile
+              <Plus className="size-3.5" /> سطر
             </button>
           }
         >
           {p.sizeChart.length ? (
             <table className="adm-table w-full max-w-2xl">
               <thead>
-                <tr><th>Größe</th><th>Breite</th><th>Länge</th><th>Ärmel</th><th /></tr>
+                <tr><th>المقاس</th><th>العرض</th><th>الطول</th><th>الكم</th><th /></tr>
               </thead>
               <tbody>
                 {p.sizeChart.map((r, i) => {
@@ -259,16 +256,16 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
               </tbody>
             </table>
           ) : (
-            <p className="text-sm text-stone-dark">Keine Maßtabelle – im Shop wird dann keine angezeigt.</p>
+            <p className="text-sm text-stone-dark">لا يوجد جدول مقاسات – لن يظهر في المتجر.</p>
           )}
         </Card>
       ) : null}
 
       <Card
-        title="Details (Material, Pflege, Format …)"
+        title="التفاصيل (الخامة، العناية، الحجم …)"
         action={
           <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => up({ details: [...p.details, { ...empty }] })}>
-            <Plus className="size-3.5" /> Punkt
+            <Plus className="size-3.5" /> نقطة
           </button>
         }
       >
@@ -276,7 +273,7 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
           {p.details.map((d, i) => (
             <div key={i} className="flex items-start gap-2">
               <div className="flex-1">
-                <LField label={`Punkt ${i + 1}`} value={d} onChange={(v) => up({ details: p.details.map((x, j) => (j === i ? v : x)) })} />
+                <LField label={`نقطة ${i + 1}`} value={d} onChange={(v) => up({ details: p.details.map((x, j) => (j === i ? v : x)) })} />
               </div>
               <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm mt-6 text-red-700" onClick={() => up({ details: p.details.filter((_, j) => j !== i) })}>
                 <Trash2 className="size-3.5" />

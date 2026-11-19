@@ -7,9 +7,9 @@ import { formatEuro } from "@/lib/documents/format";
 import { Badge, Card, PageHeader } from "@/components/admin/ui";
 import { ProductRowActions } from "@/components/shop-admin/ProductRowActions";
 
-export const metadata = { title: "Produkte & Preise" };
+export const metadata = { title: "المنتجات والأسعار" };
 
-const kindLabel: Record<string, string> = { tshirt: "T-Shirt", hoodie: "Hoodie", flag: "Fahne", banner: "Banner", foil: "Folie", sticker: "Sticker", other: "Sonstiges" };
+const kindLabel: Record<string, string> = { tshirt: "تيشرت", hoodie: "هودي", flag: "علم", banner: "لافتة", foil: "ملصق فينيل", sticker: "ستيكر", other: "أخرى" };
 
 export default async function ProductsPage() {
   await requireShopAdmin();
@@ -18,18 +18,18 @@ export default async function ProductsPage() {
   return (
     <>
       <PageHeader
-        title="Produkte & Preise"
-        description="Reihenfolge, Sichtbarkeit, Preise, Größen, Formate und Bilder. Änderungen sind nach dem Speichern sofort im Shop."
+        title="المنتجات والأسعار"
+        description="الترتيب والظهور والأسعار والمقاسات والأحجام والصور. التعديلات تظهر في المتجر فور الحفظ."
         actions={
-          <Link href={`${base}/produkte/neu`} className="adm-btn bg-[#0b6b3a] text-white hover:bg-[#0a5c32]">
-            <Plus className="size-4" /> Neues Produkt
+          <Link href={`${base}/produkte/neu`} className="adm-btn bg-[#054239] text-white hover:bg-[#0b6456]">
+            <Plus className="size-4" /> منتج جديد
           </Link>
         }
       />
       {(["textil", "druck"] as const).map((cat) => {
         const list = store.products.map((p, i) => ({ p, i })).filter(({ p }) => p.category === cat);
         return (
-          <Card key={cat} title={cat === "textil" ? "Textilien" : "Druckprodukte (Fahnen, Banner, Folien, Sticker)"} padded={false} className="mb-6">
+          <Card key={cat} title={cat === "textil" ? "الملابس" : "المطبوعات (أعلام، لافتات، ملصقات، ستيكرات)"} padded={false} className="mb-6">
             {list.length ? (
               <ul className="divide-y divide-ink/[0.06]">
                 {list.map(({ p, i }) => {
@@ -44,27 +44,27 @@ export default async function ProductsPage() {
                         {img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <Package className="m-5 size-6 text-stone-dark" />}
                       </Link>
                       <div className="min-w-0 flex-1">
-                        <Link href={`${base}/produkte/${p.id}`} className="font-medium hover:text-[#0b6b3a]">
-                          {p.name.de}
+                        <Link href={`${base}/produkte/${p.id}`} className="font-medium hover:text-[#054239]">
+                          {p.name.ar || p.name.de}
                         </Link>
                         <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-stone-dark">
                           <Badge tone="gray">{kindLabel[p.kind]}</Badge>
-                          {p.colors.length ? <span>{p.colors.map((c) => c.name.de).join(", ")}</span> : null}
-                          <span>· {p.variants.filter((v) => v.active).length} {cat === "textil" ? "Größen" : "Formate"}</span>
-                          {!p.active ? <Badge tone="red">ausgeblendet</Badge> : null}
+                          {p.colors.length ? <span>{p.colors.map((c) => c.name.ar || c.name.de).join("، ")}</span> : null}
+                          <span>· {p.variants.filter((v) => v.active).length} {cat === "textil" ? "مقاسات" : "أحجام"}</span>
+                          {!p.active ? <Badge tone="red">مخفي</Badge> : null}
                         </p>
                       </div>
-                      <p className="w-36 text-end tabular-nums">{min === max ? formatEuro(min / 100) : `${formatEuro(min / 100)} – ${formatEuro(max / 100)}`}</p>
+                      <p className="ltr w-40 text-start tabular-nums">{min === max ? formatEuro(min / 100) : `${formatEuro(min / 100)} – ${formatEuro(max / 100)}`}</p>
                       <ProductRowActions id={p.id} active={p.active} featured={p.featured} first={i === 0} last={i === store.products.length - 1} />
                       <Link href={`${base}/produkte/${p.id}`} className="adm-btn adm-btn-ghost adm-btn-sm">
-                        Bearbeiten
+                        تعديل
                       </Link>
                     </li>
                   );
                 })}
               </ul>
             ) : (
-              <p className="p-5 text-sm text-stone-dark">Noch keine Produkte in dieser Kategorie.</p>
+              <p className="p-5 text-sm text-stone-dark">لا توجد منتجات في هذا القسم بعد.</p>
             )}
           </Card>
         );

@@ -4,7 +4,7 @@ import { setOrderStatus } from "../../actions";
 import { FilterTabs, PageHeader } from "@/components/admin/ui";
 import { OrdersList, orderLabels, type OrderRow } from "@/components/shop-admin/OrdersList";
 
-export const metadata = { title: "Bestellungen" };
+export const metadata = { title: "الطلبات" };
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   await requireShopAdmin();
@@ -17,12 +17,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const counts = (all ?? []).reduce<Record<string, number>>((m, r) => ({ ...m, [r.status as string]: (m[r.status as string] ?? 0) + 1 }), {});
   return (
     <>
-      <PageHeader title="Bestellungen" description="Alle bezahlten Bestellungen aus dem Shop. Status ändern, sobald gedruckt, versendet oder abgeholt." />
+      <PageHeader title="الطلبات" description="كل الطلبات المدفوعة من المتجر. غيّر الحالة عند الطباعة أو الشحن أو الاستلام." />
       <div className="mb-5">
         <FilterTabs
           active={status ?? "alle"}
           items={[
-            { key: "alle", label: "Alle", href: `${base}/bestellungen`, count: (all ?? []).length },
+            { key: "alle", label: "الكل", href: `${base}/bestellungen`, count: (all ?? []).length },
             ...Object.entries(orderLabels).map(([k, v]) => ({ key: k, label: v, href: `${base}/bestellungen?status=${k}`, count: counts[k] ?? 0 })),
           ]}
         />

@@ -7,7 +7,7 @@ import type { Product } from "@/lib/shop/schema";
 import { PageHeader } from "@/components/admin/ui";
 import { ProductEditor } from "@/components/shop-admin/ProductEditor";
 
-export const metadata = { title: "Produkt bearbeiten" };
+export const metadata = { title: "تعديل منتج" };
 
 const blank: Product = {
   id: "neues-produkt",
@@ -40,9 +40,9 @@ export default async function ProductEditPage({ params }: { params: Promise<{ id
   return (
     <>
       <PageHeader
-        eyebrow={<Link href={`${base}/produkte`} className="hover:text-ink">← Produkte</Link>}
-        title={isNew ? "Neues Produkt" : product.name.de || "Produkt"}
-        description={isNew ? "Neues Produkt anlegen – erst nach „Im Shop sichtbar“ erscheint es im Shop." : "Alle Angaben auf Deutsch und Arabisch. Bilder per Klick oder Drag & Drop hochladen."}
+        eyebrow={<Link href={`${base}/produkte`} className="hover:text-ink">→ المنتجات</Link>}
+        title={isNew ? "منتج جديد" : product.name.ar || product.name.de || "منتج"}
+        description={isNew ? "أضف منتجاً جديداً – يظهر في المتجر بعد تفعيل «ظاهر في المتجر»." : "عدّل البيانات والأسعار والصور. ارفع الصور بالنقر أو بالسحب والإفلات."}
       />
       <ProductEditor initial={product} isNew={isNew} base={base} defaults={defaults} />
     </>

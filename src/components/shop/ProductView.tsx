@@ -7,6 +7,7 @@ import { activeVariants, detailOf, imageOf, type Product } from "@/lib/shop/sche
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
 import { useShop } from "./ShopProvider";
+import { PaymentLogos } from "./PaymentLogos";
 import { cn } from "@/lib/utils";
 
 function Stepper({ value, onChange, max, label, size = "md" }: { value: number; onChange: (n: number) => void; max: number; label: string; size?: "sm" | "md" }) {
@@ -255,6 +256,11 @@ export function ProductView({
             {added ? t.product.added : textile && totalPieces > 0 ? fill(t.product.addN, { n: totalPieces }) : t.product.add}
             {totalPieces > 0 && !added ? <span className="ltr-num text-white/70">· {money(prePct ? reduce(sumCents) : sumCents)}</span> : null}
           </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
+          <span>{lang === "ar" ? "ادفع بأمان عبر" : "Sicher bezahlen"}</span>
+          <PaymentLogos />
         </div>
 
         {/* Angebote */}
