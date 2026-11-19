@@ -24,7 +24,9 @@ async function load(): Promise<ShopStore> {
 }
 
 /** Aktueller Shop-Stand (gecacht, wird beim Speichern in der Verwaltung sofort erneuert) */
-export const getStore = unstable_cache(load, ["shop-store-v1"], { tags: [TAG], revalidate: 600 });
+// Der Daten-Cache überlebt Deployments – darum Schlüssel je Deployment (neue Startdaten sofort sichtbar)
+const DEPLOY = process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || "local";
+export const getStore = unstable_cache(load, ["shop-store", DEPLOY], { tags: [TAG], revalidate: 600 });
 
 /** Ungecacht – für die Verwaltung */
 export const getStoreFresh = load;
