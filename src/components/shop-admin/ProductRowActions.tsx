@@ -11,7 +11,7 @@ export function ProductRowActions({ id, active, featured, first, last }: { id: s
   const router = useRouter();
   const run = (a: Parameters<typeof productAction>[1]) =>
     start(async () => {
-      if (a === "delete" && !confirm("Produkt wirklich löschen? Das kann nicht rückgängig gemacht werden.")) return;
+      if (a === "delete" && !confirm("هل تريد حذف المنتج نهائياً؟ لا يمكن التراجع عن ذلك.")) return;
       const r = await productAction(id, a);
       if (!r.ok) alert(r.error);
       router.refresh();
@@ -20,22 +20,22 @@ export function ProductRowActions({ id, active, featured, first, last }: { id: s
   return (
     <div className="flex items-center gap-0.5">
       {pending ? <Loader2 className="me-1 size-4 animate-spin text-stone-dark" /> : null}
-      <button type="button" className={btn} onClick={() => run("toggle")} title={active ? "Im Shop ausblenden" : "Im Shop anzeigen"} disabled={pending}>
+      <button type="button" className={btn} onClick={() => run("toggle")} title={active ? "إخفاء من المتجر" : "إظهار في المتجر"} disabled={pending}>
         {active ? <Eye className="size-4" /> : <EyeOff className="size-4 text-red-600" />}
       </button>
-      <button type="button" className={btn} onClick={() => run("feature")} title="Hervorheben" disabled={pending}>
+      <button type="button" className={btn} onClick={() => run("feature")} title="تمييز" disabled={pending}>
         <Star className={cn("size-4", featured && "fill-amber-400 text-amber-500")} />
       </button>
-      <button type="button" className={btn} onClick={() => run("up")} title="Nach oben" disabled={pending || first}>
+      <button type="button" className={btn} onClick={() => run("up")} title="للأعلى" disabled={pending || first}>
         <ArrowUp className="size-4" />
       </button>
-      <button type="button" className={btn} onClick={() => run("down")} title="Nach unten" disabled={pending || last}>
+      <button type="button" className={btn} onClick={() => run("down")} title="للأسفل" disabled={pending || last}>
         <ArrowDown className="size-4" />
       </button>
-      <button type="button" className={btn} onClick={() => run("duplicate")} title="Duplizieren" disabled={pending}>
+      <button type="button" className={btn} onClick={() => run("duplicate")} title="نسخ" disabled={pending}>
         <Copy className="size-4" />
       </button>
-      <button type="button" className={cn(btn, "hover:text-red-700")} onClick={() => run("delete")} title="Löschen" disabled={pending}>
+      <button type="button" className={cn(btn, "hover:text-red-700")} onClick={() => run("delete")} title="حذف" disabled={pending}>
         <Trash2 className="size-4" />
       </button>
     </div>

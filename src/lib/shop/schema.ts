@@ -93,7 +93,7 @@ export const categoryKinds: Record<CategorySlug, Kind[]> = {
   flags: ["flag", "banner"],
   stickers: ["sticker", "foil", "other"],
 };
-const slideSchema = z.object({ image: img, title: L, text: L, link: z.string().max(200).default("") });
+const slideSchema = z.object({ image: img, title: L, text: L, link: z.string().max(200).default(""), credit: z.string().max(200).default("") });
 const sectionSchema = z.object({ slug: z.enum(categorySlugs), title: L, text: L, image: img.default("") });
 
 export const settingsSchema = z.object({

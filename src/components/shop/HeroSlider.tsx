@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type Slide = { image: string; title: string; text: string; href: string };
+export type Slide = { image: string; title: string; text: string; href: string; credit?: string };
 
 /** Breiter Bild-Slider mit Titel in der Mitte (wechselt automatisch, pausiert bei Hover) */
 export function HeroSlider({ slides, cta }: { slides: Slide[]; cta: string }) {
@@ -27,6 +27,7 @@ export function HeroSlider({ slides, cta }: { slides: Slide[]; cta: string }) {
         <div key={k} className={cn("absolute inset-0 transition-opacity duration-1000", k === i ? "opacity-100" : "pointer-events-none opacity-0")} aria-hidden={k !== i}>
           <Image src={s.image} alt="" fill priority={k === 0} sizes="100vw" className={cn("object-cover", k === i && "ken")} />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,40,35,0.45),rgba(5,25,22,0.72))]" />
+          {s.credit ? <span className="absolute end-3 top-2 z-10 max-w-[70%] truncate text-[0.6rem] text-white/60" dir="ltr">{s.credit}</span> : null}
           <div className="relative flex h-full flex-col items-center justify-center px-14 text-center text-white">
             <h2 className={cn("text-3xl leading-tight drop-shadow-sm sm:text-5xl lg:text-6xl", k === i && "rise")}>{s.title}</h2>
             {s.text ? <p className={cn("mt-3 max-w-xl text-base text-white/85 sm:text-lg", k === i && "rise")} style={{ animationDelay: "150ms" }}>{s.text}</p> : null}

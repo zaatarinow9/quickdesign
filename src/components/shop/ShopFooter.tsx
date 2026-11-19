@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { PaymentLogos } from "./PaymentLogos";
 import type { Lang } from "@/lib/shop/config";
 import type { ShopDict } from "@/lib/shop/i18n";
 
@@ -58,11 +59,7 @@ export function ShopFooter({ t, base, lang, whatsapp }: { t: ShopDict; base: str
       <div className="border-t border-[var(--line)]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-5 text-xs sm:flex-row sm:px-6">
           <span>© 2026 QuickDesign</span>
-          <span className="flex flex-wrap items-center gap-2">
-            {["Visa", "Mastercard", "Apple Pay", "Google Pay", "PayPal", "Klarna"].map((m) => (
-              <span key={m} className="rounded-md bg-white px-2 py-1 font-medium text-[var(--ink)] ring-1 ring-[var(--line)]">{m}</span>
-            ))}
-          </span>
+          <PaymentLogos />
         </div>
       </div>
     </footer>

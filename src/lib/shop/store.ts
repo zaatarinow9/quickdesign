@@ -38,17 +38,17 @@ export async function saveStore(next: unknown, by: string): Promise<{ ok: true }
   }
   const ids = new Set<string>();
   for (const p of parsed.data.products) {
-    if (ids.has(p.id)) return { ok: false, error: `Produkt-Kennung doppelt: ${p.id}` };
+    if (ids.has(p.id)) return { ok: false, error: `رابط المنتج مكرر: ${p.id}` };
     ids.add(p.id);
     const v = new Set(p.variants.map((x) => x.id));
-    if (v.size !== p.variants.length) return { ok: false, error: `${p.name.de}: Größe/Format doppelt` };
+    if (v.size !== p.variants.length) return { ok: false, error: `${p.name.ar || p.name.de}: مقاس أو حجم مكرر` };
   }
   const current = await db().from("shop_store").select("data").eq("id", 1).maybeSingle();
   if (current.data) await db().from("shop_store_history").insert({ data: current.data.data, created_by: by });
   const { error } = await db()
     .from("shop_store")
     .upsert({ id: 1, data: parsed.data, updated_at: new Date().toISOString(), updated_by: by });
-  if (error) return { ok: false, error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
+  if (error) return { ok: false, error: "تعذّر الحفظ. يرجى المحاولة مرة أخرى." };
   updateTag(TAG);
   return { ok: true };
 }

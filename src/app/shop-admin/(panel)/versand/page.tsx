@@ -3,14 +3,14 @@ import { getStoreFresh } from "@/lib/shop/store";
 import { PageHeader } from "@/components/admin/ui";
 import { SettingsEditor } from "@/components/shop-admin/SettingsEditor";
 
-export const metadata = { title: "Versand, Express & Vorbestellung" };
+export const metadata = { title: "الشحن والسريع والطلب المسبق" };
 
 export default async function ShippingPage() {
   await requireShopAdmin();
   const store = await getStoreFresh();
   return (
     <>
-      <PageHeader title="Versand, Express & Vorbestellung" description="Versandkosten, Express-Aufpreis, Abholung, Vorbestellrabatt und wichtige Termine." />
+      <PageHeader title="الشحن والسريع والطلب المسبق" description="أسعار الشحن، والشحن السريع، والاستلام، وخصم الطلب المسبق، والمواعيد المهمة." />
       <SettingsEditor initial={store.settings} mode="shipping" />
     </>
   );

@@ -9,7 +9,7 @@ import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
 import { activeProducts, categoryKinds, offerLive, preorderLive } from "@/lib/shop/schema";
 import { HeroSlider } from "@/components/shop/HeroSlider";
-import { ProductCard } from "@/components/shop/ProductCard";
+import { CollectionTabs } from "@/components/shop/CollectionTabs";
 import { Reveal } from "@/components/shop/Reveal";
 import { categoryIcon } from "@/components/shop/ShopIcons";
 import { WavingFlag } from "@/components/brand/WavingFlag";
@@ -29,7 +29,6 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
   const live = store.offers.filter((o) => offerLive(o, now));
   const pre = preorderLive(s, now);
   const products = activeProducts(store);
-  const featured = [...products.filter((p) => p.featured), ...products.filter((p) => !p.featured)].slice(0, 8);
   const sections = s.sections.filter((x) => products.some((p) => categoryKinds[x.slug].includes(p.kind)));
 
   // Laufband: Angebote und Vorteile
@@ -46,6 +45,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
     title: sl.title[lang] || sl.title.de,
     text: sl.text[lang] || sl.text.de,
     href: sl.link?.startsWith("http") ? sl.link : href(sl.link || "#produkte"),
+    credit: "credit" in sl ? sl.credit : "",
   }));
 
   const stats = [
@@ -76,47 +76,32 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
 
   return (
     <>
-      {/* Laufband */}
-      {promos.length ? (
-        <div className="overflow-hidden border-b border-[var(--line)] bg-white py-3 text-sm text-[var(--ink)]">
-          <div className="marquee flex w-max gap-12 whitespace-nowrap ps-12">
-            {[...promos, ...promos, ...promos].map((p, i) => (
-              <span key={i} className="flex items-center gap-2">
-                <p.icon className="size-4 text-[var(--green)]" strokeWidth={1.7} aria-hidden />
-                {p.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {/* Slider */}
+      <HeroSlider slides={slides} cta={t.hero.cta} />
 
-      {/* Zahlarten */}
-      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-2xl border border-[var(--line)] bg-[var(--paper-2)] px-5 py-3.5 text-sm">
-          <span className="font-medium">{ar ? "ادفع بأمان عبر" : "Sicher bezahlen mit"}</span>
-          {["Apple Pay", "Google Pay", "PayPal", "Klarna", ar ? "بطاقة بنكية" : "Karte"].map((m) => (
-            <span key={m} className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium ring-1 ring-[var(--line)]">{m}</span>
+      {/* Grüne Leiste: Countdown und Angebote */}
+      <div className="overflow-hidden bg-[var(--green)] py-3 text-sm text-white">
+        <div className="marquee flex w-max gap-12 whitespace-nowrap ps-12">
+          {[0, 1, 2].map((k) => (
+            <span key={k} className="flex items-center gap-12">
+              <span className="flex items-center gap-2.5">
+                <WavingFlag className="h-3.5 w-auto" amp={4} dur={3} />
+                {days > 0 ? fill(t.hero.days, { days }) : t.hero.today}
+              </span>
+              {promos.map((p, i) => (
+                <span key={i} className="flex items-center gap-2">
+                  <p.icon className="size-4 text-[var(--gold)]" strokeWidth={1.7} aria-hidden />
+                  {p.text}
+                </span>
+              ))}
+            </span>
           ))}
         </div>
       </div>
 
-      {/* Slider */}
-      <div className="mt-6">
-        <HeroSlider slides={slides} cta={t.hero.cta} />
-      </div>
-
-      {/* Countdown-Zeile */}
-      <div className="bg-[var(--green)] py-3 text-center text-sm text-white">
-        <span className="inline-flex items-center gap-2.5">
-          <WavingFlag className="h-3.5 w-auto" amp={4} dur={3} />
-          {days > 0 ? fill(t.hero.days, { days }) : t.hero.today}
-          {s.campaign.lastOrderDay && days > 6 ? <span className="hidden text-white/75 sm:inline">· {fill(t.hero.lastOrder, { date: dateLong(s.campaign.lastOrderDay, lang) })}</span> : null}
-        </span>
-      </div>
-
       {/* Bereiche */}
       <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
-        <h2 className="text-2xl">{ar ? "الأقسام" : "Bereiche"}</h2>
+        <h2 className="text-3xl">{ar ? "الأقسام" : "Bereiche"}</h2>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {sections.map((x, i) => {
             const Icon = categoryIcon[x.slug];
@@ -135,32 +120,22 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
         </div>
       </section>
 
-      {/* Bereichs-Banner */}
-      <section className="mt-14">
-        {sections.map((x) => (
-          <Link key={x.slug} href={href(`/qism/${x.slug}`)} className="group relative block h-[220px] overflow-hidden sm:h-[300px]">
-            {x.image ? <Image src={x.image} alt="" fill sizes="100vw" className="object-cover transition-transform duration-[1.4s] ease-out group-hover:scale-105" /> : null}
-            <div className="absolute inset-0 bg-[linear-gradient(270deg,rgba(5,40,35,0.8)_0%,rgba(5,40,35,0.4)_55%,rgba(5,40,35,0.1)_100%)] ltr:bg-[linear-gradient(90deg,rgba(5,40,35,0.8)_0%,rgba(5,40,35,0.4)_55%,rgba(5,40,35,0.1)_100%)]" />
-            <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center px-4 text-white sm:px-6">
-              <h2 className="text-3xl sm:text-4xl">{x.title[lang] || x.title.de}</h2>
-              <p className="mt-2 text-white/80">{x.text[lang] || x.text.de}</p>
-              <span className="mt-5 inline-flex w-fit items-center gap-2 text-sm text-[var(--mint)] transition-transform group-hover:-translate-x-1 ltr:group-hover:translate-x-1">
-                {ar ? "تسوّق القسم" : "Ansehen"} <span aria-hidden className="ltr:rotate-180">←</span>
-              </span>
-            </div>
-          </Link>
-        ))}
-      </section>
-
       {/* Produkte */}
       <section id="produkte" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-16 sm:px-6">
-        <h2 className="text-2xl">{ar ? "منتجات مختارة" : "Ausgewählte Produkte"}</h2>
-        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-          {featured.map((p, i) => (
-            <Reveal key={p.id} delay={(i % 4) * 70}>
-              <ProductCard p={p} store={store} lang={lang} t={t} href={href(`/produkt/${p.id}`)} now={now} />
-            </Reveal>
-          ))}
+        <Reveal>
+          <p className="text-sm text-[var(--gold)]">{t.sections.collection.eyebrow}</p>
+          <h2 className="mt-1 text-3xl sm:text-4xl">{ar ? "تسوّق المجموعة" : "Die Kollektion"}</h2>
+        </Reveal>
+        <div className="mt-6">
+          <CollectionTabs
+            products={[...products.filter((p) => p.featured), ...products.filter((p) => !p.featured)]}
+            store={store}
+            sections={sections.map((x) => ({ slug: x.slug, title: x.title[lang] || x.title.de }))}
+            lang={lang}
+            t={t}
+            base={base}
+            now={now}
+          />
         </div>
       </section>
 

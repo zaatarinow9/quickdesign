@@ -19,88 +19,88 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
 
   const shipping = (
     <>
-      <Card title="Vorbestellung (Frühbucher-Rabatt)">
+      <Card title="الطلب المسبق (خصم الحجز المبكر)">
         <div className="space-y-5">
           <Toggle
             checked={s.preorder.enabled}
             onChange={(v) => up((x) => ({ ...x, preorder: { ...x.preorder, enabled: v } }))}
-            label="Vorbestellrabatt aktiv"
-            hint="Erscheint als Leiste oben im Shop, als Badge an jedem Produkt und als Rabatt an der Kasse."
+            label="تفعيل خصم الطلب المسبق"
+            hint="يظهر بشريط أعلى المتجر، وكشارة على كل منتج، وكخصم عند الدفع."
           />
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="adm-label">Rabatt</p>
+              <p className="adm-label">نسبة الخصم</p>
               <NumberInput value={s.preorder.pct} max={90} suffix="%" onChange={(pct) => up((x) => ({ ...x, preorder: { ...x.preorder, pct } }))} />
             </div>
             <div>
-              <p className="adm-label">Gültig bis einschließlich</p>
+              <p className="adm-label">صالح حتى تاريخ (شاملاً)</p>
               <input type="date" className="adm-input w-full" value={s.preorder.until} onChange={(e) => up((x) => ({ ...x, preorder: { ...x.preorder, until: e.target.value } }))} />
             </div>
           </div>
           <Toggle
             checked={s.preorder.combine}
             onChange={(v) => up((x) => ({ ...x, preorder: { ...x.preorder, combine: v } }))}
-            label="Mit anderen Angeboten kombinierbar"
-            hint="Aus: Der Kunde bekommt automatisch das günstigere – Vorbestellrabatt oder die anderen Angebote. An: Der Vorbestellrabatt kommt zusätzlich obendrauf."
+            label="يُجمع مع العروض الأخرى"
+            hint="مطفأ: يحصل الزبون تلقائياً على الأفضل له – خصم الطلب المسبق أو العروض الأخرى. مفعّل: يُضاف خصم الطلب المسبق فوق العروض."
           />
         </div>
       </Card>
 
-      <Card title="Versand">
+      <Card title="الشحن">
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <p className="adm-label">Standardversand</p>
+            <p className="adm-label">الشحن العادي</p>
             <MoneyInput cents={s.shipping.standardCents} onChange={(c) => up((x) => ({ ...x, shipping: { ...x.shipping, standardCents: c } }))} />
           </div>
           <div>
-            <p className="adm-label">Kostenlos ab (0 = nie)</p>
+            <p className="adm-label">مجاني فوق (0 = أبداً)</p>
             <MoneyInput cents={s.shipping.freeFromCents} onChange={(c) => up((x) => ({ ...x, shipping: { ...x.shipping, freeFromCents: c } }))} />
           </div>
           <div>
-            <p className="adm-label">Lieferzeit (Werktage)</p>
+            <p className="adm-label">مدة التوصيل (أيام عمل)</p>
             <input className="adm-input w-full" value={s.shipping.deliveryDays} onChange={(e) => up((x) => ({ ...x, shipping: { ...x.shipping, deliveryDays: e.target.value } }))} placeholder="3–5" />
           </div>
         </div>
       </Card>
 
-      <Card title="Express">
+      <Card title="الشحن السريع (Express)">
         <div className="space-y-4">
-          <Toggle checked={s.shipping.express.enabled} onChange={(v) => up((x) => ({ ...x, shipping: { ...x.shipping, express: { ...x.shipping.express, enabled: v } } }))} label="Express-Versand anbieten" hint="Bevorzugte Produktion + schneller Versand. Der Kunde wählt Express an der Kasse." />
+          <Toggle checked={s.shipping.express.enabled} onChange={(v) => up((x) => ({ ...x, shipping: { ...x.shipping, express: { ...x.shipping.express, enabled: v } } }))} label="تفعيل الشحن السريع" hint="أولوية بالطباعة + شحن سريع. الزبون يختاره عند الدفع." />
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="adm-label">Preis Express</p>
+              <p className="adm-label">سعر الشحن السريع</p>
               <MoneyInput cents={s.shipping.express.cents} onChange={(c) => up((x) => ({ ...x, shipping: { ...x.shipping, express: { ...x.shipping.express, cents: c } } }))} />
             </div>
             <div>
-              <p className="adm-label">Lieferzeit Express (Werktage)</p>
+              <p className="adm-label">مدة الشحن السريع (أيام عمل)</p>
               <input className="adm-input w-full" value={s.shipping.express.days} onChange={(e) => up((x) => ({ ...x, shipping: { ...x.shipping, express: { ...x.shipping.express, days: e.target.value } } }))} placeholder="1–2" />
             </div>
           </div>
         </div>
       </Card>
 
-      <Card title="Abholung">
+      <Card title="الاستلام من المحل">
         <div className="space-y-4">
-          <Toggle checked={s.shipping.pickup.enabled} onChange={(v) => up((x) => ({ ...x, shipping: { ...x.shipping, pickup: { ...x.shipping.pickup, enabled: v } } }))} label="Kostenlose Abholung anbieten" />
+          <Toggle checked={s.shipping.pickup.enabled} onChange={(v) => up((x) => ({ ...x, shipping: { ...x.shipping, pickup: { ...x.shipping.pickup, enabled: v } } }))} label="تفعيل الاستلام المجاني" />
           <div>
-            <p className="adm-label">Abholadresse</p>
+            <p className="adm-label">عنوان الاستلام</p>
             <input className="adm-input w-full" value={s.shipping.pickup.address} onChange={(e) => up((x) => ({ ...x, shipping: { ...x.shipping, pickup: { ...x.shipping.pickup, address: e.target.value } } }))} />
           </div>
         </div>
       </Card>
 
-      <Card title="Termine & Kontakt">
+      <Card title="المواعيد والتواصل">
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <p className="adm-label">Jahrestag (Countdown)</p>
+            <p className="adm-label">تاريخ الذكرى (العدّاد)</p>
             <input type="date" className="adm-input w-full" value={s.campaign.anniversary} onChange={(e) => up((x) => ({ ...x, campaign: { ...x.campaign, anniversary: e.target.value } }))} />
           </div>
           <div>
-            <p className="adm-label">Letzter Bestelltag (Lieferung vor dem 8.12.)</p>
+            <p className="adm-label">آخر يوم للطلب (للتوصيل قبل 8.12)</p>
             <input type="date" className="adm-input w-full" value={s.campaign.lastOrderDay} onChange={(e) => up((x) => ({ ...x, campaign: { ...x.campaign, lastOrderDay: e.target.value } }))} />
           </div>
           <div>
-            <p className="adm-label">WhatsApp-Nummer (nur Ziffern, mit 49)</p>
+            <p className="adm-label">رقم واتساب (أرقام فقط، مع 49)</p>
             <input className="adm-input w-full tabular-nums" value={s.whatsapp} onChange={(e) => up((x) => ({ ...x, whatsapp: e.target.value.replace(/\D/g, "") }))} />
           </div>
         </div>
@@ -108,23 +108,23 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
     </>
   );
 
-  const sectionNames: Record<string, string> = { tshirts: "T-Shirts", hoodies: "Hoodies", flags: "Fahnen & Banner", stickers: "Sticker & Aufkleber" };
+  const sectionNames: Record<string, string> = { tshirts: "تيشرتات", hoodies: "هوديات", flags: "أعلام ولافتات", stickers: "ستيكرات وملصقات" };
   const content = (
     <>
       <Card
-        title="Slider auf der Startseite"
+        title="صور السلايدر بالصفحة الرئيسية"
         action={
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm"
             disabled={s.slides.length >= 6}
-            onClick={() => up((x) => ({ ...x, slides: [...x.slides, { image: "", title: { de: "", ar: "" }, text: { de: "", ar: "" }, link: "" }] }))}
+            onClick={() => up((x) => ({ ...x, slides: [...x.slides, { image: "", title: { de: "", ar: "" }, text: { de: "", ar: "" }, link: "", credit: "" }] }))}
           >
-            <Plus className="size-3.5" /> Bild
+            <Plus className="size-3.5" /> صورة
           </button>
         }
       >
-        <p className="mb-4 text-sm text-stone-dark">Breite Bilder (ideal 2400 × 1000 px) mit Titel in der Mitte. Wechseln automatisch alle 5 Sekunden.</p>
+        <p className="mb-4 text-sm text-stone-dark">صور عريضة (الأفضل 2400 × 1000 بكسل) مع عنوان بالنص. تتبدل تلقائياً كل 5 ثوانٍ. استخدم فقط صوراً لديك حق استخدامها واذكر المصوّر.</p>
         <div className="space-y-5">
           {s.slides.map((sl, i) => {
             const set = (patch: Partial<typeof sl>) => up((x) => ({ ...x, slides: x.slides.map((y, j) => (j === i ? { ...y, ...patch } : y)) }));
@@ -133,7 +133,7 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
                 <ImageField value={sl.image} onChange={(image) => set({ image })} />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Bild {i + 1}</span>
+                    <span className="text-sm font-medium">صورة {i + 1}</span>
                     <div className="flex gap-1">
                       <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" disabled={i === 0} onClick={() => up((x) => { const n = [...x.slides]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return { ...x, slides: n }; })}>↑</button>
                       <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => up((x) => ({ ...x, slides: x.slides.filter((_, j) => j !== i) }))}>
@@ -141,16 +141,20 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
                       </button>
                     </div>
                   </div>
-                  <LField label="Titel" value={sl.title} onChange={(title) => set({ title })} />
-                  <LField label="Untertitel" value={sl.text} onChange={(text) => set({ text })} />
+                  <LField label="العنوان" value={sl.title} onChange={(title) => set({ title })} />
+                  <LField label="العنوان الفرعي" value={sl.text} onChange={(text) => set({ text })} />
+                  <label className="block">
+                    <span className="adm-label">المصوّر / الرخصة (يظهر صغيراً على الصورة)</span>
+                    <input className="adm-input w-full" dir="ltr" value={sl.credit ?? ""} onChange={(e) => set({ credit: e.target.value })} />
+                  </label>
                   <div>
-                    <p className="adm-label">Ziel des Buttons</p>
+                    <p className="adm-label">وجهة الزر</p>
                     <select className="adm-input w-full" value={sl.link} onChange={(e) => set({ link: e.target.value })}>
-                      <option value="">Startseite – Produkte</option>
+                      <option value="">الصفحة الرئيسية – المنتجات</option>
                       {Object.entries(sectionNames).map(([k, v]) => (
-                        <option key={k} value={`/qism/${k}`}>Bereich: {v}</option>
+                        <option key={k} value={`/qism/${k}`}>قسم: {v}</option>
                       ))}
-                      <option value="/hikaya">Geschichte</option>
+                      <option value="/hikaya">الحكاية</option>
                     </select>
                   </div>
                 </div>
@@ -160,44 +164,30 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
         </div>
       </Card>
 
-      <Card title="Bereiche (Kacheln, große Banner und Bereichsseiten)">
+      <Card title="الأقسام (البطاقات وصفحات الأقسام)">
         <div className="grid gap-5 md:grid-cols-2">
           {s.sections.map((sec, i) => {
             const set = (patch: Partial<typeof sec>) => up((x) => ({ ...x, sections: x.sections.map((y, j) => (j === i ? { ...y, ...patch } : y)) }));
             return (
               <div key={sec.slug} className="space-y-3 rounded-xl border border-ink/10 p-4">
                 <p className="text-sm font-medium">{sectionNames[sec.slug]}</p>
-                <ImageField label="Banner-Bild (breit)" value={sec.image} onChange={(image) => set({ image })} />
-                <LField label="Titel" value={sec.title} onChange={(title) => set({ title })} />
-                <LField label="Untertitel" value={sec.text} onChange={(text) => set({ text })} />
+                <ImageField label="صورة القسم (عريضة)" value={sec.image} onChange={(image) => set({ image })} />
+                <LField label="العنوان" value={sec.title} onChange={(title) => set({ title })} />
+                <LField label="العنوان الفرعي" value={sec.text} onChange={(text) => set({ text })} />
               </div>
             );
           })}
         </div>
       </Card>
 
-      <Card title="Startseite – großer Bereich oben (Hero)">
-        <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
-          <div className="space-y-5">
-            <LField label="Zeile über dem Titel" value={s.hero.eyebrow} onChange={(v) => up((x) => ({ ...x, hero: { ...x.hero, eyebrow: v } }))} />
-            <LField label="Titel" value={s.hero.title} onChange={(v) => up((x) => ({ ...x, hero: { ...x.hero, title: v } }))} />
-            <LField label="Text" value={s.hero.text} onChange={(v) => up((x) => ({ ...x, hero: { ...x.hero, text: v } }))} multiline />
-          </div>
-          <div>
-            <ImageField label="Großes Bild (optional)" value={s.hero.image} onChange={(image) => up((x) => ({ ...x, hero: { ...x.hero, image } }))} />
-            <p className="mt-2 text-xs text-stone-dark">Optional: großes Bild unter dem Titel (z. B. Foto vom Laden oder von einer Feier). Ideal: Querformat, mindestens 2400 px breit.</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card title="Geschichte – „Ein Tag, den wir nie vergessen“">
+      <Card title="الحكاية – «يومٌ لن ننساه»">
         <div className="space-y-5">
-          <LField label="Zeile über dem Titel" value={s.story.eyebrow} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, eyebrow: v } }))} />
-          <LField label="Titel" value={s.story.title} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, title: v } }))} />
+          <LField label="سطر فوق العنوان" value={s.story.eyebrow} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, eyebrow: v } }))} />
+          <LField label="العنوان" value={s.story.title} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, title: v } }))} />
           {s.story.paragraphs.map((p, i) => (
             <div key={i} className="flex items-start gap-2">
               <div className="flex-1">
-                <LField label={`Absatz ${i + 1}`} value={p} multiline onChange={(v) => up((x) => ({ ...x, story: { ...x.story, paragraphs: x.story.paragraphs.map((y, j) => (j === i ? v : y)) } }))} />
+                <LField label={`فقرة ${i + 1}`} value={p} multiline onChange={(v) => up((x) => ({ ...x, story: { ...x.story, paragraphs: x.story.paragraphs.map((y, j) => (j === i ? v : y)) } }))} />
               </div>
               <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm mt-6 text-red-700" onClick={() => up((x) => ({ ...x, story: { ...x.story, paragraphs: x.story.paragraphs.filter((_, j) => j !== i) } }))}>
                 <Trash2 className="size-3.5" />
@@ -205,39 +195,38 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
             </div>
           ))}
           <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => up((x) => ({ ...x, story: { ...x.story, paragraphs: [...x.story.paragraphs, { de: "", ar: "" }] } }))}>
-            <Plus className="size-3.5" /> Absatz
+            <Plus className="size-3.5" /> فقرة
           </button>
-          <LField label="Zitat" value={s.story.quote} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, quote: v } }))} />
+          <LField label="الاقتباس" value={s.story.quote} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, quote: v } }))} />
           <div className="max-w-xs">
-            <ImageField label="Bild neben der Geschichte (Startseite)" value={s.story.image} onChange={(image) => up((x) => ({ ...x, story: { ...x.story, image } }))} />
+            <ImageField label="صورة بجانب الحكاية (الرئيسية)" value={s.story.image} onChange={(image) => up((x) => ({ ...x, story: { ...x.story, image } }))} />
           </div>
         </div>
       </Card>
 
       <Card
-        title="Fotos der Geschichte (Demonstrationen, Feiern)"
+        title="صور الحكاية (المظاهرات والاحتفالات)"
         action={
           <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => up((x) => ({ ...x, story: { ...x.story, images: [...x.story.images, { url: "", caption: { de: "", ar: "" }, credit: "" }] } }))}>
-            <Plus className="size-3.5" /> Foto
+            <Plus className="size-3.5" /> صورة
           </button>
         }
       >
-        <p className="mb-4 text-sm text-stone-dark">Bis zu 6 Fotos werden als Collage gezeigt – das erste groß. Bitte nur Fotos mit Nutzungsrecht verwenden und den Urheber angeben.</p>
+        <p className="mb-4 text-sm text-stone-dark">تظهر الصور كمجموعة في صفحة الحكاية – الأولى كبيرة. استخدم فقط صوراً لديك حق استخدامها واذكر المصوّر.</p>
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {s.story.images.map((im, i) => {
             const set = (patch: Partial<typeof im>) => up((x) => ({ ...x, story: { ...x.story, images: x.story.images.map((y, j) => (j === i ? { ...y, ...patch } : y)) } }));
             return (
               <div key={i} className="space-y-3 rounded-xl border border-ink/10 p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-medium">Foto {i + 1}{i === 0 ? " (groß)" : ""}</span>
+                  <span className="text-sm font-medium">صورة {i + 1}{i === 0 ? " (كبيرة)" : ""}</span>
                   <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => up((x) => ({ ...x, story: { ...x.story, images: x.story.images.filter((_, j) => j !== i) } }))}>
                     <Trash2 className="size-3.5" />
                   </button>
                 </div>
                 <ImageField value={im.url} onChange={(url) => set({ url })} />
-                <input className="adm-input w-full" placeholder="Bildunterschrift (DE)" value={im.caption.de} onChange={(e) => set({ caption: { ...im.caption, de: e.target.value } })} />
-                <input className="adm-input w-full" dir="rtl" placeholder="التعليق (AR)" value={im.caption.ar} onChange={(e) => set({ caption: { ...im.caption, ar: e.target.value } })} />
-                <input className="adm-input w-full text-xs" placeholder="Foto: Name, Lizenz" value={im.credit} onChange={(e) => set({ credit: e.target.value })} />
+                <input className="adm-input w-full" dir="rtl" placeholder="تعليق الصورة" value={im.caption.ar} onChange={(e) => set({ caption: { ...im.caption, ar: e.target.value } })} />
+                <input className="adm-input w-full text-xs" placeholder="المصوّر والرخصة" value={im.credit} onChange={(e) => set({ credit: e.target.value })} />
               </div>
             );
           })}

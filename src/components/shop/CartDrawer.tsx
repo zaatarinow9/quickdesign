@@ -10,6 +10,7 @@ import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
 import { priceCart } from "@/lib/shop/pricing";
 import { useShop } from "./ShopProvider";
+import { PaymentLogos } from "./PaymentLogos";
 
 export function CartDrawer() {
   const { t, lang, lines, open, setOpen, setQty, remove, href, store } = useShop();
@@ -186,7 +187,9 @@ export function CartDrawer() {
                     {state === "loading" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
                     {state === "loading" ? t.cart.loading : t.cart.checkout}
                   </button>
-                  <p className="mt-3 text-center text-xs text-[var(--muted)]">{t.cart.payments}</p>
+                  <div className="mt-4 flex justify-center">
+                    <PaymentLogos className="justify-center" />
+                  </div>
                   <p className="mt-1 text-center text-xs text-[var(--muted)]">
                     <Link href={href("/agb")} onClick={() => setOpen(false)} className="underline-offset-4 hover:underline">
                       {t.cart.agb}
