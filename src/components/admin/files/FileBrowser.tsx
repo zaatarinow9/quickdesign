@@ -34,13 +34,15 @@ import { formatDateTime } from "@/lib/documents/format";
 import {
   datePrefix,
   fileCategories,
+  fileProgress,
   fileStatusInfo,
   fileStatuses,
+  isPrintDayFolder,
+  printDayLabel,
   folderColors,
   formatBytes,
   joinFolder,
   sortLabels,
-  type FileStatus,
   type FolderEntry,
   type SortKey,
   type StoredFile,
@@ -68,7 +70,6 @@ const setPref = (k: string, v: string) => {
 };
 const folderHref = (p: string) => (p ? `/admin/dateien?ordner=${encodeURIComponent(p)}` : "/admin/dateien");
 const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
-const statusDot: Record<FileStatus, string> = { bearbeitung: "bg-amber-400", druckfertig: "bg-emerald-500", erledigt: "bg-stone-light" };
 
 function sortFiles(files: StoredFile[], sort: SortKey) {
   const list = [...files];
@@ -273,6 +274,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
               <Link href={folderHref(f.path)} className="flex h-full flex-col items-center gap-2 rounded-2xl p-3 text-center ring-1 ring-transparent transition hover:bg-ink/[0.03] hover:ring-ink/10">
                 <FolderGlyph color={f.color} className="size-20 stroke-[1.2]" />
                 <span className="line-clamp-2 text-sm font-medium leading-snug">{f.name}</span>
+                {isPrintDayFolder(f.path) ? <span className="-mt-1 text-[0.7rem] text-accent">{printDayLabel(f.name).split(",")[0]}</span> : null}
                 <span className="text-xs text-stone-dark">
                   {f.fileCount} Datei{f.fileCount === 1 ? "" : "en"}
                   {f.totalSize ? ` · ${formatBytes(f.totalSize)}` : ""}
@@ -298,7 +300,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                     ) : (
                       <FileIcon name={f.name} type={f.content_type} className="size-16 rounded-2xl [&_svg]:size-8" />
                     )}
-                    <span className={cn("absolute bottom-2 right-2 size-2.5 rounded-full ring-2 ring-white", statusDot[f.status])} title={fileStatusInfo[f.status].label} />
+                    <span className={cn("absolute bottom-2 right-2 size-2.5 rounded-full ring-2 ring-white", fileStatusInfo[f.status].dot)} title={fileStatusInfo[f.status].label} />
                   </div>
                   <p className="mt-2 line-clamp-2 break-words px-1 text-[0.82rem] font-medium leading-snug" title={f.name}>
                     {f.name}
@@ -309,6 +311,12 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                   {f.category || (flat && f.folder) ? (
                     <p className="mt-1 truncate px-1 text-[0.7rem] text-stone-dark">{[f.category, flat ? f.folder : null].filter(Boolean).join(" · ")}</p>
                   ) : null}
+                  <div className="mt-1.5 px-1">
+                    <span className={cn("inline-block rounded-full px-2 py-0.5 text-[0.66rem] font-medium", fileStatusInfo[f.status].chip)}>{fileStatusInfo[f.status].label}</span>
+                    <div className="mt-1 h-1 overflow-hidden rounded-full bg-ink/[0.06]">
+                      <div className={cn("h-full rounded-full", fileStatusInfo[f.status].bar)} style={{ width: `${Math.max(6, fileProgress(f.status))}%` }} />
+                    </div>
+                  </div>
                 </Link>
                 <button
                   type="button"

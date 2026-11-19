@@ -4,11 +4,11 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Download, ExternalLink, Folder } 
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { isR2Configured, presignDownload } from "@/lib/files/r2";
-import { siblings } from "@/lib/files/server";
+import { fileEvents, siblings } from "@/lib/files/server";
+import { FileWorkflow } from "@/components/admin/files/FileWorkflow";
 import { formatBytes, isFileStatus, viewerKind } from "@/lib/files/shared";
 import { formatDateTime } from "@/lib/documents/format";
 import { FileViewer } from "@/components/admin/files/FileViewer";
-import { FileStatusSelect } from "@/components/admin/files/FileStatusSelect";
 import { ViewerKeys } from "@/components/admin/files/ViewerNav";
 import { FileIcon } from "@/components/admin/files/FileIcon";
 import { Notice } from "@/components/admin/ui";
@@ -31,11 +31,12 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
 
   const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
   const kind = viewerKind(f.name, f.content_type);
-  const [url, downloadUrl, list, previewUrl] = await Promise.all([
+  const [url, downloadUrl, list, previewUrl, events] = await Promise.all([
     presignDownload(f.object_key, f.name, { inline: true, seconds: 3600, contentType: MIME[ext] }),
     presignDownload(f.object_key, f.name, { seconds: 3600 }),
     siblings(f.folder ?? ""),
     f.preview_key ? presignDownload(f.preview_key, `${f.name}.jpg`, { inline: true, seconds: 3600, contentType: "image/jpeg" }) : Promise.resolve(null),
+    fileEvents(f.id),
   ]);
   // Office-Dateien zeigt der Microsoft-Viewer an (er lädt die Datei über den zeitlich begrenzten Link)
   const officeUrl = kind === "office" ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}` : null;
@@ -74,7 +75,6 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <FileStatusSelect id={f.id} status={isFileStatus(f.status) ? f.status : "bearbeitung"} />
           <span className="hidden text-xs tabular-nums text-white/50 sm:inline">{idx >= 0 ? `${idx + 1} / ${list.length}` : ""}</span>
           {prev ? (
             <Link href={prev} className="grid size-9 place-items-center rounded-lg hover:bg-white/10" aria-label="Vorherige Datei">
@@ -94,6 +94,7 @@ export default async function FileViewPage({ params }: { params: Promise<{ id: s
           </a>
         </div>
       </header>
+      <FileWorkflow id={f.id} status={isFileStatus(f.status) ? f.status : "neu"} events={events} />
       {f.message ? <p className="whitespace-pre-line border-b border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/85 sm:px-6">💬 {f.message}</p> : null}
       <div className="flex min-h-0 flex-1 items-center justify-center p-3 sm:p-6">
         <FileViewer fileId={f.id} previewUrl={previewUrl} kind={kind} url={url} officeUrl={officeUrl} name={f.name} size={Number(f.size)} downloadUrl={downloadUrl} />

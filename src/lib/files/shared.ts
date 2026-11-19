@@ -1,13 +1,20 @@
 /** Dateien: Typen und Hilfsfunktionen (client- und serverseitig nutzbar). */
 
-export type FileStatus = "bearbeitung" | "druckfertig" | "erledigt";
-export const fileStatuses: FileStatus[] = ["bearbeitung", "druckfertig", "erledigt"];
+export type FileStatus = "neu" | "bearbeitung" | "freigabe" | "druckfertig" | "im_druck" | "erledigt";
+/** Ablauf einer Datei in Reihenfolge */
+export const fileStatuses: FileStatus[] = ["neu", "bearbeitung", "freigabe", "druckfertig", "im_druck", "erledigt"];
 export const isFileStatus = (v: unknown): v is FileStatus => typeof v === "string" && (fileStatuses as string[]).includes(v);
-export const fileStatusInfo: Record<FileStatus, { label: string; tone: "amber" | "green" | "gray" }> = {
-  bearbeitung: { label: "In Bearbeitung", tone: "amber" },
-  druckfertig: { label: "Druckfertig", tone: "green" },
-  erledigt: { label: "Erledigt", tone: "gray" },
+export const fileStatusInfo: Record<FileStatus, { label: string; short: string; hint: string; dot: string; chip: string; bar: string }> = {
+  neu: { label: "Neu", short: "Neu", hint: "Gerade hochgeladen", dot: "bg-sky-500", chip: "bg-sky-500/12 text-sky-800", bar: "bg-sky-500" },
+  bearbeitung: { label: "In Bearbeitung", short: "Bearbeitung", hint: "Wird gestaltet / angepasst", dot: "bg-amber-400", chip: "bg-amber-500/14 text-amber-800", bar: "bg-amber-400" },
+  freigabe: { label: "Freigabe Kunde", short: "Freigabe", hint: "Wartet auf Korrektur / Freigabe", dot: "bg-violet-500", chip: "bg-violet-500/12 text-violet-800", bar: "bg-violet-500" },
+  druckfertig: { label: "Druckfertig", short: "Druckfertig", hint: "Freigegeben, bereit für den Druck", dot: "bg-emerald-500", chip: "bg-emerald-500/14 text-emerald-800", bar: "bg-emerald-500" },
+  im_druck: { label: "Im Druck", short: "Druck", hint: "Wird gedruckt / produziert", dot: "bg-accent", chip: "bg-accent/12 text-accent", bar: "bg-accent" },
+  erledigt: { label: "Erledigt", short: "Erledigt", hint: "Fertig – keine Arbeit mehr nötig", dot: "bg-stone-light", chip: "bg-ink/[0.07] text-stone-dark", bar: "bg-stone" },
 };
+/** Fortschritt in Prozent (für Balken) */
+export const fileProgress = (s: FileStatus) => Math.round((fileStatuses.indexOf(s) / (fileStatuses.length - 1)) * 100);
+export const nextFileStatus = (s: FileStatus): FileStatus | null => fileStatuses[fileStatuses.indexOf(s) + 1] ?? null;
 
 /** Ein Upload darf bis zu 5 GB groß sein (Grenze für einen einzelnen PUT bei R2) */
 export const MAX_FILE_SIZE = 5 * 1024 ** 3;
@@ -29,6 +36,7 @@ export type StoredFile = {
   created_at: string;
   folder: string;
   category: string | null;
+  status_changed_at?: string | null;
   project?: { id: string; number: string; title: string; customer_name: string; company_name: string | null } | null;
 };
 
@@ -118,3 +126,14 @@ export type SortKey = "name" | "neu" | "alt" | "groesse" | "typ";
 export const sortLabels: Record<SortKey, string> = { name: "Name A–Z", neu: "Neueste zuerst", alt: "Älteste zuerst", groesse: "Größte zuerst", typ: "Dateityp" };
 export const isSortKey = (v: unknown): v is SortKey => typeof v === "string" && v in sortLabels;
 export type ViewMode = "raster" | "liste";
+
+/* ------------------------------ Druck-Tagesordner ------------------------------ */
+
+export const PRINT_ROOT = "Druck";
+/** Tagesordner für Druckdaten, z. B. "Druck/2026-11-19" */
+export const printFolderFor = (date: string) => `${PRINT_ROOT}/${date}`;
+export const isPrintDayFolder = (path: string) => /^Druck\/\d{4}-\d{2}-\d{2}$/.test(path);
+export function printDayLabel(date: string) {
+  const d = new Date(`${date}T12:00:00Z`);
+  return new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(d);
+}

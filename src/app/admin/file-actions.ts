@@ -11,7 +11,7 @@ import { logActivity } from "@/lib/admin/log";
 import { sendMail } from "@/lib/email/send";
 import { fileNotifyEmail } from "@/lib/email/project-templates";
 import { deleteObject, headObject, isR2Configured, presignUpload } from "@/lib/files/r2";
-import { datePrefix, folderColors, formatBytes, isFileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, parentFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { datePrefix, fileStatusInfo, folderColors, formatBytes, isFileStatus, type FileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, parentFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { logProjectEvent } from "@/lib/projects/server";
 import type { ActionState } from "./document-actions";
 
@@ -157,6 +157,7 @@ export async function completeUploadBatch(input: { ids: string[]; notify: boolea
   const first = list[0];
   if (!first) return { error: "Die Dateien sind nicht angekommen. Bitte erneut versuchen." };
   const folders = [...new Set(list.map((r) => r.folder).filter(Boolean))];
+  await logFileEvents(ids.data, "hochgeladen", folders[0] ?? null, admin.name || admin.email);
   await logActivity(admin.email, "hochgeladen", "datei", first.id, `${total} Datei(en)${folders[0] ? ` in „${folders[0]}“` : ""}: ${list.map((d) => d.name).join(", ").slice(0, 250)}`);
   if (first.project_id) await logProjectEvent(first.project_id, "datei", `${total} Datei(en) hochgeladen`, admin.email);
 
@@ -218,13 +219,38 @@ export async function abortUpload(ids: string[]) {
   await db().from("files").delete().in("id", parsed.data).eq("complete", false);
 }
 
+/** Verlauf einer Datei protokollieren (best effort) */
+async function logFileEvents(ids: string[], type: string, note: string | null, actor: string) {
+  if (!ids.length) return;
+  try {
+    await db()
+      .from("file_events")
+      .insert(ids.map((file_id) => ({ file_id, type, note: note?.slice(0, 1000) ?? null, actor })));
+  } catch {
+    /* ignore */
+  }
+}
+
+async function changeStatus(ids: string[], status: FileStatus, actor: string) {
+  const { data } = await db()
+    .from("files")
+    .update({ status, status_changed_at: new Date().toISOString() })
+    .in("id", ids)
+    .neq("status", status)
+    .select("id, project_id");
+  const changed = (data ?? []).map((r) => r.id as string);
+  await logFileEvents(changed, "status", fileStatusInfo[status].label, actor);
+  return data ?? [];
+}
+
 export async function setFileStatus(fd: FormData) {
-  await assertAdmin();
+  const admin = await assertAdmin();
   const id = uuid.safeParse(fd.get("id"));
   const status = fd.get("status");
   if (!id.success || !isFileStatus(status)) return;
-  const { data } = await db().from("files").update({ status }).eq("id", id.data).select("project_id").maybeSingle();
-  paths(data?.project_id);
+  const rows = await changeStatus([id.data], status, admin.name || admin.email);
+  paths(rows[0]?.project_id);
+  revalidatePath(`/admin/dateien/${id.data}/ansicht`);
 }
 
 export async function updateFileNote(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -341,6 +367,7 @@ export async function moveFiles(input: { ids: string[]; folder: string }): Promi
   const folder = normalizeFolder(input.folder);
   await ensureFolders([folder].filter(Boolean), admin.email);
   await db().from("files").update({ folder }).in("id", ids.data);
+  await logFileEvents(ids.data, "verschoben", folder || "Alle Dateien", admin.name || admin.email);
   paths();
   return { ok: `${ids.data.length} Datei${ids.data.length === 1 ? "" : "en"} verschoben.` };
 }
@@ -351,9 +378,13 @@ export async function updateFiles(input: { ids: string[]; category?: string | nu
   if (!ids.success) return { error: "Keine Dateien gewählt." };
   const patch: Record<string, unknown> = {};
   if (input.category !== undefined) patch.category = String(input.category ?? "").trim().slice(0, 60) || null;
-  if (input.status !== undefined && isFileStatus(input.status)) patch.status = input.status;
-  if (!Object.keys(patch).length) return { error: "Nichts zu ändern." };
-  await db().from("files").update(patch).in("id", ids.data);
+  if (!Object.keys(patch).length && !(input.status !== undefined && isFileStatus(input.status))) return { error: "Nichts zu ändern." };
+  const admin = await assertAdmin();
+  if (Object.keys(patch).length) {
+    await db().from("files").update(patch).in("id", ids.data);
+    if ("category" in patch) await logFileEvents(ids.data, "kategorie", (patch.category as string) ?? "keine", admin.name || admin.email);
+  }
+  if (input.status !== undefined && isFileStatus(input.status)) await changeStatus(ids.data, input.status, admin.name || admin.email);
   paths();
   return { ok: "Gespeichert." };
 }

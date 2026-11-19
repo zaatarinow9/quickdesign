@@ -14,10 +14,11 @@ import {
   teamMembers,
   thumbnailUrls,
 } from "@/lib/files/server";
-import { folderName, isFileStatus, isSortKey, normalizeFolder } from "@/lib/files/shared";
+import { isFileStatus, isSortKey, normalizeFolder } from "@/lib/files/shared";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileBrowser } from "@/components/admin/files/FileBrowser";
-import { Card, EmptyState, FilterTabs, PageHeader, SearchForm } from "@/components/admin/ui";
+import { Card, EmptyState, PageHeader, SearchForm } from "@/components/admin/ui";
+import { DateienTabs } from "@/components/admin/files/DateienTabs";
 
 export const metadata = { title: "Dateien" };
 
@@ -49,7 +50,6 @@ export default async function FilesPage({ searchParams }: { searchParams: Promis
     flat ? Promise.resolve(null) : folderMeta(folder),
   ]);
   const thumbs = await thumbnailUrls(files);
-  const active = mine ? "mich" : (status ?? "alle");
   const crumbs = folder ? folder.split("/").map((name, i, arr) => ({ name, path: arr.slice(0, i + 1).join("/") })) : [];
   const customer = meta?.customer ? (Array.isArray(meta.customer) ? meta.customer[0] : meta.customer) : null;
 
@@ -58,16 +58,7 @@ export default async function FilesPage({ searchParams }: { searchParams: Promis
       <PageHeader title="Dateien" description="Ordner für Kunden und Aufträge, Dateien hineinziehen – Vorschau und Download direkt im Browser." />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <FilterTabs
-          active={active}
-          items={[
-            { key: "alle", label: "Ordner", href: "/admin/dateien", count: counts.alle },
-            { key: "mich", label: "Für mich", href: "/admin/dateien?fuer=mich" },
-            { key: "bearbeitung", label: "In Bearbeitung", href: "/admin/dateien?status=bearbeitung", count: counts.bearbeitung },
-            { key: "druckfertig", label: "Druckfertig", href: "/admin/dateien?status=druckfertig", count: counts.druckfertig },
-            { key: "erledigt", label: "Erledigt", href: "/admin/dateien?status=erledigt", count: counts.erledigt },
-          ]}
-        />
+        <DateienTabs active={mine ? "mich" : "ordner"} counts={{ alle: counts.alle, aktiv: counts.aktiv }} />
         <SearchForm defaultValue={q} placeholder="In allen Ordnern suchen …" hidden={{ status }} />
       </div>
 
@@ -91,8 +82,7 @@ export default async function FilesPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       <div className="mb-6">
-        <FileUploader projects={projects} team={team} configured={configured} folder={flat ? "" : folder} compact />
-        {!flat && folder ? <p className="mt-1.5 text-xs text-stone-dark">Neue Dateien landen in „{folderName(folder)}“.</p> : null}
+        <FileUploader projects={projects} team={team} configured={configured} folder={flat ? "" : folder} allFolders={allFolders} compact />
       </div>
 
       <Card padded={false}>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, Mail, SlidersHorizontal, X } from "lucide-react";
 import { abortUpload, completeUploadBatch, finishUpload, startUpload } from "@/app/admin/file-actions";
-import { datePrefix, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { datePrefix, printDayLabel, printFolderFor, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { previewsFromFile } from "@/lib/files/preview-client";
 import { savePreviews } from "@/lib/files/preview-upload";
 import { Notice } from "@/components/admin/ui";
@@ -71,6 +71,8 @@ export function FileUploader({
   folder = "",
   compact,
   configured,
+  allFolders,
+  defaultTarget = "hier",
 }: {
   projects: { id: string; label: string }[];
   team: { email: string; name: string }[];
@@ -79,12 +81,18 @@ export function FileUploader({
   folder?: string;
   compact?: boolean;
   configured: boolean;
+  /** Ordnerliste für „Anderer Ordner“ – ohne Liste wird keine Zielauswahl angezeigt */
+  allFolders?: string[];
+  /** Vorauswahl des Ziels */
+  defaultTarget?: "hier" | "druck";
 }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const dirInput = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [dest, setDest] = useState<{ mode: "hier" | "druck" | "andere"; path: string }>({ mode: defaultTarget, path: folder });
+  const targetFolder = dest.mode === "druck" ? printFolderFor(datePrefix()) : dest.mode === "andere" ? dest.path : folder;
   const [opts, setOpts] = useState({ projectId: defaultProjectId ?? "", message: "", assignedTo: "", notify: true, category: "", withDate: false });
   // Anzeige-Kopie des Upload-Zustands (die Arbeitsdaten liegen in Refs)
   const [view, setView] = useState<{ items: Item[]; running: boolean }>({ items: [], running: false });
@@ -95,13 +103,17 @@ export function FileUploader({
   const xhrs = useRef(new Set<XMLHttpRequest>());
   const sessionIds = useRef<string[]>([]);
   const optsRef = useRef(opts);
+  const targetRef = useRef(targetFolder);
+  const destModeRef = useRef(dest.mode);
   const cancelled = useRef(false);
   const lastPaint = useRef(0);
   const previewJobs = useRef<{ id: string; file: File }[]>([]);
   const previewRunning = useRef(false);
   useEffect(() => {
     optsRef.current = opts;
-  }, [opts]);
+    targetRef.current = targetFolder;
+    destModeRef.current = dest.mode;
+  }, [opts, targetFolder, dest.mode]);
 
   const paint = (force = false) => {
     const now = Date.now();
@@ -145,8 +157,9 @@ export function FileUploader({
         const o = optsRef.current;
         const res = await startUpload({
           files: chunk.map((i) => ({ name: i.file.name, size: i.file.size, type: i.file.type || "application/octet-stream", dir: i.dir })),
-          folder,
-          category: o.category || null,
+          folder: targetRef.current,
+          // Druckdaten automatisch als solche kennzeichnen
+          category: o.category || (destModeRef.current === "druck" ? "Druckdaten" : null),
           projectId: o.projectId || null,
           message: o.message.trim() || null,
           assignedTo: o.assignedTo || null,
@@ -271,8 +284,48 @@ export function FileUploader({
     opts.withDate ? "Ordner mit Datum" : null,
   ].filter(Boolean);
 
+  const folderLabel = (p: string) => (p ? p.split("/").pop() : "Alle Dateien");
+
   return (
     <div className="space-y-3">
+      {/* Ziel: hier, Druck-Tagesordner oder anderer Ordner */}
+      {allFolders ? (
+        <div className="flex flex-wrap items-center gap-1.5 text-sm">
+          <span className="mr-1 text-xs font-medium text-stone-dark">Hochladen nach:</span>
+          {(
+            [
+              ["hier", `📁 ${folderLabel(folder)}`],
+              ["druck", `🖨 Druck heute · ${printDayLabel(datePrefix()).split(", ")[1] ?? datePrefix()}`],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setDest((d) => ({ ...d, mode }))}
+              aria-pressed={dest.mode === mode}
+              className={cn("h-8 rounded-full px-3 text-xs ring-1 transition", dest.mode === mode ? "bg-ink font-semibold text-white ring-ink" : "bg-white ring-ink/10 hover:ring-ink/30")}
+            >
+              {label}
+            </button>
+          ))}
+          <select
+            aria-label="Anderer Ordner"
+            value={dest.mode === "andere" ? dest.path : ""}
+            onChange={(e) => setDest(e.target.value === "" ? { mode: "hier", path: folder } : { mode: "andere", path: e.target.value === "__root" ? "" : e.target.value })}
+            className={cn("adm-input h-8 w-auto max-w-[16rem] py-0 text-xs", dest.mode === "andere" && "ring-2 ring-ink")}
+          >
+            <option value="">Anderer Ordner …</option>
+            <option value="__root">Alle Dateien (oberste Ebene)</option>
+            {allFolders.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <span className="basis-full truncate text-xs text-stone-dark sm:basis-auto">→ {targetFolder || "Alle Dateien"}</span>
+        </div>
+      ) : null}
+
       {/* Optionen – gelten für alles, was danach hineingezogen wird */}
       <div className="rounded-xl bg-[#f7f5f1] ring-1 ring-ink/[0.06]">
         <button type="button" onClick={() => setShowOptions((v) => !v)} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm" aria-expanded={showOptions}>

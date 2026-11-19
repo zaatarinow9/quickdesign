@@ -3,7 +3,7 @@ import { db } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { isFileStatus, type FileStatus, type FolderEntry, type StoredFile } from "./shared";
 
-const COLS = "id, name, size, content_type, folder, category, project_id, message, status, assigned_to, uploaded_by, created_at, project:projects(id, number, title, customer_name, company_name)";
+const COLS = "id, name, size, content_type, folder, category, status_changed_at, project_id, message, status, assigned_to, uploaded_by, created_at, project:projects(id, number, title, customer_name, company_name)";
 
 function normalize(row: Record<string, unknown>): StoredFile {
   const project = Array.isArray(row.project) ? row.project[0] : row.project;
@@ -12,7 +12,7 @@ function normalize(row: Record<string, unknown>): StoredFile {
     size: Number(row.size ?? 0),
     folder: String(row.folder ?? ""),
     category: (row.category as string) ?? null,
-    status: isFileStatus(row.status) ? row.status : "bearbeitung",
+    status: isFileStatus(row.status) ? row.status : "neu",
     project: (project as StoredFile["project"]) ?? null,
   };
 }
@@ -39,10 +39,11 @@ export async function getFileRow(id: string) {
 
 export async function fileCounts() {
   const { data } = await db().from("files").select("status").eq("complete", true);
-  const counts: Record<FileStatus | "alle", number> = { alle: 0, bearbeitung: 0, druckfertig: 0, erledigt: 0 };
+  const counts: Record<FileStatus | "alle" | "aktiv", number> = { alle: 0, aktiv: 0, neu: 0, bearbeitung: 0, freigabe: 0, druckfertig: 0, im_druck: 0, erledigt: 0 };
   for (const r of data ?? []) {
     counts.alle++;
     if (isFileStatus(r.status)) counts[r.status]++;
+    if (r.status !== "erledigt") counts.aktiv++;
   }
   return counts;
 }
@@ -146,4 +147,48 @@ export async function thumbnailUrls(files: { id: string; name: string; size: num
     }),
   );
   return out;
+}
+
+export async function fileEvents(id: string) {
+  const { data } = await db().from("file_events").select("id, type, note, actor, created_at").eq("file_id", id).order("created_at", { ascending: false }).limit(100);
+  return (data ?? []) as { id: number; type: string; note: string | null; actor: string | null; created_at: string }[];
+}
+
+export type PrintDay = { date: string; path: string; total: number; size: number; byStatus: Partial<Record<FileStatus, number>>; last: string | null };
+
+/** Druck-Tagesordner (Druck/JJJJ-MM-TT) mit Anzahl je Status – neueste zuerst */
+export async function printDays(limit = 120): Promise<PrintDay[]> {
+  const [{ data: files }, { data: metas }] = await Promise.all([
+    db().from("files").select("folder, status, size, created_at").eq("complete", true).like("folder", "Druck/%").limit(20000),
+    db().from("file_folders").select("path").like("path", "Druck/%"),
+  ]);
+  const map = new Map<string, PrintDay>();
+  const day = (path: string) => {
+    const m = /^Druck\/(\d{4}-\d{2}-\d{2})(?:\/|$)/.exec(path);
+    if (!m) return null;
+    const p = `Druck/${m[1]}`;
+    const d = map.get(p) ?? { date: m[1], path: p, total: 0, size: 0, byStatus: {}, last: null };
+    map.set(p, d);
+    return d;
+  };
+  for (const m of metas ?? []) day(String(m.path));
+  for (const f of files ?? []) {
+    const d = day(String(f.folder));
+    if (!d) continue;
+    d.total++;
+    d.size += Number(f.size);
+    if (isFileStatus(f.status)) d.byStatus[f.status] = (d.byStatus[f.status] ?? 0) + 1;
+    if (!d.last || f.created_at > d.last) d.last = f.created_at;
+  }
+  return [...map.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);
+}
+
+/** Dateien für die Ablauf-Übersicht: alles Offene + kürzlich Erledigtes */
+export async function workflowFiles(): Promise<StoredFile[]> {
+  const since = new Date(Date.now() - 14 * 864e5).toISOString();
+  const [open, done] = await Promise.all([
+    db().from("files").select(COLS).eq("complete", true).neq("status", "erledigt").order("created_at", { ascending: false }).limit(600),
+    db().from("files").select(COLS).eq("complete", true).eq("status", "erledigt").gte("status_changed_at", since).order("status_changed_at", { ascending: false }).limit(100),
+  ]);
+  return [...(open.data ?? []), ...(done.data ?? [])].map(normalize);
 }
