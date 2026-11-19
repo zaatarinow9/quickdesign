@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgePercent, ChevronDown, Gift, MapPin, Printer, ShieldCheck, Store, Truck, Zap } from "lucide-react";
+import { BadgePercent, ChevronDown, Gift, MapPin, Printer, Store, Truck, Zap } from "lucide-react";
 import { daysUntilAnniversary, isLang } from "@/lib/shop/config";
 import { dict, fill } from "@/lib/shop/i18n";
 import { dateLong, money } from "@/lib/shop/format";
@@ -52,7 +52,6 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
     { icon: Printer, big: "100%", text: ar ? "طباعة في زاربروكن" : "in Saarbrücken gedruckt" },
     s.shipping.express.enabled ? { icon: Zap, big: s.shipping.express.days, text: ar ? "أيام عمل للشحن السريع" : "Werktage Express" } : null,
     s.shipping.freeFromCents ? { icon: Truck, big: money(s.shipping.freeFromCents), text: ar ? "شحن مجاني فوق هذا المبلغ" : "ab hier versandkostenfrei" } : null,
-    { icon: ShieldCheck, big: "14", text: ar ? "يوماً لحق الإرجاع" : "Tage Widerrufsrecht" },
   ].filter(Boolean) as { icon: typeof Printer; big: string; text: string }[];
 
   const faq = ar
@@ -63,14 +62,12 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
           a: `الشحن العادي ${s.shipping.deliveryDays} أيام عمل داخل ألمانيا${s.shipping.express.enabled ? `، والشحن السريع ${s.shipping.express.days} أيام عمل مقابل ${money(s.shipping.express.cents)}` : ""}.${s.campaign.lastOrderDay ? ` ليصلك الطلب قبل 8 كانون الأول اطلب قبل ${dateLong(s.campaign.lastOrderDay, lang)}.` : ""}`,
         },
         { q: "هل يمكنني استلام الطلب بنفسي؟", a: s.shipping.pickup.enabled ? `نعم، الاستلام مجاني من محلنا: ${s.shipping.pickup.address}. سنبلغك فور جهوز طلبك.` : "حالياً نرسل الطلبات بالشحن فقط." },
-        { q: "هل يمكنني إرجاع أو استبدال المنتج؟", a: "لديك حق الإرجاع خلال 14 يوماً من الاستلام. لا يشمل ذلك الطلبات المصممة خصيصاً باسمك أو شعارك." },
         { q: "هل يمكن طلب تصميم خاص أو كمية كبيرة؟", a: "طبعاً – راسلنا على واتساب ونطبع لك باسم جمعيتك أو شعارك بالكمية التي تريدها." },
       ]
     : [
         { q: "Welche Zahlungsarten gibt es?", a: "Karte, Apple Pay, Google Pay, PayPal und Klarna – sicher über Stripe." },
         { q: "Wie lange dauert die Lieferung?", a: `Standard ${s.shipping.deliveryDays} Werktage, Express ${s.shipping.express.days} Werktage.` },
         { q: "Kann ich abholen?", a: s.shipping.pickup.enabled ? `Ja, kostenlos: ${s.shipping.pickup.address}.` : "Derzeit nur Versand." },
-        { q: "Kann ich zurückgeben?", a: "Sie haben 14 Tage Widerrufsrecht, ausgenommen individuell gestaltete Bestellungen." },
         { q: "Sonderwünsche?", a: "Schreiben Sie uns per WhatsApp." },
       ];
 
@@ -165,7 +162,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
 
       {/* Zahlen */}
       <section className="mt-20 bg-[var(--paper-2)]">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-4 py-14 text-center sm:px-6 md:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-6 px-4 py-14 text-center sm:px-6">
           {stats.map((x) => (
             <Reveal key={x.text}>
               <x.icon className="mx-auto size-8 text-[var(--gold)]" strokeWidth={1.4} />
