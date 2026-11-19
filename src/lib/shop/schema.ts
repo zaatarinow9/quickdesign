@@ -84,6 +84,17 @@ export const offerSchema = z.object({
 });
 
 const storyImage = z.object({ url: img, caption: L, credit: z.string().max(300).default("") });
+export const categorySlugs = ["tshirts", "hoodies", "flags", "stickers"] as const;
+export type CategorySlug = (typeof categorySlugs)[number];
+/** Welche Produktarten zu welchem Shop-Bereich gehören */
+export const categoryKinds: Record<CategorySlug, Kind[]> = {
+  tshirts: ["tshirt"],
+  hoodies: ["hoodie"],
+  flags: ["flag", "banner"],
+  stickers: ["sticker", "foil", "other"],
+};
+const slideSchema = z.object({ image: img, title: L, text: L, link: z.string().max(200).default("") });
+const sectionSchema = z.object({ slug: z.enum(categorySlugs), title: L, text: L, image: img.default("") });
 
 export const settingsSchema = z.object({
   shipping: z.object({
@@ -105,7 +116,11 @@ export const settingsSchema = z.object({
   campaign: z.object({ anniversary: date, lastOrderDay: date }),
   whatsapp: z.string().regex(/^\d{6,16}$/),
   hero: z.object({ eyebrow: L, title: L, text: L, image: img.default("") }),
-  story: z.object({ eyebrow: L, title: L, quote: L, paragraphs: z.array(L).max(8), images: z.array(storyImage).max(12) }),
+  story: z.object({ eyebrow: L, title: L, quote: L, paragraphs: z.array(L).max(8), images: z.array(storyImage).max(12), image: img.default("") }),
+  /** Startseiten-Slider */
+  slides: z.array(slideSchema).max(6).default([]),
+  /** Bereiche (Kacheln, Banner, Kategorieseiten) */
+  sections: z.array(sectionSchema).max(4).default([]),
 });
 
 export const storeSchema = z.object({

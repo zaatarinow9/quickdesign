@@ -37,7 +37,7 @@ export default async function DankePage({ params, searchParams }: { params: Prom
         </p>
       ) : null}
       <p className="mt-8 rounded-xl px-5 py-4 text-sm text-[var(--muted)] ring-1 ring-[var(--line)]">{t.danke.pickup}</p>
-      <Link href={`${base}/${lang}`} className="mt-10 inline-flex h-12 items-center rounded-full bg-[var(--ink)] px-6 font-medium text-white hover:bg-black">
+      <Link href={`${base}/${lang}`} className="mt-10 inline-flex h-12 items-center rounded-full bg-[var(--green)] px-6 font-medium text-white hover:bg-[var(--green-2)]">
         {t.danke.back}
       </Link>
       <div className="shop-tricolor mt-16 h-1 w-24 rounded-full ring-1 ring-[var(--line)]" aria-hidden />

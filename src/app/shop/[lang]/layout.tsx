@@ -6,7 +6,7 @@ import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
 import { preorderLive } from "@/lib/shop/schema";
 import { dateLong } from "@/lib/shop/format";
-import { thmanyah } from "../fonts";
+import { qomra } from "../fonts";
 import { ShopProvider } from "@/components/shop/ShopProvider";
 import { ShopHeader } from "@/components/shop/ShopHeader";
 import { ShopFooter } from "@/components/shop/ShopFooter";
@@ -51,13 +51,21 @@ export default async function ShopLayout({ children, params }: { children: React
   const pre = store.settings.preorder;
   const showPre = preorderLive(store.settings, nowMs());
   return (
-    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${thmanyah.variable} min-h-screen antialiased`}>
+    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${qomra.variable} min-h-screen antialiased`}>
       <div className="shop-tricolor h-[3px]" aria-hidden />
-      {showPre ? (
-        <a href={`${base}/${lang}#kollektion`} className="block bg-[var(--ink)] px-4 py-2 text-center text-[0.82rem] text-white/90 hover:text-white">
-          {fill(t.preorder.bar, { pct: pre.pct, date: pre.until ? dateLong(pre.until, lang) : "" })}
-        </a>
-      ) : null}
+      <div className="border-b border-[var(--line)] bg-[var(--paper-2)] text-xs text-[var(--muted)]">
+        <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <span className="truncate">
+            {showPre ? <span className="font-medium text-[var(--green)]">{fill(t.preorder.bar, { pct: pre.pct, date: pre.until ? dateLong(pre.until, lang) : "" })}</span> : t.footer.note}
+          </span>
+          <span className="hidden shrink-0 items-center gap-4 sm:flex">
+            <a href={`https://wa.me/${store.settings.whatsapp}`} target="_blank" rel="noopener" className="ltr-num hover:text-[var(--green)]">
+              +{store.settings.whatsapp.replace(/^49/, "49 ")}
+            </a>
+            <a href="mailto:info@quickdesign24.de" className="hover:text-[var(--green)]">info@quickdesign24.de</a>
+          </span>
+        </div>
+      </div>
       <ShopProvider lang={lang} base={base} t={t} store={store}>
         <ShopHeader />
         <main>{children}</main>

@@ -108,8 +108,74 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
     </>
   );
 
+  const sectionNames: Record<string, string> = { tshirts: "T-Shirts", hoodies: "Hoodies", flags: "Fahnen & Banner", stickers: "Sticker & Aufkleber" };
   const content = (
     <>
+      <Card
+        title="Slider auf der Startseite"
+        action={
+          <button
+            type="button"
+            className="adm-btn adm-btn-ghost adm-btn-sm"
+            disabled={s.slides.length >= 6}
+            onClick={() => up((x) => ({ ...x, slides: [...x.slides, { image: "", title: { de: "", ar: "" }, text: { de: "", ar: "" }, link: "" }] }))}
+          >
+            <Plus className="size-3.5" /> Bild
+          </button>
+        }
+      >
+        <p className="mb-4 text-sm text-stone-dark">Breite Bilder (ideal 2400 × 1000 px) mit Titel in der Mitte. Wechseln automatisch alle 5 Sekunden.</p>
+        <div className="space-y-5">
+          {s.slides.map((sl, i) => {
+            const set = (patch: Partial<typeof sl>) => up((x) => ({ ...x, slides: x.slides.map((y, j) => (j === i ? { ...y, ...patch } : y)) }));
+            return (
+              <div key={i} className="grid gap-4 rounded-xl border border-ink/10 p-4 lg:grid-cols-[14rem_1fr]">
+                <ImageField value={sl.image} onChange={(image) => set({ image })} />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Bild {i + 1}</span>
+                    <div className="flex gap-1">
+                      <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" disabled={i === 0} onClick={() => up((x) => { const n = [...x.slides]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return { ...x, slides: n }; })}>↑</button>
+                      <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => up((x) => ({ ...x, slides: x.slides.filter((_, j) => j !== i) }))}>
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <LField label="Titel" value={sl.title} onChange={(title) => set({ title })} />
+                  <LField label="Untertitel" value={sl.text} onChange={(text) => set({ text })} />
+                  <div>
+                    <p className="adm-label">Ziel des Buttons</p>
+                    <select className="adm-input w-full" value={sl.link} onChange={(e) => set({ link: e.target.value })}>
+                      <option value="">Startseite – Produkte</option>
+                      {Object.entries(sectionNames).map(([k, v]) => (
+                        <option key={k} value={`/qism/${k}`}>Bereich: {v}</option>
+                      ))}
+                      <option value="/hikaya">Geschichte</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card title="Bereiche (Kacheln, große Banner und Bereichsseiten)">
+        <div className="grid gap-5 md:grid-cols-2">
+          {s.sections.map((sec, i) => {
+            const set = (patch: Partial<typeof sec>) => up((x) => ({ ...x, sections: x.sections.map((y, j) => (j === i ? { ...y, ...patch } : y)) }));
+            return (
+              <div key={sec.slug} className="space-y-3 rounded-xl border border-ink/10 p-4">
+                <p className="text-sm font-medium">{sectionNames[sec.slug]}</p>
+                <ImageField label="Banner-Bild (breit)" value={sec.image} onChange={(image) => set({ image })} />
+                <LField label="Titel" value={sec.title} onChange={(title) => set({ title })} />
+                <LField label="Untertitel" value={sec.text} onChange={(text) => set({ text })} />
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
       <Card title="Startseite – großer Bereich oben (Hero)">
         <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
           <div className="space-y-5">
@@ -142,6 +208,9 @@ export function SettingsEditor({ initial, mode }: { initial: ShopSettings; mode:
             <Plus className="size-3.5" /> Absatz
           </button>
           <LField label="Zitat" value={s.story.quote} onChange={(v) => up((x) => ({ ...x, story: { ...x.story, quote: v } }))} />
+          <div className="max-w-xs">
+            <ImageField label="Bild neben der Geschichte (Startseite)" value={s.story.image} onChange={(image) => up((x) => ({ ...x, story: { ...x.story, image } }))} />
+          </div>
         </div>
       </Card>
 

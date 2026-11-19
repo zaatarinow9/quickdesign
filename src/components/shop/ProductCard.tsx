@@ -12,8 +12,8 @@ export function ProductCard({ p, store, lang, t, href, priority = false, now }: 
   const price = fromPrice(p);
   const detail = detailOf(p);
   return (
-    <Link href={href} className="group block">
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--paper-2)]">
+    <Link href={href} className="group block h-full rounded-2xl border border-[var(--line)] bg-white p-2.5 transition hover:border-[var(--green)] hover:shadow-[0_14px_34px_-22px_rgba(5,66,57,0.5)]">
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-[var(--paper-2)]">
         <Image
           src={imageOf(p)}
           alt={p.name[lang]}
@@ -26,17 +26,17 @@ export function ProductCard({ p, store, lang, t, href, priority = false, now }: 
           <Image src={detail} alt="" fill sizes="(min-width: 1024px) 270px, 50vw" className="object-cover opacity-0 transition duration-700 ease-out group-hover:opacity-100" />
         ) : null}
         <div className="absolute start-3 top-3 flex flex-col items-start gap-1.5">
-          {pre ? <span className="ltr-num rounded-full bg-[var(--ink)] px-2.5 py-1 text-xs font-medium text-white">−{pre} %</span> : null}
-          {badge ? <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-[var(--green)] shadow-sm">{badge.badge[lang] || badge.badge.de}</span> : null}
+          {pre ? <span className="ltr-num rounded-full bg-[var(--green)] px-2.5 py-1 text-xs font-medium text-white">−{pre} %</span> : null}
+          {badge ? <span className="rounded-full bg-[var(--mint)] px-2.5 py-1 text-xs font-medium text-[var(--green)] shadow-sm">{badge.badge[lang] || badge.badge.de}</span> : null}
         </div>
       </div>
-      <div className="mt-3">
-        <h3 className="text-[0.98rem] leading-snug">{p.name[lang]}</h3>
+      <div className="px-1.5 pb-1.5 pt-3">
+        <h3 className="text-[0.98rem] font-medium leading-snug">{p.name[lang]}</h3>
         <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[0.95rem]">
           {varies ? <span className="text-sm text-[var(--muted)]">{t.card.from}</span> : null}
           {pre ? (
             <>
-              <span className="ltr-num font-medium text-[var(--ink)]">{money(Math.round((price * (100 - pre)) / 100))}</span>
+              <span className="ltr-num font-bold text-[var(--green)]">{money(Math.round((price * (100 - pre)) / 100))}</span>
               <span className="ltr-num text-sm text-[var(--muted)] line-through">{money(price)}</span>
             </>
           ) : (

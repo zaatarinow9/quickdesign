@@ -1,12 +1,14 @@
 import localFont from "next/font/local";
 
-/** Thmanyah Sans – nur im Shop geladen (Deutsch und Arabisch). Austausch: --font-ar-display in shop.css. */
-export const thmanyah = localFont({
+/** itf Qomra Arabic – Schrift der neuen syrischen Staatsidentität, nur im Shop geladen. */
+export const qomra = localFont({
   src: [
-    { path: "./fonts/thmanyahsans-Regular.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/thmanyahsans-Medium.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/thmanyahsans-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/qomra-Light.woff2", weight: "300", style: "normal" },
+    { path: "./fonts/qomra-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/qomra-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/qomra-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/qomra-Black.woff2", weight: "900", style: "normal" },
   ],
-  variable: "--font-thmanyah",
+  variable: "--font-qomra",
   display: "swap",
 });

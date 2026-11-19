@@ -43,6 +43,7 @@ const C = {
   weiss: { id: "weiss", hex: "#f4f2ed", name: { de: "Weiß", ar: "أبيض" } },
   sand: { id: "sand", hex: "#d8ccb4", name: { de: "Sand", ar: "رملي" } },
   gruen: { id: "gruen", hex: "#1f3b2d", name: { de: "Flaschengrün", ar: "أخضر زيتي" } },
+  gold: { id: "gold", hex: "#bca475", name: { de: "Gold", ar: "ذهبي" } },
 } satisfies Record<string, Color>;
 
 const img = (n: string) => `/shop/${n}.webp`;
@@ -250,6 +251,29 @@ export const products: Product[] = [
       { min: 5, pct: 10 },
       { min: 10, pct: 20 },
     ],
+  },
+  {
+    slug: "nisr-autoaufkleber",
+    category: "druck",
+    kind: "foil",
+    featured: true,
+    name: { de: "Autoaufkleber „Syrischer Adler“", ar: "ملصق النسر السوري للسيارة" },
+    tagline: { de: "Das neue Staatswappen als Plotterfolie", ar: "شعار الدولة الجديد بفينيل مقصوص" },
+    description: {
+      de: "Der goldene Adler mit den drei Sternen – als geplottete Folie ohne Hintergrund. Für Heckscheibe, Motorhaube oder Schaufenster, inklusive Übertragungsfolie.",
+      ar: "النسر الذهبي مع النجوم الثلاث – فينيل مقصوص بدون خلفية. للزجاج الخلفي أو غطاء المحرك أو واجهة المحل، مع شريط النقل للتركيب السهل.",
+    },
+    colors: (["gold", "weiss"] as const).map((c) => ({ color: C[c], image: img(`folie-nisr-${c}`) })),
+    variants: [
+      { id: "20cm", label: { de: "20 × 15 cm", ar: "20 × 15 سم" }, priceCents: 990 },
+      { id: "30cm", label: { de: "30 × 23 cm (Heckscheibe)", ar: "30 × 23 سم (زجاج خلفي)" }, priceCents: 1490 },
+      { id: "50cm", label: { de: "50 × 38 cm (Motorhaube)", ar: "50 × 38 سم (غطاء المحرك)" }, priceCents: 2490 },
+    ],
+    details: [
+      { de: "Hochwertige Plotterfolie, außen ca. 5 Jahre haltbar, waschanlagenfest", ar: "فينيل عالي الجودة، يدوم حوالي 5 سنوات، مقاوم لغسيل السيارات" },
+      { de: "Inkl. Übertragungsfolie und Anleitung", ar: "مع شريط النقل وتعليمات التركيب" },
+    ],
+    tiers: [{ min: 5, pct: 10 }],
   },
   {
     slug: "sticker-set",

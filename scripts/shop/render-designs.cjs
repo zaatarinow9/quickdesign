@@ -13,7 +13,7 @@ fs.mkdirSync(out, { recursive: true });
 const fonts = [400, 500, 700, 900]
   .map((w, i) => {
     const f = ["Regular", "Medium", "Bold", "Bold"][i];
-    const p = path.join(root, "src/app/shop/fonts", `thmanyahsans-${f}.woff2`);
+    const p = path.join(__dirname, "fonts", `thmanyahsans-${f}.woff2`);
     return `@font-face{font-family:'Thmanyah Sans';font-weight:${w};src:url(data:font/woff2;base64,${fs.readFileSync(p).toString("base64")}) format('woff2')}`;
   })
   .join("");
