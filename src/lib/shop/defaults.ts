@@ -144,7 +144,7 @@ export const defaultStore: ShopStore = {
       {
         image: "/shop/photos/umayyaden-moschee-2024.webp",
         title: { de: "Zwei Jahre Freiheit", ar: "عامان من الحرية" },
-        text: { de: "Zwei Jahre seit dem 8. Dezember 2024", ar: "عامان على الثامن من كانون الأول 2024" },
+        text: { de: "Umayyaden-Moschee, Damaskus – Dezember 2024", ar: "الجامع الأموي، دمشق – كانون الأول 2024" },
         link: "",
         credit: "Foto: Wikimedia Commons (gemeinfrei)",
       },

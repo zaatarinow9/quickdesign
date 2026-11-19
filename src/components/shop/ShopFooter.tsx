@@ -18,7 +18,7 @@ export function ShopFooter({ t, base, lang, whatsapp }: { t: ShopDict; base: str
           <Logo className="w-[120px] text-[var(--ink)]" />
           <p className="mt-4 max-w-xs leading-relaxed">
             {ar
-              ? "مجموعة الذكرى الثانية لتحرير سوريا – تصميم وطباعة QuickDesign في زاربروكن، بكل حب ودقة."
+              ? "مجموعة الذكرى الثانية لتحرير سوريا."
               : "Die Kollektion zum zweiten Jahrestag der Befreiung Syriens – gestaltet und gedruckt von QuickDesign in Saarbrücken."}
           </p>
           <div className="shop-tricolor mt-5 h-1 w-24 rounded-full ring-1 ring-[var(--line)]" />

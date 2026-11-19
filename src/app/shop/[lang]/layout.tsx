@@ -11,6 +11,7 @@ import { ShopProvider } from "@/components/shop/ShopProvider";
 import { ShopHeader } from "@/components/shop/ShopHeader";
 import { ShopFooter } from "@/components/shop/ShopFooter";
 import { CartDrawer } from "@/components/shop/CartDrawer";
+import { ShopAssistant } from "@/components/shop/ShopAssistant";
 import "../shop.css";
 
 /** Der Shop ist nur auf Arabisch (Deutsch-Texte bleiben im Code als Reserve) */
@@ -72,6 +73,7 @@ export default async function ShopLayout({ children, params }: { children: React
         <main>{children}</main>
         <ShopFooter t={t} base={base} lang={lang} whatsapp={store.settings.whatsapp} />
         <CartDrawer />
+        <ShopAssistant />
       </ShopProvider>
     </div>
   );
