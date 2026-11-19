@@ -11,7 +11,7 @@ const L = site.legal;
 const company = `${L.companyName}, Inhaber ${L.owner}, ${L.street}, ${L.postalCode} ${L.city}`;
 
 function H({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-10 text-xl font-semibold text-white">{children}</h2>;
+  return <h2 className="mt-10 text-xl font-semibold text-[var(--ink)]">{children}</h2>;
 }
 
 export function AgbText({ smallBusiness }: { smallBusiness: boolean }) {
@@ -95,7 +95,7 @@ export function WiderrufText() {
       <H>Ausschluss des Widerrufsrechts</H>
       <p>Das Widerrufsrecht besteht nicht bei Verträgen zur Lieferung von Waren, die nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung durch den Verbraucher maßgeblich ist (z. B. Sammelbestellungen mit eigenem Namen, Text oder Logo).</p>
       <H>Muster-Widerrufsformular</H>
-      <div className="rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10">
+      <div className="rounded-2xl bg-[var(--card)] p-5 ring-1 ring-[var(--line)]">
         <p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
         <p className="mt-3">An {company}, E-Mail: {site.contact.email}:</p>
         <p className="mt-3">

@@ -51,9 +51,11 @@ export type CheckoutSession = {
   collected_information?: { shipping_details?: { name?: string | null; address?: Record<string, string | null> | null } | null } | null;
   shipping_cost?: { amount_total: number; shipping_rate?: string | { display_name?: string } | null } | null;
   line_items?: { data: { description: string; quantity: number; amount_total: number }[] };
+  total_details?: { amount_discount: number; amount_shipping: number } | null;
 };
 
 export const createCheckoutSession = (params: Params) => stripe<CheckoutSession>("POST", "/checkout/sessions", params);
+export const createCoupon = (params: Params) => stripe<{ id: string }>("POST", "/coupons", params);
 
 export const getCheckoutSession = (id: string) => {
   if (!isStripeConfigured() || !/^cs_[A-Za-z0-9_]+$/.test(id)) return Promise.resolve(null);

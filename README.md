@@ -58,6 +58,13 @@ Der Shop liegt im selben Projekt unter `src/app/shop/[lang]/…` (Deutsch `/de`,
   `quickdesign24.de/shop/...` leitet per 308 auf die Subdomain. In Previews/lokal ist der Shop direkt unter `/shop/de` erreichbar
   (lokal mit Subdomain: `http://shop.localhost:3000`).
 - **Katalog**: `src/lib/shop/catalog.ts` (Preise in Cent – der Checkout rechnet nur mit diesen Werten).
+  Textilien, Fahnen, Banner, Folien und Sticker; Formate mit eigenem Preis, Mengenrabatte (`tiers`).
+- **Angebote**: `src/lib/shop/pricing.ts` + `offers` in `config.ts` – „2 + 1“ (jedes dritte Textil −50 %) wird an der
+  Stripe-Kasse als einmaliger Gutschein abgezogen, Mengenrabatte stecken im Stückpreis.
+- **Motive & Produktbilder**: Druckvorlagen als SVG in `design/shop/` (Texte vor dem Druck in Pfade umwandeln),
+  Produktbilder in `public/shop/*.webp`. Neu erzeugen:
+  `python3 scripts/shop/designs.py && node scripts/shop/render-designs.cjs && python3 scripts/shop/mockups.py`
+  (benötigt `pip install opencv-python-headless numpy pillow`). Echte Fotos können die WebP-Dateien 1:1 ersetzen.
 - **Texte**: `src/lib/shop/i18n.ts`, Rechtstexte in `src/components/shop/LegalTexts.tsx`.
 - **Zahlung**: Stripe Checkout über die REST-API (`src/lib/shop/stripe.ts`). Zahlungsarten (Karte, Apple Pay, Google Pay,
   PayPal, Klarna) werden im Stripe-Dashboard aktiviert. Ohne Schlüssel zeigt der Warenkorb einen Hinweis „Zahlung nicht aktiviert“.

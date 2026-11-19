@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { campaign, isLang, langs, shipping } from "@/lib/shop/config";
-import { productBySlug, products } from "@/lib/shop/catalog";
+import { campaign, isLang, langs, shipping, SHOP_URL } from "@/lib/shop/config";
+import { fromPrice, imageOf, productBySlug, products } from "@/lib/shop/catalog";
 import { dict, fill } from "@/lib/shop/i18n";
 import { dateLong, money } from "@/lib/shop/format";
 import { shopBase } from "@/lib/shop/server";
@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     title: p.name[lang],
     description: p.description[lang],
     alternates: { canonical: `/${lang}/produkt/${slug}`, languages: { de: `/de/produkt/${slug}`, ar: `/ar/produkt/${slug}` } },
+    openGraph: { images: [{ url: imageOf(p), width: 1200, height: 1200 }] },
   };
 }
 
@@ -35,7 +36,8 @@ export default async function ProductPage({ params }: { params: Promise<{ lang: 
   // TODO(Inhaber): Kleinunternehmer (§ 19 UStG)? Steuerung über Verwaltung → Einstellungen → Steuer.
   const taxNote = settings.tax.smallBusiness ? t.product.taxSmall : t.product.taxIncl;
   const shippingNote = `${fill(t.product.shippingText, { std: money(shipping.standardCents), free: money(shipping.freeFromCents) })}. ${fill(t.hero.lastOrder, { date: dateLong(campaign.lastOrderDay, lang) })}`;
-  const others = products.filter((x) => x.slug !== p.slug).slice(0, 3);
+  // Erst gleiche Kategorie, dann Rest
+  const others = [...products.filter((x) => x.slug !== p.slug && x.category === p.category), ...products.filter((x) => x.category !== p.category)].slice(0, 4);
   const href = (x = "") => `${base}/${lang}${x}`;
 
   const jsonLd = {
@@ -44,21 +46,22 @@ export default async function ProductPage({ params }: { params: Promise<{ lang: 
     name: p.name[lang],
     description: p.description[lang],
     brand: { "@type": "Brand", name: "QuickDesign" },
-    offers: { "@type": "Offer", priceCurrency: "EUR", price: (p.priceCents / 100).toFixed(2), availability: "https://schema.org/InStock" },
+    image: `${SHOP_URL}${imageOf(p)}`,
+    offers: { "@type": "Offer", priceCurrency: "EUR", price: (fromPrice(p) / 100).toFixed(2), availability: "https://schema.org/InStock" },
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-16">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <Link href={`${href()}#kollektion`} className="mb-8 inline-flex text-sm text-white/60 hover:text-white">
+      <Link href={`${href()}#${p.category}`} className="mb-6 inline-flex text-sm text-[var(--muted)] hover:text-[var(--ink)]">
         {lang === "ar" ? "→" : "←"} {t.product.back}
       </Link>
       <ProductView p={p} taxNote={taxNote} shippingNote={shippingNote} />
       <section className="mt-24">
-        <h2 className="mb-8 text-3xl font-semibold tracking-tight">{t.product.more}</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-8 text-2xl">{t.product.more}</h2>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
           {others.map((o) => (
-            <ProductCard key={o.slug} p={o} lang={lang} href={href(`/produkt/${o.slug}`)} viewLabel={t.grid.view} />
+            <ProductCard key={o.slug} p={o} lang={lang} t={t} href={href(`/produkt/${o.slug}`)} />
           ))}
         </div>
       </section>

@@ -44,3 +44,4 @@ next-env.d.ts
 # build/tool scratch output
 /.next-build-check/
 /.codex-temp/
+scripts/shop/.build/

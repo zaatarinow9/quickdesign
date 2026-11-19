@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveLine } from "@/lib/shop/catalog";
-import { isLang, shipping, SHOP_HOSTS, SHOP_URL, shopLimits } from "@/lib/shop/config";
-import { createCheckoutSession, isStripeConfigured } from "@/lib/shop/stripe";
+import { isLang, offers, shipping, SHOP_HOSTS, SHOP_URL, shopLimits } from "@/lib/shop/config";
+import { createCheckoutSession, createCoupon, isStripeConfigured } from "@/lib/shop/stripe";
+import { priceLines } from "@/lib/shop/pricing";
 import { clientIpHash, rateLimit } from "@/lib/security";
 
 const schema = z.object({
   lang: z.string(),
   items: z
-    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(10), qty: z.number().int().min(1).max(shopLimits.maxQtyPerLine) }))
+    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(20), qty: z.number().int().min(1).max(shopLimits.maxQtyPerLine) }))
     .min(1)
     .max(shopLimits.maxLines),
 });
@@ -33,13 +34,19 @@ export async function POST(request: Request) {
   const lang = isLang(parsed.data.lang) ? parsed.data.lang : "de";
   const lines = parsed.data.items.map(resolveLine);
   if (lines.some((l) => !l)) return NextResponse.json({ error: "invalid" }, { status: 400 });
-  const items = lines.filter((l): l is NonNullable<typeof l> => !!l);
-  const subtotal = items.reduce((s, l) => s + l.unitCents * l.qty, 0);
-  const shippingCents = subtotal >= shipping.freeFromCents ? 0 : shipping.standardCents;
+  const price = priceLines(lines.filter((l): l is NonNullable<typeof l> => !!l));
+  const items = price.lines;
+  const shippingCents = price.shippingCents;
   const base = origin(request);
+  const variantName = (l: (typeof items)[number]) => [l.color?.name.de, l.variant.label.de].filter(Boolean).join(" – ");
 
   try {
+    // Angebot 2 + 1 als einmaliger Rabatt (Mengenrabatte stecken bereits im Stückpreis)
+    const coupon = price.bundleCents
+      ? await createCoupon({ amount_off: price.bundleCents, currency: "eur", duration: "once", max_redemptions: 1, name: `Angebot 2 + 1 (${price.bundleItems}× ${offers.bundle.pct} %)` })
+      : null;
     const session = await createCheckoutSession({
+      discounts: coupon ? [{ coupon: coupon.id }] : undefined,
       mode: "payment",
       // Zahlarten (Karte, Apple Pay, Google Pay, PayPal, Klarna …) kommen aus dem Stripe-Dashboard
       line_items: items.map((l) => ({
@@ -48,9 +55,9 @@ export async function POST(request: Request) {
           currency: "eur",
           unit_amount: l.unitCents,
           product_data: {
-            name: `${l.product.name.de} – ${l.color.name.de} – ${l.size}`,
-            description: l.product.tagline.de,
-            metadata: { slug: l.product.slug, color: l.color.id, size: l.size },
+            name: `${l.product.name.de} – ${variantName(l)}`,
+            description: l.tierPct ? `${l.product.tagline.de} · Mengenrabatt ${l.tierPct} %` : l.product.tagline.de,
+            metadata: { slug: l.product.slug, color: l.color?.id ?? "", size: l.variant.id },
           },
         },
       })),
@@ -59,7 +66,7 @@ export async function POST(request: Request) {
         {
           shipping_rate_data: {
             type: "fixed_amount",
-            display_name: shippingCents ? "Versand innerhalb Deutschlands" : "Versand innerhalb Deutschlands (kostenlos ab 60 €)",
+            display_name: shippingCents ? "Versand innerhalb Deutschlands" : "Versand innerhalb Deutschlands (kostenlos)",
             fixed_amount: { amount: shippingCents, currency: "eur" },
             delivery_estimate: { minimum: { unit: "business_day", value: 3 }, maximum: { unit: "business_day", value: 5 } },
           },
@@ -81,7 +88,8 @@ export async function POST(request: Request) {
       },
       metadata: {
         lang,
-        items: items.map((l) => `${l.qty}x ${l.product.slug}/${l.color.id}/${l.size}`).join("; ").slice(0, 490),
+        items: items.map((l) => `${l.qty}x ${l.product.slug}/${l.color?.id ?? "-"}/${l.variant.id}`).join("; ").slice(0, 490),
+        bundle_cents: String(price.bundleCents),
       },
       success_url: `${base}/${lang}/danke?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/${lang}`,

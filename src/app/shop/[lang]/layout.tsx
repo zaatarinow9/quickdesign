@@ -33,7 +33,8 @@ export default async function ShopLayout({ children, params }: { children: React
   const base = await shopBase();
   const t = dict[lang];
   return (
-    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${thmanyah.variable} min-h-screen bg-[#0a0c0b] text-white antialiased`}>
+    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${thmanyah.variable} min-h-screen antialiased`}>
+      <div className="shop-tricolor h-[3px]" aria-hidden />
       <ShopProvider lang={lang} base={base} t={t}>
         <ShopHeader />
         <main>{children}</main>

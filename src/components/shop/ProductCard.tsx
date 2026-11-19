@@ -1,33 +1,37 @@
+import Image from "next/image";
 import Link from "next/link";
+import { fromPrice, imageOf, type Product } from "@/lib/shop/catalog";
 import type { Lang } from "@/lib/shop/config";
-import type { Product } from "@/lib/shop/catalog";
 import { money } from "@/lib/shop/format";
-import { Mockup } from "./Mockup";
+import type { ShopDict } from "@/lib/shop/i18n";
 
-export function ProductCard({ p, lang, href, viewLabel }: { p: Product; lang: Lang; href: string; viewLabel: string }) {
-  const c = p.colors[0];
+export function ProductCard({ p, lang, t, href, priority = false }: { p: Product; lang: Lang; t: ShopDict; href: string; priority?: boolean }) {
+  const varies = new Set(p.variants.map((v) => v.priceCents)).size > 1;
   return (
-    <Link href={href} className="group relative flex flex-col overflow-hidden rounded-[1.75rem] bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-4 ring-1 ring-white/10 transition duration-500 hover:-translate-y-1 hover:ring-[var(--shop-gold)]/60 sm:p-5">
-      {p.badge ? (
-        <span className="absolute start-4 top-4 z-10 rounded-full bg-[var(--shop-gold-2)] px-3 py-1 text-[0.7rem] font-semibold text-[#1a140a]">{p.badge[lang]}</span>
-      ) : null}
-      <div className="relative aspect-[5/5.6] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,rgba(255,255,255,0.10),transparent_70%)]">
-        <Mockup garment={p.garment} art={p.artwork} color={c.hex} tone={c.ink} label={p.name[lang]} className="h-full w-full transition duration-700 group-hover:scale-[1.04]" />
+    <Link href={href} className="group block">
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--paper-2)]">
+        <Image
+          src={imageOf(p)}
+          alt={p.name[lang]}
+          fill
+          priority={priority}
+          sizes="(min-width: 1024px) 360px, (min-width: 640px) 45vw, 50vw"
+          className="object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
+        />
       </div>
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-lg font-semibold leading-snug">{p.name[lang]}</h3>
-          <p className="mt-1 text-sm text-white/60">{p.tagline[lang]}</p>
-        </div>
-        <span className="ltr-num shrink-0 text-lg font-semibold text-[var(--shop-gold-2)]">{money(p.priceCents)}</span>
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex gap-1.5">
-          {p.colors.map((col) => (
-            <span key={col.id} className="size-4 rounded-full ring-1 ring-white/30" style={{ background: col.hex }} title={col.name[lang]} />
-          ))}
-        </div>
-        <span className="text-sm text-white/70 transition group-hover:text-[var(--shop-gold-2)]">{viewLabel} {lang === "ar" ? "←" : "→"}</span>
+      <div className="mt-3">
+        <h3 className="text-[0.98rem] leading-snug">{p.name[lang]}</h3>
+        <p className="mt-1 text-[0.95rem]">
+          {varies ? <span className="text-sm text-[var(--muted)]">{t.card.from} </span> : null}
+          <span className="ltr-num">{money(fromPrice(p))}</span>
+        </p>
+        {p.colors.length > 1 ? (
+          <div className="mt-2 flex gap-1.5" aria-label={t.card.colors}>
+            {p.colors.map(({ color }) => (
+              <span key={color.id} title={color.name[lang]} className="size-3 rounded-full ring-1 ring-black/10" style={{ background: color.hex }} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </Link>
   );

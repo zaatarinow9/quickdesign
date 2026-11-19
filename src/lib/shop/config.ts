@@ -36,4 +36,18 @@ export const shipping = {
 /** WhatsApp für Sammelbestellungen (Vereine, Familien) */
 export const whatsappNumber = "4915772785677";
 
-export const shopLimits = { maxQtyPerLine: 20, maxLines: 30 };
+export const shopLimits = { maxQtyPerLine: 500, maxLines: 30 };
+
+/**
+ * Angebote – TODO(Inhaber): Prozentsätze bestätigen.
+ * bundle: Bei Textilien ist jedes dritte Teil (das günstigste je Dreiergruppe) um `pct` % reduziert.
+ * Mengenrabatte für Druckprodukte stehen direkt am Produkt (catalog.ts → tiers).
+ */
+export const offers = {
+  bundle: { every: 3, pct: 50 },
+};
+
+/** Tage bis zum Jahrestag (für „Noch X Tage“) */
+export function daysUntilAnniversary(now = Date.now()) {
+  return Math.max(0, Math.ceil((Date.parse(campaign.anniversary) - now) / 86_400_000));
+}

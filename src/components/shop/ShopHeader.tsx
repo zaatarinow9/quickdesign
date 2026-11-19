@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Languages, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { useShop } from "./ShopProvider";
 
@@ -12,38 +12,34 @@ export function ShopHeader() {
   // Gleiche Seite in der anderen Sprache
   const other = lang === "de" ? "ar" : "de";
   const switchHref = /\/(de|ar)(\/|$)/.test(pathname) ? pathname.replace(/\/(de|ar)(\/|$)/, `/${other}$2`) : href().replace(`/${lang}`, `/${other}`);
+  const link = "rounded-full px-3 py-2 text-[var(--muted)] transition-colors hover:text-[var(--ink)]";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0a0c0b]/80 text-white backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:h-[4.5rem] sm:px-6">
-        <Link href={href()} className="flex shrink-0 items-center gap-3" aria-label="QuickDesign Shop">
-          <Logo className="w-[108px] sm:w-[128px]" />
-          <span className="hidden h-6 w-px bg-white/20 sm:block" />
-          <span className="hidden text-xs font-semibold uppercase tracking-[0.25em] text-[var(--shop-gold-2)] sm:block">Shop</span>
+    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/90 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
+        <Link href={href()} className="flex shrink-0 items-center gap-3 text-[var(--ink)]" aria-label="QuickDesign Shop">
+          <Logo className="w-[104px]" />
+          <span className="hidden h-5 w-px bg-[var(--line)] sm:block" />
+          <span className="ltr-num hidden text-sm text-[var(--muted)] sm:block">8.12.</span>
         </Link>
-        <nav className="ms-auto hidden items-center gap-1 text-sm md:flex" aria-label="Shop">
-          <a href={`${href()}#kollektion`} className="rounded-full px-3.5 py-2 text-white/75 hover:bg-white/10 hover:text-white">{t.nav.shop}</a>
-          <a href={`${href()}#geschichte`} className="rounded-full px-3.5 py-2 text-white/75 hover:bg-white/10 hover:text-white">{t.nav.story}</a>
-          <a href={`${href()}#gruppen`} className="rounded-full px-3.5 py-2 text-white/75 hover:bg-white/10 hover:text-white">{t.nav.groups}</a>
+        <nav className="ms-auto hidden items-center text-[0.95rem] md:flex" aria-label="Shop">
+          <a href={`${href()}#textil`} className={link}>{t.nav.textil}</a>
+          <a href={`${href()}#druck`} className={link}>{t.nav.druck}</a>
+          <a href={`${href()}#gruppen`} className={link}>{t.nav.groups}</a>
         </nav>
-        <div className="ms-auto flex items-center gap-1.5 md:ms-2">
-          <Link
-            href={switchHref}
-            hrefLang={other}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-white/80 ring-1 ring-white/15 hover:bg-white/10 hover:text-white"
-            style={{ fontFamily: other === "ar" ? "var(--font-ar-display)" : undefined }}
-          >
-            <Languages className="size-4" aria-hidden /> {t.langSwitch}
+        <div className="ms-auto flex items-center gap-1 md:ms-3">
+          <Link href={switchHref} hrefLang={other} lang={other} className="rounded-full px-3 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+            {t.langSwitch}
           </Link>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="relative grid size-10 place-items-center rounded-full bg-white text-[#0a0c0b] transition hover:bg-[var(--shop-gold-2)]"
+            className="relative grid size-10 place-items-center rounded-full text-[var(--ink)] transition-colors hover:bg-[var(--paper-2)]"
             aria-label={`${t.nav.cart} (${count})`}
           >
-            <ShoppingBag className="size-[18px]" aria-hidden />
+            <ShoppingBag className="size-5" strokeWidth={1.6} aria-hidden />
             {count ? (
-              <span className="ltr-num absolute -end-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[var(--shop-red)] px-1 text-[0.68rem] font-bold text-white ring-2 ring-[#0a0c0b]">
+              <span className="ltr-num absolute end-0.5 top-0.5 grid min-w-[1.15rem] place-items-center rounded-full bg-[var(--green)] px-1 text-[0.65rem] font-bold leading-[1.15rem] text-white">
                 {count}
               </span>
             ) : null}

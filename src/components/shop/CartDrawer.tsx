@@ -1,14 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Loader2, Lock, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { productBySlug } from "@/lib/shop/catalog";
-import { shipping, whatsappNumber } from "@/lib/shop/config";
+import { Loader2, Minus, Plus, X } from "lucide-react";
+import { imageOf, resolveLine, type ResolvedLine } from "@/lib/shop/catalog";
+import { offers, whatsappNumber } from "@/lib/shop/config";
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
-import { Mockup } from "./Mockup";
+import { priceLines } from "@/lib/shop/pricing";
 import { useShop } from "./ShopProvider";
 
 export function CartDrawer() {
@@ -26,16 +27,13 @@ export function CartDrawer() {
     };
   }, [open, setOpen]);
 
-  const rows = lines
-    .map((l, i) => {
-      const p = productBySlug(l.slug);
-      const c = p?.colors.find((x) => x.id === l.color);
-      return p && c ? { i, l, p, c } : null;
-    })
-    .filter((r): r is NonNullable<typeof r> => !!r);
-  const subtotal = rows.reduce((s, r) => s + r.p.priceCents * r.l.qty, 0);
-  const missing = Math.max(0, shipping.freeFromCents - subtotal);
-  const progress = Math.min(100, (subtotal / shipping.freeFromCents) * 100);
+  const rows = useMemo(
+    () => lines.map((l, i) => ({ i, l, r: resolveLine(l) })).filter((x): x is { i: number; l: (typeof lines)[number]; r: ResolvedLine } => !!x.r),
+    [lines],
+  );
+  const price = useMemo(() => priceLines(rows.map((x) => x.r)), [rows]);
+  const progress = Math.min(100, (price.total / (price.total + price.freeShippingMissing || 1)) * 100);
+  const textileCount = rows.filter((x) => x.r.product.category === "textil").reduce((s, x) => s + x.r.qty, 0);
 
   const checkout = async () => {
     setState("loading");
@@ -43,7 +41,7 @@ export function CartDrawer() {
       const res = await fetch("/api/shop/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lang, items: rows.map((r) => r.l) }),
+        body: JSON.stringify({ lang, items: rows.map((x) => x.l) }),
       });
       const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (data.url) {
@@ -56,9 +54,9 @@ export function CartDrawer() {
     }
   };
 
-  const waText = encodeURIComponent(
-    `${t.groups.message}\n\n${rows.map((r) => `• ${r.l.qty}× ${r.p.name[lang]} – ${r.c.name[lang]} – ${r.l.size}`).join("\n")}`,
-  );
+  const describe = (r: ResolvedLine) => [r.color?.name[lang], r.variant.label[lang]].filter(Boolean).join(" · ");
+  const waText = encodeURIComponent(`${t.groups.message}\n\n${rows.map(({ r }) => `• ${r.qty}× ${r.product.name[lang]} – ${describe(r)}`).join("\n")}`);
+  const side = lang === "ar" ? "-100%" : "100%";
 
   return (
     <AnimatePresence>
@@ -66,106 +64,137 @@ export function CartDrawer() {
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t.cart.title}>
           <motion.button
             type="button"
-            aria-label="Schließen"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-label="×"
+            className="absolute inset-0 cursor-default bg-black/30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
           />
           <motion.aside
-            className="absolute inset-y-0 end-0 flex w-full max-w-md flex-col bg-[#0f1211] text-white shadow-2xl"
-            initial={{ x: lang === "ar" ? "-100%" : "100%" }}
+            initial={{ x: side }}
             animate={{ x: 0 }}
-            exit={{ x: lang === "ar" ? "-100%" : "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 320 }}
+            exit={{ x: side }}
+            transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-y-0 end-0 flex w-full max-w-md flex-col bg-[var(--paper)] shadow-2xl"
           >
-            <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <ShoppingBag className="size-5 text-[var(--shop-gold-2)]" aria-hidden /> {t.cart.title}
-              </h2>
-              <button type="button" onClick={() => setOpen(false)} className="grid size-9 place-items-center rounded-full hover:bg-white/10" aria-label="Schließen">
-                <X className="size-5" />
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+              <h2 className="text-xl">{t.cart.title}</h2>
+              <button type="button" onClick={() => setOpen(false)} className="grid size-9 place-items-center rounded-full hover:bg-[var(--paper-2)]" aria-label="×">
+                <X className="size-5" strokeWidth={1.6} />
               </button>
-            </header>
+            </div>
 
             {rows.length ? (
               <>
-                <div className="border-b border-white/10 px-5 py-3 text-sm">
-                  <p className={missing ? "text-white/75" : "font-semibold text-emerald-300"}>
-                    {missing ? fill(t.cart.freeHint, { amount: money(missing) }) : t.cart.freeReached}
-                  </p>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[var(--shop-green)] to-[var(--shop-gold)] transition-[width] duration-500" style={{ width: `${progress}%` }} />
+                <div className="space-y-2 border-b border-[var(--line)] px-5 py-4 text-sm">
+                  <p className="text-[var(--muted)]">{price.freeShippingMissing ? fill(t.cart.freeHint, { amount: money(price.freeShippingMissing) }) : t.cart.freeReached}</p>
+                  <div className="h-1 overflow-hidden rounded-full bg-[var(--line)]">
+                    <div className="h-full rounded-full bg-[var(--green)] transition-[width] duration-500" style={{ width: `${progress}%` }} />
                   </div>
+                  {textileCount > 0 && price.textileToNext > 0 ? (
+                    <p className="pt-1 text-[var(--muted)]">
+                      <span className="ltr-num me-1.5 rounded bg-[var(--green)] px-1.5 py-0.5 text-xs font-medium text-white">2 + 1</span>
+                      {fill(price.textileToNext === 1 ? t.cart.bundleHint : t.cart.bundleHintMany, { n: price.textileToNext, pct: offers.bundle.pct })}
+                    </p>
+                  ) : null}
                 </div>
-                <ul className="flex-1 divide-y divide-white/10 overflow-y-auto px-5">
-                  {rows.map(({ i, l, p, c }) => (
-                    <li key={`${l.slug}-${l.color}-${l.size}`} className="flex gap-4 py-4">
-                      <Link href={href(`/produkt/${p.slug}`)} onClick={() => setOpen(false)} className="w-20 shrink-0 rounded-xl bg-white/[0.04] p-1">
-                        <Mockup garment={p.garment} art={p.artwork} color={c.hex} tone={c.ink} />
-                      </Link>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium leading-snug">{p.name[lang]}</p>
-                        <p className="mt-0.5 text-xs text-white/60">
-                          {c.name[lang]} · <span className="ltr-num">{l.size}</span>
-                        </p>
-                        <div className="mt-2.5 flex items-center justify-between gap-2">
-                          <div className="flex items-center rounded-full ring-1 ring-white/15">
-                            <button type="button" onClick={() => setQty(i, l.qty - 1)} className="grid size-8 place-items-center rounded-full hover:bg-white/10" aria-label="−">
-                              <Minus className="size-3.5" />
-                            </button>
-                            <span className="ltr-num w-7 text-center text-sm">{l.qty}</span>
-                            <button type="button" onClick={() => setQty(i, l.qty + 1)} className="grid size-8 place-items-center rounded-full hover:bg-white/10" aria-label="+">
-                              <Plus className="size-3.5" />
+
+                <ul className="flex-1 divide-y divide-[var(--line)] overflow-y-auto px-5">
+                  {rows.map(({ i, r }, k) => {
+                    const pl = price.lines[k];
+                    return (
+                      <li key={`${r.product.slug}-${r.color?.id}-${r.variant.id}`} className="flex gap-4 py-4">
+                        <Link href={href(`/produkt/${r.product.slug}`)} onClick={() => setOpen(false)} className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-[var(--paper-2)]">
+                          <Image src={imageOf(r.product, r.color?.id)} alt="" fill sizes="80px" className="object-cover" />
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-[0.95rem] leading-snug">{r.product.name[lang]}</p>
+                            <button type="button" onClick={() => remove(i)} className="text-xs text-[var(--muted)] underline-offset-4 hover:text-[var(--ink)] hover:underline">
+                              {t.cart.remove}
                             </button>
                           </div>
-                          <span className="ltr-num font-semibold">{money(p.priceCents * l.qty)}</span>
+                          <p className="mt-0.5 text-sm text-[var(--muted)]">{describe(r)}</p>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div className="flex items-center rounded-full ring-1 ring-[var(--line)]">
+                              <button type="button" onClick={() => setQty(i, r.qty - 1)} className="grid size-8 place-items-center text-[var(--muted)] hover:text-[var(--ink)]" aria-label="−">
+                                <Minus className="size-3.5" />
+                              </button>
+                              <span className="ltr-num w-7 text-center text-sm">{r.qty}</span>
+                              <button type="button" onClick={() => setQty(i, r.qty + 1)} className="grid size-8 place-items-center text-[var(--muted)] hover:text-[var(--ink)]" aria-label="+">
+                                <Plus className="size-3.5" />
+                              </button>
+                            </div>
+                            <p className="flex items-baseline gap-2 text-sm">
+                              {pl.tierPct ? <span className="ltr-num text-[var(--muted)] line-through">{money(pl.listCents * r.qty)}</span> : null}
+                              <span className="ltr-num">{money(pl.unitCents * r.qty)}</span>
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <button type="button" onClick={() => remove(i)} className="self-start text-white/40 hover:text-red-300" aria-label={t.cart.remove}>
-                        <Trash2 className="size-4" />
-                      </button>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
-                <footer className="space-y-3 border-t border-white/10 px-5 py-5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/70">{t.cart.subtotal}</span>
-                    <span className="ltr-num text-lg font-semibold">{money(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-white/55">
-                    <span>{t.cart.shipping}</span>
-                    <span>{missing ? t.cart.shippingCalc : t.cart.freeReached}</span>
-                  </div>
-                  {state === "disabled" ? (
-                    <div className="rounded-xl bg-amber-400/10 p-3 text-sm text-amber-100 ring-1 ring-amber-300/30">
-                      {t.cart.disabled}
-                      <a href={`https://wa.me/${whatsappNumber}?text=${waText}`} target="_blank" rel="noopener" className="mt-2 block font-semibold text-[var(--shop-gold-2)] underline">
-                        WhatsApp →
+
+                <div className="border-t border-[var(--line)] px-5 py-5">
+                  <dl className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-[var(--muted)]">{t.cart.subtotal}</dt>
+                      <dd className="ltr-num">{money(price.listTotal)}</dd>
+                    </div>
+                    {price.tierSavings ? (
+                      <div className="flex justify-between text-[var(--green)]">
+                        <dt>{t.cart.tierSavings}</dt>
+                        <dd className="ltr-num">−{money(price.tierSavings)}</dd>
+                      </div>
+                    ) : null}
+                    {price.bundleCents ? (
+                      <div className="flex justify-between text-[var(--green)]">
+                        <dt>{t.cart.bundle}</dt>
+                        <dd className="ltr-num">−{money(price.bundleCents)}</dd>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between">
+                      <dt className="text-[var(--muted)]">{t.cart.shipping}</dt>
+                      <dd className="text-[var(--muted)]">{price.shippingCents ? t.cart.shippingCalc : t.cart.freeReached}</dd>
+                    </div>
+                    <div className="flex justify-between border-t border-[var(--line)] pt-2.5 text-base font-medium">
+                      <dt>{t.cart.total}</dt>
+                      <dd className="ltr-num">{money(price.total)}</dd>
+                    </div>
+                  </dl>
+
+                  {state === "disabled" || state === "error" ? (
+                    <div className="mt-4 rounded-xl bg-[var(--card)] p-4 text-sm leading-relaxed ring-1 ring-[var(--line)]">
+                      <p>{state === "disabled" ? t.cart.disabled : t.cart.error}</p>
+                      <a href={`https://wa.me/${whatsappNumber}?text=${waText}`} target="_blank" rel="noopener" className="mt-2 inline-block font-medium text-[var(--green)] underline underline-offset-4">
+                        WhatsApp
                       </a>
                     </div>
-                  ) : state === "error" ? (
-                    <p className="text-sm text-red-300">{t.cart.error}</p>
                   ) : null}
+
                   <button
                     type="button"
                     onClick={checkout}
                     disabled={state === "loading"}
-                    className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#d8b25e] to-[#ecd08a] py-3.5 font-semibold text-[#14110a] shadow-[0_10px_30px_-10px_rgba(216,178,94,0.6)] transition hover:brightness-105 disabled:opacity-70"
+                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--ink)] font-medium text-white transition hover:bg-black disabled:opacity-70"
                   >
-                    {state === "loading" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Lock className="size-4" aria-hidden />}
+                    {state === "loading" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
                     {state === "loading" ? t.cart.loading : t.cart.checkout}
                   </button>
-                  <p className="text-center text-[0.7rem] text-white/45">{t.cart.payments}</p>
-                  <p className="text-center text-[0.7rem] text-white/45">{t.cart.agb}</p>
-                </footer>
+                  <p className="mt-3 text-center text-xs text-[var(--muted)]">{t.cart.payments}</p>
+                  <p className="mt-1 text-center text-xs text-[var(--muted)]">
+                    <Link href={href("/agb")} onClick={() => setOpen(false)} className="underline-offset-4 hover:underline">
+                      {t.cart.agb}
+                    </Link>
+                  </p>
+                </div>
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center text-white/70">
-                <ShoppingBag className="size-12 text-white/25" aria-hidden />
-                <p>{t.cart.empty}</p>
-                <button type="button" onClick={() => setOpen(false)} className="rounded-full px-5 py-2.5 text-sm ring-1 ring-white/20 hover:bg-white/10">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+                <p className="text-[var(--muted)]">{t.cart.empty}</p>
+                <button type="button" onClick={() => setOpen(false)} className="rounded-full px-5 py-2.5 ring-1 ring-[var(--line)] hover:ring-[var(--ink)]">
                   {t.cart.continue}
                 </button>
               </div>

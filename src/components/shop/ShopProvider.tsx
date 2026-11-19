@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Lang } from "@/lib/shop/config";
 import { shopLimits } from "@/lib/shop/config";
 import type { ShopDict } from "@/lib/shop/i18n";
+import { resolveLine } from "@/lib/shop/catalog";
 
 export type CartLine = { slug: string; color: string; size: string; qty: number };
 
@@ -24,7 +25,7 @@ type Ctx = {
 };
 
 const ShopCtx = createContext<Ctx | null>(null);
-export const CART_KEY = "qd-shop-cart-v1";
+export const CART_KEY = "qd-shop-cart-v2";
 const KEY = CART_KEY;
 
 export function ShopProvider({ lang, base, t, children }: { lang: Lang; base: string; t: ShopDict; children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export function ShopProvider({ lang, base, t, children }: { lang: Lang; base: st
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) ?? "[]");
       // eslint-disable-next-line react-hooks/set-state-in-effect -- einmalige Hydration aus localStorage
-      if (Array.isArray(raw)) setLines(raw.filter((l) => l && typeof l.slug === "string").slice(0, shopLimits.maxLines));
+      if (Array.isArray(raw)) setLines(raw.filter((l) => l && typeof l.slug === "string" && resolveLine(l)).slice(0, shopLimits.maxLines));
     } catch {
       /* leer starten */
     }

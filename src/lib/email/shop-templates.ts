@@ -42,6 +42,7 @@ ${itemsTable(o)}
 ${summaryTable([
   { label: "Zwischensumme", value: eur(o.subtotal) },
   { label: "Versand", value: `${eur(o.shipping)} (${o.shippingMethod})` },
+  ...(o.subtotal + o.shipping - o.total > 0 ? [{ label: "Rabatt (Angebot 2 + 1)", value: `−${eur(o.subtotal + o.shipping - o.total)}` }] : []),
   { label: "Gesamt (bezahlt)", value: eur(o.total), strong: true },
 ])}
 <div style="padding:14px 16px;background:${PAPER};border-radius:10px;font-size:14px;line-height:1.6;">

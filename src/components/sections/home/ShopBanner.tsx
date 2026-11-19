@@ -26,7 +26,7 @@ export default function ShopBanner() {
           </span>
           <p className="text-sm leading-snug sm:text-base">
             <span className="font-semibold text-[#e8cf8f]">Neu: Kollektion „Tag der Befreiung“ 8.12.</span>{" "}
-            <span className="text-paper/70">T-Shirts &amp; Hoodies zum zweiten Jahrestag – bedruckt in Saarbrücken.</span>
+            <span className="text-paper/70">T-Shirts, Hoodies, Fahnen, Banner &amp; Sticker zum zweiten Jahrestag – gedruckt in Saarbrücken.</span>
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#c9a24f]/60 px-4 py-2 text-sm font-medium text-[#e8cf8f] transition group-hover:bg-[#c9a24f] group-hover:text-[#0a0c0b]">
