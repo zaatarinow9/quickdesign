@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Lang } from "@/lib/shop/config";
 import { money } from "@/lib/shop/format";
+import { DiscountSeal, OfferTag } from "./Badges";
 import type { ShopDict } from "@/lib/shop/i18n";
 import { activeVariants, detailOf, fromPrice, imageOf, inScope, offerLive, preorderLive, type Product, type ShopStore } from "@/lib/shop/schema";
 
@@ -25,10 +26,16 @@ export function ProductCard({ p, store, lang, t, href, priority = false, now }: 
         {detail ? (
           <Image src={detail} alt="" fill sizes="(min-width: 1024px) 270px, 50vw" className="object-cover opacity-0 transition duration-700 ease-out group-hover:opacity-100" />
         ) : null}
-        <div className="absolute start-3 top-3 flex flex-col items-start gap-1.5">
-          {pre ? <span className="ltr-num rounded-full bg-[var(--green)] px-2.5 py-1 text-xs font-medium text-white">−{pre} %</span> : null}
-          {badge ? <span className="rounded-full bg-[var(--mint)] px-2.5 py-1 text-xs font-medium text-[var(--green)] shadow-sm">{badge.badge[lang] || badge.badge.de}</span> : null}
-        </div>
+        {pre ? (
+          <span className="absolute end-2.5 top-2.5 transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-105">
+            <DiscountSeal pct={pre} label={lang === "ar" ? "خصم" : "Rabatt"} />
+          </span>
+        ) : null}
+        {badge ? (
+          <span className="absolute bottom-2.5 start-2.5">
+            <OfferTag text={badge.badge[lang] || badge.badge.de} />
+          </span>
+        ) : null}
       </div>
       <div className="px-1.5 pb-1.5 pt-3">
         <h3 className="text-[0.98rem] font-medium leading-snug">{p.name[lang]}</h3>

@@ -7,6 +7,7 @@ import { activeVariants, detailOf, imageOf, type Product } from "@/lib/shop/sche
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
 import { useShop } from "./ShopProvider";
+import { DiscountSeal } from "./Badges";
 import { PaymentLogos } from "./PaymentLogos";
 import { cn } from "@/lib/utils";
 
@@ -120,7 +121,7 @@ export function ProductView({
               style={zoom ? { transform: "scale(2)", transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
             />
           ) : null}
-          {prePct ? <span className="ltr-num absolute start-4 top-4 rounded-full bg-[var(--green)] px-3 py-1 text-xs font-medium text-white">−{prePct} %</span> : null}
+          {prePct ? <span className="absolute end-4 top-4"><DiscountSeal pct={prePct} size="lg" label={lang === "ar" ? "طلب مسبق" : "Vorbestellung"} /></span> : null}
           <span className="pointer-events-none absolute bottom-3 end-3 hidden rounded-full bg-white/85 px-3 py-1 text-xs text-[var(--muted)] backdrop-blur sm:block">{t.product.zoom}</span>
         </div>
         {images.length > 1 ? (
