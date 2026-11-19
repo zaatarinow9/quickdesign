@@ -126,7 +126,42 @@ export default function PrivacyPage() {
       </div>
 
       <div>
-        <h2>9. Ihre Rechte</h2>
+        <h2>9. Online-Shop und Zahlungsabwicklung (Stripe)</h2>
+        <p>
+          In unserem Online-Shop unter shop.quickdesign24.de verarbeiten wir die Daten, die für die Abwicklung Ihrer
+          Bestellung erforderlich sind: Name, E-Mail-Adresse, Telefonnummer, Liefer- bzw. Rechnungsanschrift, bestellte
+          Artikel, Beträge und die gewählte Versandart (Art. 6 Abs. 1 lit. b DSGVO). Den Inhalt Ihres Warenkorbs speichern wir
+          bis zur Bestellung ausschließlich lokal in Ihrem Browser (localStorage); er wird nicht an uns übertragen, bevor Sie
+          zur Kasse gehen.
+        </p>
+        <p>
+          Die Zahlung wickeln wir über Stripe ab (Stripe Payments Europe Ltd., 1 Grand Canal Street Lower, Grand Canal Dock,
+          Dublin, Irland). Beim Klick auf „Zur Kasse“ werden Sie auf eine Bezahlseite von Stripe weitergeleitet. Dort geben
+          Sie Ihre Kontakt-, Liefer- und Zahlungsdaten direkt bei Stripe ein; Kartendaten erhalten wir nicht. Je nach gewählter
+          Zahlungsart (z. B. Apple Pay, Google Pay, PayPal, Klarna) werden Daten zusätzlich an den jeweiligen Anbieter
+          übermittelt. Stripe kann Daten auch in die USA übertragen; Stripe ist nach dem EU-U.S. Data Privacy Framework
+          zertifiziert, zusätzlich bestehen Standardvertragsklauseln. Stripe setzt zur Betrugsprävention eigene technisch
+          notwendige Cookies auf der Bezahlseite (Art. 6 Abs. 1 lit. b und f DSGVO). Weitere Informationen:{" "}
+          <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener">stripe.com/de/privacy</a>.
+        </p>
+        <p>
+          Bestelldaten bewahren wir gemäß den handels- und steuerrechtlichen Aufbewahrungspflichten bis zu zehn Jahre auf
+          (Art. 6 Abs. 1 lit. c DSGVO, § 147 AO, § 257 HGB).
+        </p>
+      </div>
+
+      <div>
+        <h2>10. Versand von Shop-Bestellungen</h2>
+        <p>
+          Wählen Sie den Versand, geben wir Name und Lieferanschrift sowie – soweit für die Zustellbenachrichtigung
+          erforderlich – E-Mail-Adresse oder Telefonnummer an das beauftragte Versandunternehmen (z. B. DHL Paket GmbH oder
+          Deutsche Post AG) weiter (Art. 6 Abs. 1 lit. b DSGVO). Bei Abholung in unserem Ladengeschäft findet keine Weitergabe
+          statt; wir benachrichtigen Sie per E-Mail oder Telefon, sobald Ihre Bestellung bereitliegt.
+        </p>
+      </div>
+
+      <div>
+        <h2>11. Ihre Rechte</h2>
         <p>
           Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der
           Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21 DSGVO) sowie das Recht, erteilte

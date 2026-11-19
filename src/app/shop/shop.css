@@ -1,0 +1,46 @@
+/* Nur im Shop geladen */
+.shop-root {
+  /* Schrift für arabische Texte und Motive – hier austauschbar */
+  --font-ar-display: var(--font-thmanyah), "Reem Kufi", system-ui, sans-serif;
+  --shop-gold: #c9a24f;
+  --shop-gold-2: #e8cf8f;
+  --shop-green: #007a3d;
+  --shop-red: #ce1126;
+  --shop-night: #0a0c0b;
+}
+.shop-root[dir="rtl"] {
+  font-family: var(--font-ar-display);
+}
+.shop-root[dir="rtl"] .font-display,
+.shop-root[dir="rtl"] h1,
+.shop-root[dir="rtl"] h2,
+.shop-root[dir="rtl"] h3 {
+  font-family: var(--font-ar-display);
+  letter-spacing: 0;
+}
+/* Zahlen, Preise, Daten nie spiegeln */
+.shop-root .ltr-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+.shop-gold-text {
+  background: linear-gradient(100deg, #f6e3a7 0%, #d8b25e 35%, #b88a35 60%, #ecd08a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.shop-gold-line {
+  background: linear-gradient(90deg, transparent, var(--shop-gold), transparent);
+}
+@keyframes shop-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shop-shimmer {
+  background-size: 200% 100%;
+  animation: shop-shimmer 6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-shimmer { animation: none; }
+}

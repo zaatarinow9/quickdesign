@@ -21,6 +21,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   Users,
   X,
 } from "lucide-react";
@@ -40,6 +41,7 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
         { href: "/admin/angebote", label: "Angebote", icon: FileText },
         { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
         { href: "/admin/dateien", label: "Dateien", icon: FolderUp },
+        { href: "/admin/shop", label: "Shop-Bestellungen", icon: ShoppingBag },
         { href: "/admin/rechnungen", label: "Rechnungen", icon: Receipt },
         { href: "/admin/kunden", label: "Kunden", icon: Users },
       ],

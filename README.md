@@ -50,6 +50,23 @@ Nur für das Kontaktformular nötig – siehe `.env.example`:
 
 Ohne SMTP-Konfiguration zeigt das Formular einen Hinweis mit E-Mail-Adresse und Telefonnummer.
 
+## Shop „Tag der Befreiung“ (`shop.quickdesign24.de`)
+
+Der Shop liegt im selben Projekt unter `src/app/shop/[lang]/…` (Deutsch `/de`, Arabisch `/ar` mit RTL).
+
+- **Routing** (`src/proxy.ts`): Auf `shop.quickdesign24.de` wird `/de/...` intern auf `/shop/de/...` umgeschrieben;
+  `quickdesign24.de/shop/...` leitet per 308 auf die Subdomain. In Previews/lokal ist der Shop direkt unter `/shop/de` erreichbar
+  (lokal mit Subdomain: `http://shop.localhost:3000`).
+- **Katalog**: `src/lib/shop/catalog.ts` (Preise in Cent – der Checkout rechnet nur mit diesen Werten).
+- **Texte**: `src/lib/shop/i18n.ts`, Rechtstexte in `src/components/shop/LegalTexts.tsx`.
+- **Zahlung**: Stripe Checkout über die REST-API (`src/lib/shop/stripe.ts`). Zahlungsarten (Karte, Apple Pay, Google Pay,
+  PayPal, Klarna) werden im Stripe-Dashboard aktiviert. Ohne Schlüssel zeigt der Warenkorb einen Hinweis „Zahlung nicht aktiviert“.
+- **Webhook**: `https://shop.quickdesign24.de/api/stripe/webhook` mit den Events `checkout.session.completed` und
+  `checkout.session.async_payment_succeeded` → Bestellung in `shop_orders`, E-Mail an Inhaber und Kunde.
+- **Verwaltung**: `/admin/shop`.
+- **Env**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (als „Sensitive“ in Vercel, nie im Code).
+- **DNS**: `shop` CNAME → `cname.vercel-dns.com` (bei Hostinger), Domain im Vercel-Projekt hinzufügen.
+
 ## Barrierefreiheit & Performance
 
 - `prefers-reduced-motion` wird respektiert (Motion `reducedMotion="user"`, kein Lenis, keine Marquees/Parallax).
