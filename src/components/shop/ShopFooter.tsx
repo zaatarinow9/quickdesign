@@ -28,8 +28,9 @@ export function ShopFooter({ t, base, lang, whatsapp }: { t: ShopDict; base: str
           <ul className="space-y-2.5">
             <li><Link href={h("/hikaya")} className={a}>{ar ? "الحكاية" : "Geschichte"}</Link></li>
             <li><Link href={h("/versand")} className={a}>{t.footer.versand}</Link></li>
-            <li><Link href={h("/widerruf")} className={a}>{t.footer.widerruf}</Link></li>
             <li><Link href={h("/agb")} className={a}>{t.footer.agb}</Link></li>
+            {/* Pflichtangabe nach deutschem Recht (Fernabsatz) – nicht entfernen */}
+            <li><Link href={h("/widerruf")} className={a}>{t.footer.widerruf}</Link></li>
             <li><a href={`${main}/impressum`} className={a}>{t.footer.impressum}</a></li>
             <li><a href={`${main}/datenschutz`} className={a}>{t.footer.datenschutz}</a></li>
           </ul>
