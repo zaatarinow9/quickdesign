@@ -5,7 +5,9 @@ import type { Lang } from "@/lib/shop/config";
 import type { ShopDict } from "@/lib/shop/i18n";
 import { resolveLine, type ShopStore } from "@/lib/shop/schema";
 
-export type CartLine = { slug: string; color: string; size: string; qty: number };
+/** front/back: Motiv-IDs beim Selbstgestalten (leer = keine Seite) */
+export type CartLine = { slug: string; color: string; size: string; qty: number; front?: string; back?: string };
+const sameLine = (a: CartLine, b: CartLine) => a.slug === b.slug && a.color === b.color && a.size === b.size && (a.front ?? "") === (b.front ?? "") && (a.back ?? "") === (b.back ?? "");
 
 type Ctx = {
   lang: Lang;
@@ -62,7 +64,7 @@ export function ShopProvider({ lang, base, t, store, children }: { lang: Lang; b
       setLines((ls) => {
         let next = [...ls];
         for (const l of list) {
-          const i = next.findIndex((x) => x.slug === l.slug && x.color === l.color && x.size === l.size);
+          const i = next.findIndex((x) => sameLine(x, l));
           if (i >= 0) next = next.map((x, j) => (j === i ? { ...x, qty: Math.min(maxOf(l.slug), x.qty + l.qty) } : x));
           else next.push({ ...l, qty: Math.min(maxOf(l.slug), l.qty) });
         }

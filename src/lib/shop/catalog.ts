@@ -42,7 +42,7 @@ const C = {
   schwarz: { id: "schwarz", hex: "#1d1d1f", name: { de: "Schwarz", ar: "أسود" } },
   weiss: { id: "weiss", hex: "#f4f2ed", name: { de: "Weiß", ar: "أبيض" } },
   sand: { id: "sand", hex: "#d8ccb4", name: { de: "Sand", ar: "رملي" } },
-  gruen: { id: "gruen", hex: "#1f3b2d", name: { de: "Flaschengrün", ar: "أخضر زيتي" } },
+  gruen: { id: "gruen", hex: "#4b5133", name: { de: "Olivgrün", ar: "أخضر زيتي" } },
   gold: { id: "gold", hex: "#bca475", name: { de: "Gold", ar: "ذهبي" } },
 } satisfies Record<string, Color>;
 
@@ -156,7 +156,7 @@ export const products: Product[] = [
       de: "„Wahid, wahid, wahid – asch-scha‘b as-suri wahid“: der Ruf, der alle verbunden hat. Mit kleinem Band in den Farben der Fahne.",
       ar: "«واحد واحد واحد، الشعب السوري واحد» – الهتاف الذي جمع الجميع، مع شريط صغير بألوان العلم.",
     },
-    colors: (["schwarz", "gruen"] as const).map((c) => ({ color: C[c], image: img(`hoodie-wahid-${c}`) })),
+    colors: (["schwarz", "weiss", "gruen"] as const).map((c) => ({ color: C[c], image: img(`hoodie-wahid-${c}`) })),
     variants: HOODIE,
     details: HOODIE_DETAILS,
     sizeChart: HOODIE_CHART,
@@ -168,7 +168,7 @@ export const products: Product[] = [
     name: { de: "Hoodie „Fahne 8.12.“", ar: "هودي «علم 8.12»" },
     tagline: { de: "Warm durch den Dezember", ar: "دفء كانون الأول" },
     description: { de: "Die Fahne mit Datum auf einem schweren, weichen Hoodie – für kalte Dezembertage und lange Feiern.", ar: "العلم مع التاريخ على هودي ثقيل وناعم – لأيام كانون الباردة والاحتفالات الطويلة." },
-    colors: (["schwarz", "sand"] as const).map((c) => ({ color: C[c], image: img(`hoodie-flagge-${c}`) })),
+    colors: (["schwarz", "weiss", "gruen"] as const).map((c) => ({ color: C[c], image: img(`hoodie-flagge-${c}`) })),
     variants: HOODIE,
     details: HOODIE_DETAILS,
     sizeChart: HOODIE_CHART,

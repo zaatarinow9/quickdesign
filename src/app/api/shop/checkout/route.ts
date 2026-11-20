@@ -10,7 +10,7 @@ import { clientIpHash, rateLimit } from "@/lib/security";
 const schema = z.object({
   lang: z.string(),
   items: z
-    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(30), qty: z.number().int().min(1).max(1000) }))
+    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(30), qty: z.number().int().min(1).max(1000), front: z.string().max(40).optional(), back: z.string().max(40).optional() }))
     .min(1)
     .max(40),
 });
@@ -41,7 +41,9 @@ export async function POST(request: Request) {
   const sh = store.settings.shipping;
   const base = origin(request);
   const L = lang === "ar" ? "ar" : "de";
-  const variantName = (l: (typeof items)[number]) => [l.color?.name[L] || l.color?.name.de, l.variant.label[L] || l.variant.label.de].filter(Boolean).join(" – ");
+  const motifText = (l: (typeof items)[number]) =>
+    [l.front ? `أمام: ${l.front.name[L] || l.front.name.de}` : "", l.back ? `خلف: ${l.back.name[L] || l.back.name.de}` : ""].filter(Boolean).join(" · ");
+  const variantName = (l: (typeof items)[number]) => [l.color?.name[L] || l.color?.name.de, l.variant.label[L] || l.variant.label.de, motifText(l)].filter(Boolean).join(" – ");
   const days = (d: string) => {
     const [a, b] = d.split(/[–-]/).map((x) => parseInt(x, 10));
     return Number.isFinite(a) ? { minimum: { unit: "business_day", value: a }, maximum: { unit: "business_day", value: Number.isFinite(b) ? b : a } } : undefined;
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
           product_data: {
             name: `${l.product.name[L] || l.product.name.de} – ${variantName(l)}`,
             description: l.unitPct ? `${l.product.tagline.de || l.product.name.de} · ${l.unitOffer?.de ?? "Rabatt"} (−${l.unitPct} %)` : l.product.tagline.de || undefined,
-            metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id },
+            metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id, front: l.front?.id ?? "", back: l.back?.id ?? "" },
           },
         },
       })),
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
             },
       metadata: {
         lang,
-        items: items.map((l) => `${l.qty}x ${l.product.id}/${l.color?.id ?? "-"}/${l.variant.id}`).join("; ").slice(0, 490),
+        items: items.map((l) => `${l.qty}x ${l.product.id}/${l.color?.id ?? "-"}/${l.variant.id}${l.front || l.back ? `[${l.front?.id ?? "-"}|${l.back?.id ?? "-"}]` : ""}`).join("; ").slice(0, 490),
         discounts: price.discounts.map((d) => `${d.id}:${d.cents}`).join(";").slice(0, 490),
       },
       success_url: `${base}/${lang}/danke?session_id={CHECKOUT_SESSION_ID}`,

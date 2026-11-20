@@ -237,7 +237,7 @@ def fabric_render(H, base_hex, mask, extra_dark=None):
     return col, shade, knit, dark
 
 
-def garment(kind, fabric_hex, design_name=None, seed=1):
+def garment(kind, fabric_hex, design_name=None, seed=1, view="front"):
     global rng
     rng = np.random.default_rng(seed)
     left = TEE_LEFT if kind == "tshirt" else HOOD_LEFT
@@ -273,7 +273,18 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
     col, shade, knit, dark = fabric_render(H, fabric_hex, mask)
     seam_tone = 1.10 if dark else 0.88
 
-    if kind == "tshirt":
+    if kind == "tshirt" and view == "back":
+        # Rückseite: schmales Kragenbündchen oben, keine Innenseite
+        neck = [((406, 144), (440, 152), (468, 156), (500, 156)), ((500, 156), (532, 156), (560, 152), (594, 144))]
+        band = poly_mask(path(neck + [((594, 144), (590, 160), (560, 168), (500, 170)), ((500, 170), (440, 168), (410, 160), (406, 144))], K), blur_px=1)
+        ribs = (np.sin(np.arange(S, dtype=np.float32) * 1.2)[None, :] * 0.5 + 0.5)
+        col *= (1 + band * (0.02 - ribs * 0.05))[..., None]
+        col *= (1 - line_mask(path([((410, 162), (440, 168), (470, 171), (500, 171)), ((500, 171), (530, 171), (560, 168), (590, 162))], K), 3, blur_px=1.5) * 0.2)[..., None]
+        stitches = [path([(298, 872), (500, 880), (702, 872)], K), path([(298, 862), (500, 870), (702, 862)], K),
+                    path([(132, 360), (220, 414)], K), path([(868, 360), (780, 414)], K),
+                    path([((412, 176), (440, 181), (470, 184), (500, 184)), ((500, 184), (530, 184), (560, 181), (588, 176))], K)]
+        print_box = (500 * K, 236 * K, 400 * K, 440 * K)
+    elif kind == "tshirt":
         # Kragen: hinten sichtbares Bündchen, Innenseite, vorderes Bündchen, Etikett
         back_band_low = [((410, 146), (440, 164), (470, 172), (500, 172)), ((500, 172), (530, 172), (560, 164), (590, 146))]
         front_in = [((590, 146), (572, 200), (536, 222), (500, 222)), ((500, 222), (464, 222), (428, 200), (410, 146))]
@@ -293,6 +304,21 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
                     path([(132, 360), (220, 414)], K), path([(868, 360), (780, 414)], K),
                     path([((412, 160), (434, 232), (470, 256), (500, 256)), ((500, 256), (530, 256), (566, 232), (588, 160))], K)]
         print_box = (500 * K, 262 * K, 390 * K, 390 * K)
+    elif view == "back":
+        # Hoodie von hinten: Kapuze liegt flach, Mittelnaht, kein Beutel, keine Kordeln
+        col *= (1 - line_mask(path([(500, 42), (500, 200)], K), 5, blur_px=2) * 0.28)[..., None]
+        hood_edge = path([((380, 170), (420, 196), (460, 206), (500, 208)), ((500, 208), (540, 206), (580, 196), (620, 170))], K)
+        col *= (1 - blur(line_mask(hood_edge, 14, blur_px=3), 6) * 0.22)[..., None]
+        sh3, _ = shade_from_height(blur(poly_mask(path([(380, 60), (620, 60), (620, 200), (380, 200)], K), blur_px=2), 30) * 4, 1.0)
+        col *= (1 + (sh3[..., None] - 1) * 0.5)
+        for poly in ([(78, 580), (160, 612), (174, 576), (94, 546)], [(922, 580), (840, 612), (826, 576), (906, 546)],
+                     [(284, 852), (716, 852), (716, 796), (286, 796)]):
+            rm = poly_mask(path(poly, K), blur_px=1.5)
+            ribs = (np.sin(np.arange(S, dtype=np.float32) * 0.85)[None, :] * 0.5 + 0.5)
+            col *= (1 - rm * (0.03 + ribs * 0.06))[..., None]
+            col *= (1 - line_mask(path(poly[2:4], K), 4, blur_px=2) * 0.22)[..., None]
+        stitches = [path([(300, 790), (700, 790)], K)]
+        print_box = (500 * K, 282 * K, 400 * K, 440 * K)
     else:
         face = [((404, 176), (420, 230), (462, 276), (500, 282)), ((500, 282), (538, 276), (580, 230), (596, 176)),
                 ((596, 176), (580, 128), (540, 108), (500, 106)), ((500, 106), (460, 108), (420, 128), (404, 176))]
@@ -330,7 +356,7 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
         col = col * (1 - a[..., None]) + ink * a[..., None]
 
     # --- Kordeln (Hoodie) über dem Druck
-    if kind == "hoodie":
+    if kind == "hoodie" and view == "front":
         for (x0, y0, x1, y1, bend) in ((468, 262, 458, 322, -6), (532, 262, 544, 314, 7)):
             cord = path([((x0, y0), (x0 + bend, y0 + 70), (x1 - bend, y1 - 80), (x1, y1))], K)
             col *= (1 - blur(line_mask([(x + 9, y + 12) for x, y in cord], 16), 7) * 0.35)[..., None]
@@ -345,6 +371,26 @@ def garment(kind, fabric_hex, design_name=None, seed=1):
             ring = blur(ring, 1)
             col = col * (1 - ring[..., None]) + ring[..., None] * hex2rgb("#a9a59c")
     return np.clip(col, 0, 1), mask, (pbox if design_name else None)
+
+
+def print_area(kind, view):
+    """Druckbereich in Prozent des Bildes (für die Live-Vorschau im Shop) – ohne Drehung, Zoom 0.92"""
+    boxes = {("tshirt", "front"): (500, 262, 390, 390), ("tshirt", "back"): (500, 236, 400, 440),
+             ("hoodie", "front"): (500, 352, 300, 232), ("hoodie", "back"): (500, 282, 400, 440)}
+    cx, top, w, h = boxes[(kind, view)]
+    z = 0.92
+    off = (1 - z) / 2 * 1000
+    return {"x": round((off + (cx - w / 2) * z) / 10, 2), "y": round((off + top * z) / 10, 2), "w": round(w * z / 10, 2), "h": round(h * z / 10, 2)}
+
+
+def blank_shot(kind, fabric, name, view="front", bg="#ece8e0", seed=7):
+    """Rohling ohne Motiv, gerade gelegt – Grundlage für die Live-Vorschau"""
+    col, mask, _ = garment(kind, fabric, None, seed, view)
+    back = surface("linen", bg)
+    back = drop_shadow(back, mask, soft=26, contact=5, off=(8, 14), amount=(0.22, 0.30))
+    out = back * (1 - mask[..., None]) + col * mask[..., None]
+    out = zoom(out, 0.92, bg)
+    save(out, name)
 
 
 def product_shot(kind, fabric, design, name, seed=1, bg="#ece8e0", angle=-6.0):
@@ -596,13 +642,16 @@ TEXTILES = [
     ("tshirt-hurriya-weiss", "tshirt", "#f4f2ed", "motiv-hurriya-dark"),
     ("tshirt-hurriya-schwarz", "tshirt", "#1d1d1f", "motiv-hurriya-light"),
     ("tshirt-siegel-schwarz", "tshirt", "#1d1d1f", "motiv-siegel-light"),
-    ("tshirt-siegel-gruen", "tshirt", "#1f3b2d", "motiv-siegel-light"),
+    ("tshirt-siegel-gruen", "tshirt", "#4b5133", "motiv-siegel-light"),
     ("tshirt-acht-weiss", "tshirt", "#f4f2ed", "motiv-acht-dark"),
     ("tshirt-acht-schwarz", "tshirt", "#1d1d1f", "motiv-acht-light"),
     ("tshirt-jasmin-weiss", "tshirt", "#f4f2ed", "motiv-jasmin-dark"),
     ("tshirt-jasmin-sand", "tshirt", "#d8ccb4", "motiv-jasmin-dark"),
     ("hoodie-wahid-schwarz", "hoodie", "#1d1d1f", "motiv-wahid-light"),
-    ("hoodie-wahid-gruen", "hoodie", "#1f3b2d", "motiv-wahid-light"),
+    ("hoodie-wahid-gruen", "hoodie", "#4b5133", "motiv-wahid-light"),
+    ("hoodie-wahid-weiss", "hoodie", "#f4f2ed", "motiv-wahid-dark"),
+    ("hoodie-flagge-weiss", "hoodie", "#f4f2ed", "motiv-flagge-dark"),
+    ("hoodie-flagge-gruen", "hoodie", "#4b5133", "motiv-flagge-light"),
     ("hoodie-flagge-schwarz", "hoodie", "#1d1d1f", "motiv-flagge-light"),
     ("hoodie-flagge-sand", "hoodie", "#d8ccb4", "motiv-flagge-dark"),
 ]
@@ -622,6 +671,11 @@ if __name__ == "__main__":
         foil_shot()
     if not only or "sticker" in only:
         sticker_shot()
+    if not only or "blanks" in only:
+        for kind in ("tshirt", "hoodie"):
+            for cid, hexv in (("schwarz", "#1d1d1f"), ("weiss", "#f4f2ed"), ("gruen", "#4b5133")):
+                for view in ("front", "back"):
+                    blank_shot(kind, hexv, f"blank-{kind}-{cid}-{view}", view)
     if not only or "nisr" in only:
         foil_shot("folie-nisr-gold", design="nisr-gold", W=820, top=640, vinyl_hex="#bca475")
         foil_shot("folie-nisr-weiss", design="nisr-weiss", W=820, top=640)

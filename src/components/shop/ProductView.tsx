@@ -10,8 +10,9 @@ import { useShop } from "./ShopProvider";
 import { DiscountSeal } from "./Badges";
 import { PaymentLogos } from "./PaymentLogos";
 import { cn } from "@/lib/utils";
+import { CustomizerView } from "./CustomizerView";
 
-function Stepper({ value, onChange, max, label, size = "md" }: { value: number; onChange: (n: number) => void; max: number; label: string; size?: "sm" | "md" }) {
+export function Stepper({ value, onChange, max, label, size = "md" }: { value: number; onChange: (n: number) => void; max: number; label: string; size?: "sm" | "md" }) {
   const h = size === "sm" ? "h-9" : "h-12";
   const w = size === "sm" ? "w-9" : "w-12";
   return (
@@ -33,7 +34,13 @@ function Stepper({ value, onChange, max, label, size = "md" }: { value: number; 
   );
 }
 
-export function ProductView({
+type ViewProps = { p: Product; taxNote: string; shippingLines: string[]; offerNames: string[]; prePct: number; whatsapp: string };
+
+export function ProductView(props: ViewProps) {
+  return props.p.custom.enabled ? <CustomizerView {...props} /> : <StandardView {...props} />;
+}
+
+function StandardView({
   p,
   taxNote,
   shippingLines,
@@ -259,6 +266,16 @@ export function ProductView({
           </button>
         </div>
 
+        <ProductExtras p={p} shippingLines={shippingLines} offerNames={offerNames} prePct={prePct} whatsapp={whatsapp} />
+      </div>
+    </div>
+  );
+}
+
+export function ProductExtras({ p, shippingLines, offerNames, prePct, whatsapp }: Omit<ViewProps, "taxNote">) {
+  const { t, lang } = useShop();
+  return (
+    <>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
           <span>{lang === "ar" ? "ادفع بأمان عبر" : "Sicher bezahlen"}</span>
           <PaymentLogos />
@@ -308,7 +325,6 @@ export function ProductView({
             ))}
           </ul>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

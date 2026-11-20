@@ -11,7 +11,7 @@ const variantImages: Record<string, Record<string, string>> = {
   "fahne-revolution": { "30x45": "/shop/fahne-hand.webp", "90x150": "/shop/fahne.webp", "150x250": "/shop/fahne-gross.webp" },
 };
 
-const products: Product[] = seed.map((p) => ({
+const seedProducts: Product[] = seed.map((p) => ({
   id: p.slug,
   active: true,
   featured: !!p.featured,
@@ -21,18 +21,84 @@ const products: Product[] = seed.map((p) => ({
   tagline: p.tagline,
   description: p.description,
   details: p.details,
-  colors: p.colors.map(({ color, image }) => ({ id: color.id, name: color.name, hex: color.hex, image, detail: detailName(image) })),
+  colors: p.colors.map(({ color, image }) => ({ id: color.id, name: color.name, hex: color.hex, image, detail: detailName(image), blankFront: "", blankBack: "" })),
   image: p.image ?? "",
   detail: p.image && p.category === "druck" && p.kind !== "sticker" && p.kind !== "flag" ? detailName(p.image) : "",
   gallery: [],
   variants: p.variants.map((v) => ({ id: v.id, label: v.label, priceCents: v.priceCents, image: variantImages[p.slug]?.[v.id] ?? "", active: true })),
   sizeChart: p.sizeChart ?? [],
   maxQty: p.category === "textil" ? 50 : 500,
+  custom: { enabled: false, extraSideCents: 0 },
 }));
+
+/** Gestalter-Produkte: Farbe, Seite (vorne/hinten/beide) und Motiv frei wählbar */
+const blankColors = (kind: "tshirt" | "hoodie") =>
+  ([
+    ["schwarz", "#1d1d1f", { de: "Schwarz", ar: "أسود" }],
+    ["weiss", "#f4f2ed", { de: "Weiß", ar: "أبيض" }],
+    ["gruen", "#4b5133", { de: "Olivgrün", ar: "أخضر زيتي" }],
+  ] as const).map(([id, hex, name]) => ({
+    id,
+    name: { ...name },
+    hex,
+    image: `/shop/blank-${kind}-${id}-front.webp`,
+    detail: "",
+    blankFront: `/shop/blank-${kind}-${id}-front.webp`,
+    blankBack: `/shop/blank-${kind}-${id}-back.webp`,
+  }));
+const base = (id: string) => seedProducts.find((p) => p.id === id)!;
+const designers: Product[] = [
+  {
+    ...base("tshirt-hurriya"),
+    id: "tshirt-gestalten",
+    featured: true,
+    name: { de: "T-Shirt selbst gestalten", ar: "صمّم تيشرتك" },
+    tagline: { de: "Farbe, Motiv, vorne oder hinten – du entscheidest", ar: "اختر اللون والتصميم ومكان الطباعة" },
+    description: {
+      de: "Wähle die Farbe, dann dein Motiv aus unserer Kollektion – vorne, hinten oder auf beiden Seiten. Die Vorschau zeigt dir sofort, wie dein Shirt aussieht.",
+      ar: "اختر لون التيشرت، ثم التصميم من مجموعتنا – على الأمام أو الخلف أو الجهتين معاً. المعاينة تريك شكل قطعتك فوراً.",
+    },
+    colors: blankColors("tshirt"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
+  {
+    ...base("hoodie-wahid"),
+    id: "hoodie-gestalten",
+    featured: true,
+    name: { de: "Hoodie selbst gestalten", ar: "صمّم هوديك" },
+    tagline: { de: "Schwarz, Weiß oder Olivgrün – mit deinem Motiv", ar: "أسود أو أبيض أو أخضر زيتي – بتصميمك" },
+    description: {
+      de: "Dein Hoodie zum Jahrestag: Farbe wählen, Motiv vorne und/oder groß auf dem Rücken – live in der Vorschau.",
+      ar: "هوديك للذكرى: اختر اللون والتصميم على الصدر أو كبيراً على الظهر – وشاهده مباشرة في المعاينة.",
+    },
+    colors: blankColors("hoodie"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
+];
+const products: Product[] = [...designers, ...seedProducts];
+
+const motif = (id: string, de: string, ar: string) => ({ id, name: { de, ar }, light: `/shop/motifs/${id}-light.webp`, dark: `/shop/motifs/${id}-dark.webp`, active: true });
+const motifs = [
+  motif("flagge", "Fahne 8.12.", "علم 8.12"),
+  motif("hurriya", "Hurriya", "حرية"),
+  motif("nisr-gold", "Adler (Gold)", "النسر الذهبي"),
+  motif("siegel", "Siegel Freies Syrien", "ختم سوريا حرة"),
+  motif("acht", "8.12", "8.12"),
+  motif("wahid", "Wahid, wahid, wahid", "واحد واحد واحد"),
+  motif("jasmin", "Jasmin von Damaskus", "ياسمين الشام"),
+  motif("nisr-weiss", "Adler (einfarbig)", "النسر بلون واحد"),
+  motif("sticker-siegel", "Sticker Siegel (farbig)", "ستيكر الختم الملوّن"),
+  motif("sticker-fahne", "Sticker Fahne", "ستيكر العلم"),
+  motif("sticker-acht", "Sticker 8.12", "ستيكر 8.12"),
+  motif("sticker-hurriya", "Sticker Hurriya", "ستيكر حرية"),
+];
 
 export const defaultStore: ShopStore = {
   version: 1,
   products,
+  motifs,
   offers: [
     {
       id: "zwei-plus-eins",

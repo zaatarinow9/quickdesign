@@ -19,13 +19,14 @@ const blank: Product = {
   tagline: { de: "", ar: "" },
   description: { de: "", ar: "" },
   details: [],
-  colors: [{ id: "schwarz", name: { de: "Schwarz", ar: "أسود" }, hex: "#1d1d1f", image: "", detail: "" }],
+  colors: [{ id: "schwarz", name: { de: "Schwarz", ar: "أسود" }, hex: "#1d1d1f", image: "", detail: "", blankFront: "", blankBack: "" }],
   image: "",
   detail: "",
   gallery: [],
   variants: ["S", "M", "L", "XL", "XXL"].map((s) => ({ id: s, label: { de: s, ar: s }, priceCents: 2990, image: "", active: true })),
   sizeChart: [],
   maxQty: 50,
+  custom: { enabled: false, extraSideCents: 0 },
 };
 
 export default async function ProductEditPage({ params }: { params: Promise<{ id: string }> }) {

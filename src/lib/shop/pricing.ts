@@ -30,7 +30,7 @@ export function priceCart(store: ShopStore, lines: ResolvedLine[], now = Date.no
       }
       if (p > best.pct) best = { pct: p, label: o.name };
     }
-    const listCents = l.variant.priceCents;
+    const listCents = l.variant.priceCents + l.extraCents;
     return { ...l, listCents, unitCents: Math.round((listCents * (100 - best.pct)) / 100), unitPct: best.pct, unitOffer: best.label };
   });
 

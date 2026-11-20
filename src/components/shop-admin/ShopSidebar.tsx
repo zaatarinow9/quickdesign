@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BadgePercent, ExternalLink, Images, KeyRound, LayoutDashboard, LogOut, Menu, Package, ShoppingBag, Truck, X } from "lucide-react";
+import { BadgePercent, ExternalLink, Images, KeyRound, LayoutDashboard, LogOut, Menu, Package, ShoppingBag, Truck, X, Palette } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ export function ShopSidebar({ base, email, openOrders, shopUrl, signOut }: { bas
         { href: `${base}/bestellungen`, label: "الطلبات", icon: ShoppingBag, badge: openOrders },
         { href: `${base}/produkte`, label: "المنتجات والأسعار", icon: Package },
         { href: `${base}/angebote`, label: "العروض والخصومات", icon: BadgePercent },
+        { href: `${base}/motive`, label: "تصاميم الطباعة", icon: Palette },
       ],
     },
     {

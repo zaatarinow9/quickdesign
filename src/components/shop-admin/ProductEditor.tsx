@@ -76,13 +76,35 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
       </Card>
 
       {/* Bilder */}
+      {p.kind === "tshirt" || p.kind === "hoodie" ? (
+        <Card title="التصميم الحر (الزبون يختار التصميم ومكان الطباعة)">
+          <div className="space-y-4">
+            <Toggle
+              checked={p.custom.enabled}
+              onChange={(enabled) => up({ custom: { ...p.custom, enabled } })}
+              label="تفعيل اختيار التصميم"
+              hint="يختار الزبون اللون، ثم الأمام أو الخلف أو الجهتين، ثم أي تصميم من «تصاميم الطباعة» ويراه فوراً على القطعة."
+            />
+            {p.custom.enabled ? (
+              <>
+                <label className="block max-w-xs">
+                  <span className="adm-label">إضافة سعر للطباعة على الجهتين</span>
+                  <MoneyInput cents={p.custom.extraSideCents} onChange={(extraSideCents) => up({ custom: { ...p.custom, extraSideCents } })} />
+                </label>
+                <p className="text-sm text-stone-dark">ارفع لكل لون صورة للقطعة فارغة من الأمام ومن الخلف (في قسم الألوان أدناه) – عليها يُركّب التصميم.</p>
+              </>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+
       <Card
         title={p.colors.length ? "الألوان والصور" : "الصور"}
         action={
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm"
-            onClick={() => up({ colors: [...p.colors, { id: `farbe-${Date.now().toString(36)}`, name: { ...empty }, hex: "#1d1d1f", image: "", detail: "" }] })}
+            onClick={() => up({ colors: [...p.colors, { id: `farbe-${Date.now().toString(36)}`, name: { ...empty }, hex: "#1d1d1f", image: "", detail: "", blankFront: "", blankBack: "" }] })}
           >
             <Plus className="size-3.5" /> لون
           </button>
@@ -104,6 +126,12 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
                   <div className="grid grid-cols-2 gap-3">
                     <ImageField label="الصورة الرئيسية" value={c.image} onChange={(image) => set({ image })} fallback={fallbackColor(c.id)?.image} />
                     <ImageField label="صورة قريبة للتصميم" value={c.detail} onChange={(detail) => set({ detail })} fallback={fallbackColor(c.id)?.detail} />
+                    {p.custom.enabled ? (
+                      <>
+                        <ImageField label="القطعة فارغة – من الأمام" value={c.blankFront} onChange={(blankFront) => set({ blankFront })} fallback={fallbackColor(c.id)?.blankFront} />
+                        <ImageField label="القطعة فارغة – من الخلف" value={c.blankBack} onChange={(blankBack) => set({ blankBack })} fallback={fallbackColor(c.id)?.blankBack} />
+                      </>
+                    ) : null}
                   </div>
                 </div>
               );
