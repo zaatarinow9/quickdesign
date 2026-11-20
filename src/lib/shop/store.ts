@@ -25,8 +25,15 @@ async function load(): Promise<ShopStore> {
 
 /** Aktueller Shop-Stand (gecacht, wird beim Speichern in der Verwaltung sofort erneuert) */
 // Der Daten-Cache überlebt Deployments – darum Schlüssel je Deployment (neue Startdaten sofort sichtbar)
+// zusätzlich ein Fingerabdruck der Startdaten, falls die Vercel-Systemvariablen nicht gesetzt sind
 const DEPLOY = process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || "local";
-export const getStore = unstable_cache(load, ["shop-store", DEPLOY], { tags: [TAG], revalidate: 600 });
+const fingerprint = (() => {
+  const str = JSON.stringify(defaultStore);
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+})();
+export const getStore = unstable_cache(load, ["shop-store", DEPLOY, fingerprint], { tags: [TAG], revalidate: 600 });
 
 /** Ungecacht – für die Verwaltung */
 export const getStoreFresh = load;

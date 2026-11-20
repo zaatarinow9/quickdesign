@@ -283,7 +283,7 @@ export function CustomizerView({
         {/* 4 Größen */}
         <div className="mt-8">
           {step(4, hint && pieces === 0 ? "اختر المقاس والكمية أولاً" : "المقاسات والكمية")}
-          <div className="mt-3 grid grid-cols-3 gap-2.5">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {variants.map((v) => (
               <SizeQty key={v.id} label={L(v.label)} value={qtys[v.id] ?? 0} max={p.maxQty} invalid={hint && !pieces} onChange={(x) => setQtys((qq) => ({ ...qq, [v.id]: x }))} />
             ))}
