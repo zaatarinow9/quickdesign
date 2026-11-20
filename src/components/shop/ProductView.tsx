@@ -37,34 +37,32 @@ export function Stepper({ value, onChange, max, label, size = "md" }: { value: n
 
 type ViewProps = { p: Product; taxNote: string; shippingLines: string[]; offerNames: string[]; prePct: number; whatsapp: string };
 
-/** Größe mit Anzahl: Größe oben, darunter runde −/+ Knöpfe – ohne verschachtelte Rahmen */
+/** Größe mit Anzahl: eine kompakte Zeile – Größe, dann − Zahl + */
 export function SizeQty({ label, value, max, onChange, invalid }: { label: string; value: number; max: number; onChange: (n: number) => void; invalid?: boolean }) {
   const on = value > 0;
   const btn = "grid size-7 shrink-0 place-items-center rounded-full transition disabled:opacity-25";
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-2 rounded-2xl border px-3 pb-3 pt-3 transition",
+        "flex h-11 items-center gap-1 rounded-xl border pe-1 ps-3 transition",
         on ? "border-[var(--green)] bg-[var(--mint)]/45" : invalid ? "border-[var(--red)]/60 bg-white" : "border-[var(--line)] bg-white hover:border-[var(--muted)]",
       )}
     >
-      <span className={cn("ltr-num text-[0.95rem] font-semibold", on ? "text-[var(--green)]" : "text-[var(--ink)]")}>{label}</span>
-      <div className="flex w-full items-center justify-between gap-1">
-        <button type="button" onClick={() => onChange(Math.max(0, value - 1))} disabled={value <= 0} className={cn(btn, "bg-[var(--paper-2)] text-[var(--ink)] hover:bg-[var(--line)]")} aria-label={`${label} −`}>
-          <Minus className="size-3.5" />
-        </button>
-        <input
-          value={value}
-          onChange={(e) => onChange(Math.max(0, Math.min(max, Number(e.target.value.replace(/\D/g, "")) || 0)))}
-          onFocus={(e) => e.currentTarget.select()}
-          inputMode="numeric"
-          aria-label={`الكمية ${label}`}
-          className={cn("ltr-num w-10 min-w-0 bg-transparent text-center text-base outline-none", on ? "font-semibold text-[var(--green)]" : "text-[var(--muted)]")}
-        />
-        <button type="button" onClick={() => onChange(Math.min(max, value + 1))} className={cn(btn, on ? "bg-[var(--green)] text-white hover:bg-[var(--green-2)]" : "bg-[var(--paper-2)] text-[var(--ink)] hover:bg-[var(--line)]")} aria-label={`${label} +`}>
-          <Plus className="size-3.5" />
-        </button>
-      </div>
+      <span className={cn("ltr-num me-auto text-sm font-semibold", on ? "text-[var(--green)]" : "text-[var(--ink)]")}>{label}</span>
+      <button type="button" onClick={() => onChange(Math.max(0, value - 1))} disabled={value <= 0} className={cn(btn, "text-[var(--muted)] hover:bg-[var(--paper-2)] hover:text-[var(--ink)]")} aria-label={`${label} −`}>
+        <Minus className="size-3.5" />
+      </button>
+      <input
+        value={value}
+        onChange={(e) => onChange(Math.max(0, Math.min(max, Number(e.target.value.replace(/\D/g, "")) || 0)))}
+        onFocus={(e) => e.currentTarget.select()}
+        inputMode="numeric"
+        aria-label={`الكمية ${label}`}
+        className={cn("ltr-num w-6 min-w-0 bg-transparent text-center text-sm outline-none", on ? "font-semibold text-[var(--green)]" : "text-[var(--muted)]")}
+      />
+      <button type="button" onClick={() => onChange(Math.min(max, value + 1))} className={cn(btn, on ? "bg-[var(--green)] text-white hover:bg-[var(--green-2)]" : "text-[var(--ink)] hover:bg-[var(--paper-2)]")} aria-label={`${label} +`}>
+        <Plus className="size-3.5" />
+      </button>
     </div>
   );
 }
@@ -224,7 +222,7 @@ function StandardView({
           <p className={cn(label, hint && totalPieces === 0 && "text-[var(--red)]")}>{hint && totalPieces === 0 ? t.product.chooseSize : textile ? t.product.sizes : t.product.format}</p>
           {textile ? (
             <>
-              <div className="mt-3 grid grid-cols-3 gap-2.5">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {variants.map((v) => (
                   <SizeQty key={v.id} label={v.label[lang]} value={qtys[v.id] ?? 0} max={p.maxQty} invalid={hint && totalPieces === 0} onChange={(x) => setQtys((q) => ({ ...q, [v.id]: x }))} />
                 ))}
