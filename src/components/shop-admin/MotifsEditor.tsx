@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { saveMotifs } from "@/app/shop-admin/actions";
 import type { Motif } from "@/lib/shop/schema";
 import { Card } from "@/components/admin/ui";
-import { ImageField, SaveBar, Toggle, uploadImage } from "./fields";
+import { SaveBar, Toggle, uploadImage } from "./fields";
 
 const newId = (name: string) =>
   `${name
@@ -109,9 +109,9 @@ export function MotifsEditor({ initial }: { initial: Motif[] }) {
                 </div>
               </div>
               <input className="adm-input mb-3 w-full" dir="rtl" placeholder="اسم التصميم" value={m.name.ar} onChange={(e) => set(i, { name: { ...m.name, ar: e.target.value } })} />
-              <div className="grid grid-cols-2 gap-3">
-                <ImageField size="sm" label="للأقمشة الفاتحة" value={m.dark} onChange={(dark) => set(i, { dark })} trim contain />
-                <ImageField size="sm" label="للأقمشة الداكنة" value={m.light} onChange={(light) => set(i, { light })} trim contain />
+              <div className="divide-y divide-ink/[0.06] rounded-lg border border-ink/10">
+                <SlotRow label="للأقمشة الفاتحة" swatch="#f4f2ed" value={m.dark} onChange={(dark) => set(i, { dark })} />
+                <SlotRow label="للأقمشة الداكنة" swatch="#1d1d1f" value={m.light} onChange={(light) => set(i, { light })} />
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink/[0.06] pt-3">
                 <Toggle checked={m.active} onChange={(active) => set(i, { active })} label="ظاهر" />
@@ -137,6 +137,45 @@ export function MotifsEditor({ initial }: { initial: Motif[] }) {
         </div>
       </Card>
       <SaveBar onSave={onSave} dirty={dirty} />
+    </div>
+  );
+}
+
+/** Eine Zeile je Fassung: Farbfeld, Bezeichnung, Hochladen/Ersetzen, Entfernen */
+function SlotRow({ label, swatch, value, onChange }: { label: string; swatch: string; value: string; onChange: (url: string) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const upload = async (f: File | undefined) => {
+    if (!f) return;
+    setError("");
+    setBusy(true);
+    try {
+      onChange(await uploadImage(f, { trim: true, max: 1600 }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "فشل الرفع.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="px-3 py-2">
+      <div className="flex items-center gap-2.5">
+        <span className="size-4 shrink-0 rounded-full ring-1 ring-ink/15" style={{ background: swatch }} aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-sm">{label}</span>
+        {!value ? <span className="text-xs text-stone-dark">النسخة الأخرى</span> : null}
+        <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => input.current?.click()} disabled={busy}>
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+          {value ? "استبدال" : "رفع"}
+        </button>
+        {value ? (
+          <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm text-red-700" onClick={() => onChange("")} title="حذف هذه النسخة">
+            <Trash2 className="size-3.5" />
+          </button>
+        ) : null}
+      </div>
+      {error ? <p className="mt-1 text-xs text-red-700">{error}</p> : null}
+      <input ref={input} type="file" accept="image/png,image/webp" className="hidden" onChange={(e) => void upload(e.target.files?.[0])} />
     </div>
   );
 }
