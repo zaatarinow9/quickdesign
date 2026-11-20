@@ -8,7 +8,7 @@ import { db } from "@/lib/supabase/admin";
 import { clientIpHash, hashKey, rateLimit } from "@/lib/security";
 import { adminBase, assertShopAdmin, isShopAdminUser } from "@/lib/shop/admin";
 import { getStoreFresh, saveStore } from "@/lib/shop/store";
-import { offerSchema, productSchema, settingsSchema, type ShopStore } from "@/lib/shop/schema";
+import { motifSchema, offerSchema, productSchema, settingsSchema, type ShopStore } from "@/lib/shop/schema";
 
 export type Result = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -124,6 +124,18 @@ export async function saveOffers(input: unknown): Promise<Result> {
     if (o.kind === "percent" && !o.percent) return { ok: false, error: `${o.name.ar || o.name.de}: أدخل نسبة الخصم.` };
   }
   return mutate((s) => ({ ...s, offers: parsed.data }));
+}
+
+export async function saveMotifs(input: unknown): Promise<Result> {
+  const parsed = z.array(motifSchema).max(300).safeParse(input);
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    return { ok: false, error: `التصميم ${Number(i.path[0]) + 1}: ${i.path.slice(1).join(" › ")} – ${i.message}` };
+  }
+  const ids = new Set(parsed.data.map((m) => m.id));
+  if (ids.size !== parsed.data.length) return { ok: false, error: "يوجد تصميمان بنفس المعرّف." };
+  for (const m of parsed.data) if (!m.light && !m.dark) return { ok: false, error: `${m.name.ar || m.id}: ارفع صورة للتصميم.` };
+  return mutate((s) => ({ ...s, motifs: parsed.data }));
 }
 
 export async function saveSettings(input: unknown): Promise<Result> {

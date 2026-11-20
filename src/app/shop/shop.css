@@ -81,3 +81,7 @@
   .shop-root .reveal, .shop-root .rise { opacity: 1; transform: none; animation: none; transition: none; filter: none; }
   .shop-root .ken, .shop-root .scroll-dot, .shop-root .marquee { animation: none; }
 }
+
+@keyframes shop-fade { from { opacity: .35; } to { opacity: 1; } }
+.shop-root .qd-fade { animation: shop-fade .35s ease-out; }
+.shop-root .qd-print { animation: shop-fade .4s ease-out; }

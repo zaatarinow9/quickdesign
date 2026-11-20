@@ -112,18 +112,49 @@ export function Toggle({ checked, onChange, label, hint }: { checked: boolean; o
 /* ------------------------------------------------------------------ Bilder */
 
 /** Bild im Browser verkleinern und als WebP komprimieren (spart Speicher und Ladezeit) */
-async function compress(file: File, max = 2400): Promise<Blob> {
+async function compress(file: File, max = 2400, trim = false): Promise<Blob> {
   if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
   const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const w = Math.round(bmp.width * scale);
-  const h = Math.round(bmp.height * scale);
+  // Motive: durchsichtigen Rand abschneiden, damit sie im Druckbereich richtig sitzen
+  let sx = 0, sy = 0, sw = bmp.width, sh = bmp.height;
+  if (trim) {
+    const c = document.createElement("canvas");
+    c.width = bmp.width;
+    c.height = bmp.height;
+    const g = c.getContext("2d")!;
+    g.drawImage(bmp, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < c.height; y++)
+      for (let x = 0; x < c.width; x++)
+        if (d[(y * c.width + x) * 4 + 3] > 8) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+    if (x1 >= x0 && y1 >= y0) [sx, sy, sw, sh] = [x0, y0, x1 - x0 + 1, y1 - y0 + 1];
+  }
+  const scale = Math.min(1, max / Math.max(sw, sh));
+  const w = Math.round(sw * scale);
+  const h = Math.round(sh * scale);
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.88));
+  canvas.getContext("2d")!.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.9));
   return blob ?? file;
+}
+
+/** Bild verkleinern, als WebP in den Shop-Speicher laden und die öffentliche Adresse liefern */
+export async function uploadImage(file: File, opts: { trim?: boolean; max?: number } = {}): Promise<string> {
+  const blob = await compress(file, opts.max ?? 2400, opts.trim);
+  const type = blob.type || file.type;
+  const signed = await signImageUpload({ name: file.name, type });
+  if (!signed.ok) throw new Error(signed.error);
+  const { error } = await storage().uploadToSignedUrl(signed.path, signed.token, blob, { contentType: type, cacheControl: "31536000" });
+  if (error) throw new Error("فشل رفع الصورة.");
+  return signed.publicUrl;
 }
 
 let sb: ReturnType<typeof createClient> | null = null;
@@ -138,6 +169,8 @@ export function ImageField({
   label,
   fallback,
   size = "md",
+  trim = false,
+  contain = false,
 }: {
   value: string;
   onChange: (url: string) => void;
@@ -145,6 +178,10 @@ export function ImageField({
   /** Standardbild, auf das zurückgesetzt werden kann */
   fallback?: string;
   size?: "sm" | "md";
+  /** durchsichtigen Rand abschneiden (Motive) */
+  trim?: boolean;
+  /** Bild ganz zeigen statt beschneiden */
+  contain?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -156,13 +193,7 @@ export function ImageField({
     setError("");
     setBusy(true);
     try {
-      const blob = await compress(file);
-      const type = blob.type || file.type;
-      const signed = await signImageUpload({ name: file.name, type });
-      if (!signed.ok) throw new Error(signed.error);
-      const { error: upErr } = await storage().uploadToSignedUrl(signed.path, signed.token, blob, { contentType: type, cacheControl: "31536000" });
-      if (upErr) throw new Error("فشل رفع الصورة.");
-      onChange(signed.publicUrl);
+      onChange(await uploadImage(file, { trim }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "فشل رفع الصورة.");
     } finally {
@@ -193,7 +224,7 @@ export function ImageField({
       >
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={value} alt="" className={cn("absolute inset-0 h-full w-full", contain ? "object-contain p-2" : "object-cover")} />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-stone-dark">
             <ImagePlus className="size-6" aria-hidden />

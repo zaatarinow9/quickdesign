@@ -28,6 +28,27 @@ export const colorSchema = z.object({
   hex: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   image: img.default(""),
   detail: img.default(""),
+  /** Rohlinge für den Gestalter (ohne Motiv, gerade gelegt) */
+  blankFront: img.default(""),
+  blankBack: img.default(""),
+});
+
+/** Motiv aus der Bibliothek (Sticker/Design) – je eine Fassung für dunkle und helle Stoffe */
+export const motifSchema = z.object({
+  id,
+  name: L,
+  /** für dunkle Stoffe */
+  light: img,
+  /** für helle Stoffe */
+  dark: img,
+  active: z.boolean().default(true),
+});
+
+/** Gestalter: Kunde wählt Motiv vorne / hinten */
+export const customSchema = z.object({
+  enabled: z.boolean().default(false),
+  /** Aufpreis, wenn vorne UND hinten bedruckt wird */
+  extraSideCents: cents.default(0),
 });
 export const sizeRowSchema = z.object({
   size: z.string().max(10),
@@ -57,6 +78,7 @@ export const productSchema = z.object({
   variants: z.array(variantSchema).min(1).max(30),
   sizeChart: z.array(sizeRowSchema).max(12).default([]),
   maxQty: z.number().int().min(1).max(1000).default(50),
+  custom: customSchema.default({ enabled: false, extraSideCents: 0 }),
 });
 
 export const scopeSchema = z.object({
@@ -126,6 +148,7 @@ export const settingsSchema = z.object({
 export const storeSchema = z.object({
   version: z.literal(1),
   products: z.array(productSchema).max(200),
+  motifs: z.array(motifSchema).max(300).default([]),
   offers: z.array(offerSchema).max(50),
   settings: settingsSchema,
 });
@@ -134,6 +157,7 @@ export type Variant = z.infer<typeof variantSchema>;
 export type Color = z.infer<typeof colorSchema>;
 export type SizeRow = z.infer<typeof sizeRowSchema>;
 export type Product = z.infer<typeof productSchema>;
+export type Motif = z.infer<typeof motifSchema>;
 export type Offer = z.infer<typeof offerSchema>;
 export type OfferScope = z.infer<typeof scopeSchema>;
 export type ShopSettings = z.infer<typeof settingsSchema>;
@@ -169,8 +193,21 @@ export const offerLive = (o: Offer, now: number) => o.active && (!o.starts || no
 export const preorderLive = (s: ShopSettings, now: number) => s.preorder.enabled && s.preorder.pct > 0 && (!s.preorder.until || now <= dayEnd(s.preorder.until));
 export const preorderEndsAt = (s: ShopSettings) => (s.preorder.until ? dayEnd(s.preorder.until) : null);
 
+/** Druckbereich je Art und Seite (Prozent des Rohling-Bildes) */
+export const printAreas: Record<"tshirt" | "hoodie", Record<"front" | "back", { x: number; y: number; w: number; h: number }>> = {
+  tshirt: { front: { x: 32.06, y: 28.1, w: 35.88, h: 35.88 }, back: { x: 31.6, y: 25.71, w: 36.8, h: 40.48 } },
+  hoodie: { front: { x: 36.2, y: 36.38, w: 27.6, h: 21.34 }, back: { x: 31.6, y: 29.94, w: 36.8, h: 40.48 } },
+};
+export const isDarkHex = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b < 140;
+};
+export const motifById = (s: ShopStore, id?: string) => (id ? s.motifs.find((m) => m.id === id && m.active) : undefined);
+export const motifImage = (m: Motif, darkFabric: boolean) => (darkFabric ? m.light || m.dark : m.dark || m.light);
+
 /** Warenkorbzeile gegen den Katalog prüfen (Preise nie aus dem Browser) */
-export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number }) {
+export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number; front?: string; back?: string }) {
   const product = productById(s, line.slug);
   if (!product) return null;
   const color = product.colors.length ? (product.colors.find((c) => c.id === line.color) ?? null) : null;
@@ -179,6 +216,15 @@ export function resolveLine(s: ShopStore, line: { slug: string; color: string; s
   if (!variant) return null;
   const qty = Math.floor(Number(line.qty));
   if (!Number.isFinite(qty) || qty < 1 || qty > product.maxQty) return null;
-  return { product, color, variant, qty };
+  let front: Motif | null = null;
+  let back: Motif | null = null;
+  let extraCents = 0;
+  if (product.custom.enabled) {
+    front = motifById(s, line.front) ?? null;
+    back = motifById(s, line.back) ?? null;
+    if ((line.front && !front) || (line.back && !back) || (!front && !back)) return null;
+    if (front && back) extraCents = product.custom.extraSideCents;
+  }
+  return { product, color, variant, qty, front, back, extraCents };
 }
 export type ResolvedLine = NonNullable<ReturnType<typeof resolveLine>>;
