@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Check, Minus, Plus } from "lucide-react";
+import Link from "next/link";
+import { Check, ChevronLeft, Minus, Palette, Plus } from "lucide-react";
 import { activeVariants, detailOf, imageOf, type Product } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
@@ -36,6 +37,38 @@ export function Stepper({ value, onChange, max, label, size = "md" }: { value: n
 
 type ViewProps = { p: Product; taxNote: string; shippingLines: string[]; offerNames: string[]; prePct: number; whatsapp: string };
 
+/** Größe mit Anzahl: Größe oben, darunter runde −/+ Knöpfe – ohne verschachtelte Rahmen */
+export function SizeQty({ label, value, max, onChange, invalid }: { label: string; value: number; max: number; onChange: (n: number) => void; invalid?: boolean }) {
+  const on = value > 0;
+  const btn = "grid size-7 shrink-0 place-items-center rounded-full transition disabled:opacity-25";
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-2 rounded-2xl border px-3 pb-3 pt-3 transition",
+        on ? "border-[var(--green)] bg-[var(--mint)]/45" : invalid ? "border-[var(--red)]/60 bg-white" : "border-[var(--line)] bg-white hover:border-[var(--muted)]",
+      )}
+    >
+      <span className={cn("ltr-num text-[0.95rem] font-semibold", on ? "text-[var(--green)]" : "text-[var(--ink)]")}>{label}</span>
+      <div className="flex w-full items-center justify-between gap-1">
+        <button type="button" onClick={() => onChange(Math.max(0, value - 1))} disabled={value <= 0} className={cn(btn, "bg-[var(--paper-2)] text-[var(--ink)] hover:bg-[var(--line)]")} aria-label={`${label} −`}>
+          <Minus className="size-3.5" />
+        </button>
+        <input
+          value={value}
+          onChange={(e) => onChange(Math.max(0, Math.min(max, Number(e.target.value.replace(/\D/g, "")) || 0)))}
+          onFocus={(e) => e.currentTarget.select()}
+          inputMode="numeric"
+          aria-label={`الكمية ${label}`}
+          className={cn("ltr-num w-10 min-w-0 bg-transparent text-center text-base outline-none", on ? "font-semibold text-[var(--green)]" : "text-[var(--muted)]")}
+        />
+        <button type="button" onClick={() => onChange(Math.min(max, value + 1))} className={cn(btn, on ? "bg-[var(--green)] text-white hover:bg-[var(--green-2)]" : "bg-[var(--paper-2)] text-[var(--ink)] hover:bg-[var(--line)]")} aria-label={`${label} +`}>
+          <Plus className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ProductView(props: ViewProps) {
   return props.p.custom.enabled ? <CustomizerView {...props} /> : <StandardView {...props} />;
 }
@@ -55,7 +88,8 @@ function StandardView({
   prePct: number;
   whatsapp: string;
 }) {
-  const { t, lang, add } = useShop();
+  const { t, lang, add, store, href } = useShop();
+  const designer = p.kind === "tshirt" || p.kind === "hoodie" ? store.products.find((x) => x.active && x.custom.enabled && x.kind === p.kind) : undefined;
   const textile = p.category === "textil";
   const variants = activeVariants(p);
   const [colorId, setColorId] = useState(p.colors[0]?.id ?? "");
@@ -190,16 +224,10 @@ function StandardView({
           <p className={cn(label, hint && totalPieces === 0 && "text-[var(--red)]")}>{hint && totalPieces === 0 ? t.product.chooseSize : textile ? t.product.sizes : t.product.format}</p>
           {textile ? (
             <>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {variants.map((v) => {
-                  const n = qtys[v.id] ?? 0;
-                  return (
-                    <div key={v.id} className={cn("flex items-center justify-between gap-2 rounded-xl px-3 py-2 ring-1 transition", n ? "bg-[var(--card)] ring-[var(--ink)]" : "ring-[var(--line)]")}>
-                      <span className="ltr-num min-w-8 font-medium">{v.label[lang]}</span>
-                      <Stepper size="sm" value={n} max={p.maxQty} label={`${t.product.qty} ${v.label[lang]}`} onChange={(x) => setQtys((q) => ({ ...q, [v.id]: x }))} />
-                    </div>
-                  );
-                })}
+              <div className="mt-3 grid grid-cols-3 gap-2.5">
+                {variants.map((v) => (
+                  <SizeQty key={v.id} label={v.label[lang]} value={qtys[v.id] ?? 0} max={p.maxQty} invalid={hint && totalPieces === 0} onChange={(x) => setQtys((q) => ({ ...q, [v.id]: x }))} />
+                ))}
               </div>
               <p className="mt-2 text-xs text-[var(--muted)]">{t.product.sizesHint}</p>
             </>
@@ -265,6 +293,22 @@ function StandardView({
             {totalPieces > 0 && !added ? <span className="ltr-num text-white/70">· {money(prePct ? reduce(sumCents) : sumCents)}</span> : null}
           </button>
         </div>
+
+        {designer ? (
+          <Link
+            href={href(`/produkt/${designer.id}`)}
+            className="group mt-5 flex items-center gap-4 rounded-2xl border border-[var(--gold)]/50 bg-gradient-to-l from-[var(--mint)]/60 to-white p-4 transition hover:border-[var(--green)]"
+          >
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--green)] text-white">
+              <Palette className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block font-medium">بدك تصميم تاني أو طباعة على الظهر؟</span>
+              <span className="block text-sm text-[var(--muted)]">اختر من مكتبة {store.motifs.filter((m) => m.active).length} تصميماً – للأمام أو الخلف أو الجهتين</span>
+            </span>
+            <ChevronLeft className="size-5 text-[var(--green)] transition-transform group-hover:-translate-x-1" />
+          </Link>
+        ) : null}
 
         <ProductExtras p={p} shippingLines={shippingLines} offerNames={offerNames} prePct={prePct} whatsapp={whatsapp} />
       </div>

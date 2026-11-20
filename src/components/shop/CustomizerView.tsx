@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, Maximize2, Search, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { activeVariants, isDarkHex, motifImage, printAreas, type Motif, type Product } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { useShop } from "./ShopProvider";
 import { GarmentPreview } from "./GarmentPreview";
 import { DiscountSeal } from "./Badges";
-import { ProductExtras, Stepper } from "./ProductView";
+import { ProductExtras, SizeQty } from "./ProductView";
 import { cn } from "@/lib/utils";
 
 type Side = "front" | "back";
@@ -44,6 +45,7 @@ export function CustomizerView({
   const [hint, setHint] = useState(false);
   const [added, setAdded] = useState(false);
   const [q, setQ] = useState("");
+  const [viewer, setViewer] = useState<number | null>(null);
 
   const color = p.colors.find((c) => c.id === colorId) ?? p.colors[0];
   const dark = color ? isDarkHex(color.hex) : false;
@@ -73,6 +75,25 @@ export function CustomizerView({
     setView(editing);
   };
   const shown = motifs.filter((m) => !q.trim() || `${m.name.ar} ${m.name.de}`.toLowerCase().includes(q.trim().toLowerCase()));
+
+  useEffect(() => {
+    if (viewer === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewer(null);
+      if (e.key === "ArrowLeft") setViewer((v) => (v === null ? v : (v + 1) % shown.length));
+      if (e.key === "ArrowRight") setViewer((v) => (v === null ? v : (v - 1 + shown.length) % shown.length));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [viewer, shown.length]);
+  const vm = viewer !== null ? shown[viewer] : undefined;
+  const assign = (s: Side, id: string) => {
+    if (s === "front") setFront(id);
+    else setBack(id);
+    if (!sideOn(s)) setPlace("both");
+    setEditing(s);
+    setView(s);
+  };
 
   const onAdd = () => {
     const lines = variants
@@ -228,28 +249,32 @@ export function CustomizerView({
             </label>
           ) : null}
           <div className="mt-3 grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto p-0.5 sm:grid-cols-4">
-            {shown.map((m) => {
+            {shown.map((m, idx) => {
               const sel = (editing === "front" ? front : back) === m.id;
+              const onF = sideOn("front") && front === m.id;
+              const onB = sideOn("back") && back === m.id;
               return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => pick(m.id)}
-                  aria-pressed={sel}
-                  title={L(m.name)}
-                  className={cn("group relative overflow-hidden rounded-xl text-center ring-1 transition", sel ? "ring-2 ring-[var(--green)]" : "ring-[var(--line)] hover:ring-[var(--muted)]")}
-                >
-                  <span className="grid aspect-square place-items-center p-3 transition-colors" style={{ background: color?.hex ?? "#fff" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- kleine Motiv-Kacheln */}
-                    <img src={motifImage(m, dark)} alt="" loading="lazy" className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" />
-                  </span>
-                  <span className="block truncate bg-[var(--card)] px-1.5 py-1.5 text-[0.7rem]">{L(m.name)}</span>
-                  {sel ? (
-                    <span className="absolute end-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-[var(--green)] text-white">
-                      <Check className="size-3" />
+                <div key={m.id} className={cn("group relative overflow-hidden rounded-xl text-center ring-1 transition", sel ? "ring-2 ring-[var(--green)]" : "ring-[var(--line)] hover:ring-[var(--muted)]")}>
+                  <button type="button" onClick={() => pick(m.id)} aria-pressed={sel} title={L(m.name)} className="block w-full">
+                    <span className="grid aspect-square place-items-center p-3 transition-colors" style={{ background: color?.hex ?? "#fff" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- kleine Motiv-Kacheln */}
+                      <img src={motifImage(m, dark)} alt="" loading="lazy" className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" />
                     </span>
-                  ) : null}
-                </button>
+                    <span className="block truncate bg-[var(--card)] px-1.5 py-1.5 text-[0.7rem]">{L(m.name)}</span>
+                  </button>
+                  <span className="pointer-events-none absolute start-1.5 top-1.5 flex gap-1">
+                    {onF ? <span className="rounded-full bg-[var(--green)] px-1.5 py-0.5 text-[0.6rem] text-white">أمام</span> : null}
+                    {onB ? <span className="rounded-full bg-[var(--gold)] px-1.5 py-0.5 text-[0.6rem] text-[var(--ink)]">خلف</span> : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setViewer(idx)}
+                    className="absolute end-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white/90 text-[var(--ink)] opacity-90 shadow-sm ring-1 ring-black/5 transition hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100"
+                    aria-label={`عرض ${L(m.name)}`}
+                  >
+                    <Maximize2 className="size-3.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -258,16 +283,10 @@ export function CustomizerView({
         {/* 4 Größen */}
         <div className="mt-8">
           {step(4, hint && pieces === 0 ? "اختر المقاس والكمية أولاً" : "المقاسات والكمية")}
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {variants.map((v) => {
-              const n = qtys[v.id] ?? 0;
-              return (
-                <div key={v.id} className={cn("flex items-center justify-between gap-2 rounded-xl px-3 py-2 ring-1 transition", n ? "bg-[var(--card)] ring-[var(--ink)]" : hint && !pieces ? "ring-[var(--red)]" : "ring-[var(--line)]")}>
-                  <span className="ltr-num min-w-8 font-medium">{L(v.label)}</span>
-                  <Stepper size="sm" value={n} max={p.maxQty} label={`الكمية ${L(v.label)}`} onChange={(x) => setQtys((qq) => ({ ...qq, [v.id]: x }))} />
-                </div>
-              );
-            })}
+          <div className="mt-3 grid grid-cols-3 gap-2.5">
+            {variants.map((v) => (
+              <SizeQty key={v.id} label={L(v.label)} value={qtys[v.id] ?? 0} max={p.maxQty} invalid={hint && !pieces} onChange={(x) => setQtys((qq) => ({ ...qq, [v.id]: x }))} />
+            ))}
           </div>
           <p className={cn(label, "mt-2 text-xs")}>يمكنك طلب عدة مقاسات بنفس التصميم دفعة واحدة.</p>
         </div>
@@ -290,6 +309,68 @@ export function CustomizerView({
 
         <ProductExtras p={p} shippingLines={shippingLines} offerNames={offerNames} prePct={prePct} whatsapp={whatsapp} />
       </div>
+      <AnimatePresence>
+        {vm ? (
+          <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={L(vm.name)}>
+            <motion.button type="button" aria-label="إغلاق" className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setViewer(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.22 }}
+              className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-[var(--paper)] shadow-2xl"
+            >
+              <div className="flex items-center justify-between px-5 py-3.5">
+                <p className="font-medium">{L(vm.name)}</p>
+                <span className="ltr-num text-xs text-[var(--muted)]">
+                  {(viewer ?? 0) + 1} / {shown.length}
+                </span>
+                <button type="button" onClick={() => setViewer(null)} className="grid size-9 place-items-center rounded-full hover:bg-[var(--paper-2)]" aria-label="إغلاق">
+                  <X className="size-5" strokeWidth={1.6} />
+                </button>
+              </div>
+              {/* Motiv auf hellem und dunklem Grund */}
+              <div className="relative grid grid-cols-2">
+                {[
+                  { bg: "#f4f2ed", src: motifImage(vm, false) },
+                  { bg: color && isDarkHex(color.hex) ? color.hex : "#1d1d1f", src: motifImage(vm, true) },
+                ].map((x, k) => (
+                  <div key={k} className="grid aspect-square place-items-center p-6" style={{ background: x.bg }}>
+                    <AnimatePresence mode="wait">
+                      <motion.img key={vm.id} src={x.src} alt="" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-h-full max-w-full object-contain drop-shadow-sm" />
+                    </AnimatePresence>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setViewer((v) => (v === null ? v : (v - 1 + shown.length) % shown.length))} className="absolute start-2 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow ring-1 ring-black/5 hover:bg-white" aria-label="السابق">
+                  <ChevronRight className="size-5" />
+                </button>
+                <button type="button" onClick={() => setViewer((v) => (v === null ? v : (v + 1) % shown.length))} className="absolute end-2 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow ring-1 ring-black/5 hover:bg-white" aria-label="التالي">
+                  <ChevronLeft className="size-5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 p-4">
+                {(["front", "back"] as const).map((sd) => {
+                  const on = sideOn(sd) && (sd === "front" ? front : back) === vm.id;
+                  return (
+                    <button
+                      key={sd}
+                      type="button"
+                      onClick={() => {
+                        assign(sd, vm.id);
+                        setViewer(null);
+                      }}
+                      className={cn("flex h-12 items-center justify-center gap-2 rounded-full font-medium transition", on ? "bg-[var(--mint)] text-[var(--green)]" : sd === "front" ? "bg-[var(--green)] text-white hover:bg-[var(--green-2)]" : "bg-[var(--ink)] text-white hover:opacity-90")}
+                    >
+                      {on ? <Check className="size-4" /> : null}
+                      {sd === "front" ? "على الأمام" : "على الخلف"}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

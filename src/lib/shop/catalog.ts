@@ -103,7 +103,7 @@ export const products: Product[] = [
   tee(
     "tshirt-fahne",
     "flagge",
-    ["schwarz", "weiss"],
+    ["schwarz", "weiss", "gruen"],
     { de: "T-Shirt „Fahne 8.12.“", ar: "تيشرت «علم 8.12»" },
     { de: "Die Fahne der Freiheit, schlicht und klar", ar: "علم الحرية، ببساطة ووضوح" },
     {
@@ -115,7 +115,7 @@ export const products: Product[] = [
   tee(
     "tshirt-hurriya",
     "hurriya",
-    ["weiss", "schwarz"],
+    ["weiss", "schwarz", "gruen"],
     { de: "T-Shirt „Hurriya – Freiheit“", ar: "تيشرت «حرية»" },
     { de: "Ein Wort, das alles sagt", ar: "كلمة واحدة تقول كل شيء" },
     { de: "„Hurriya“ – Freiheit. Groß in arabischer Schrift, mit den drei Sternen und dem Datum 8.12.2024.", ar: "«حرية» بخط عربي كبير، مع النجوم الثلاث وتاريخ 8.12.2024." },
@@ -124,7 +124,7 @@ export const products: Product[] = [
   tee(
     "tshirt-acht",
     "acht",
-    ["weiss", "schwarz"],
+    ["weiss", "schwarz", "gruen"],
     { de: "T-Shirt „8.12.“", ar: "تيشرت «8.12»" },
     { de: "Ein Datum. Ein neues Kapitel.", ar: "تاريخ واحد. فصل جديد." },
     { de: "Das Datum in großen Ziffern, darunter „der achte Dezember“ auf Arabisch und eine feine grüne Linie.", ar: "التاريخ بأرقام كبيرة، وتحته «الثامن من كانون الأول» وخط أخضر رفيع." },
@@ -132,7 +132,7 @@ export const products: Product[] = [
   tee(
     "tshirt-siegel",
     "siegel",
-    ["schwarz", "gruen"],
+    ["schwarz", "weiss", "gruen"],
     { de: "T-Shirt „Siegel – Freies Syrien“", ar: "تيشرت «ختم سوريا حرة»" },
     { de: "Ein ruhiges Siegel zum zweiten Jahrestag", ar: "ختم هادئ للذكرى الثانية" },
     { de: "Ein rundes Siegel mit „سوريا حرة“, „Free Syria · 8 December 2024“ und den drei Sternen.", ar: "ختم دائري بعبارة «سوريا حرة» و«Free Syria · 8 December 2024» والنجوم الثلاث." },
@@ -140,7 +140,7 @@ export const products: Product[] = [
   tee(
     "tshirt-jasmin",
     "jasmin",
-    ["weiss", "sand"],
+    ["weiss", "gruen", "sand"],
     { de: "T-Shirt „Jasmin von Damaskus“", ar: "تيشرت «ياسمين الشام»" },
     { de: "Feine Linien, viel Erinnerung", ar: "خطوط رقيقة وذكريات كثيرة" },
     { de: "Ein Zweig Damaszener Jasmin als feine Linienzeichnung – zart, ruhig und voller Heimat.", ar: "غصن من ياسمين الشام برسم خطي رقيق – هادئ ومليء بالحنين." },
