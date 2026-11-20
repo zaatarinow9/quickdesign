@@ -62,7 +62,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
           a: `الشحن العادي ${s.shipping.deliveryDays} أيام عمل داخل ألمانيا${s.shipping.express.enabled ? `، والشحن السريع ${s.shipping.express.days} أيام عمل مقابل ${money(s.shipping.express.cents)}` : ""}.${s.campaign.lastOrderDay ? ` ليصلك الطلب قبل 8 كانون الأول اطلب قبل ${dateLong(s.campaign.lastOrderDay, lang)}.` : ""}`,
         },
         { q: "هل يمكنني استلام الطلب بنفسي؟", a: s.shipping.pickup.enabled ? `نعم، الاستلام مجاني من محلنا: ${s.shipping.pickup.address}. سنبلغك فور جهوز طلبك.` : "حالياً نرسل الطلبات بالشحن فقط." },
-        { q: "هل يمكن طلب تصميم خاص أو كمية كبيرة؟", a: "طبعاً – راسلنا على واتساب ونطبع لك باسم جمعيتك أو شعارك بالكمية التي تريدها." },
+        { q: "هل يمكن طلب تصميم خاص أو كمية كبيرة؟", a: "بالتأكيد – راسلنا عبر واتساب ونطبع لك باسم جمعيتك أو شعارك بالكمية التي تريدها." },
       ]
     : [
         { q: "Welche Zahlungsarten gibt es?", a: "Karte, Apple Pay, Google Pay, PayPal und Klarna – sicher über Stripe." },

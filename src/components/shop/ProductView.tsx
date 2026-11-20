@@ -303,8 +303,8 @@ function StandardView({
               <Palette className="size-5" />
             </span>
             <span className="flex-1">
-              <span className="block font-medium">بدك تصميم تاني أو طباعة على الظهر؟</span>
-              <span className="block text-sm text-[var(--muted)]">اختر من مكتبة {store.motifs.filter((m) => m.active).length} تصميماً – للأمام أو الخلف أو الجهتين</span>
+              <span className="block font-medium">هل تفضّل تصميماً آخر أو طباعة على الظهر؟</span>
+              <span className="block text-sm text-[var(--muted)]">اختر من مكتبة تضم {store.motifs.filter((m) => m.active).length} تصميماً – للأمام أو الخلف أو كليهما</span>
             </span>
             <ChevronLeft className="size-5 text-[var(--green)] transition-transform group-hover:-translate-x-1" />
           </Link>
