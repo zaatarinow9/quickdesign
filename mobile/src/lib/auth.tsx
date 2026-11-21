@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sitzung beim Start prüfen
   useEffect(() => {
     if (DEMO) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Vorschau: Beispielkonto sofort laden
       void loadMe();
       return;
     }
