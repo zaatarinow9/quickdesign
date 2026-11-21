@@ -1,9 +1,9 @@
 import { View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { api, useApi } from "@/lib/api";
 import { fmt, useT } from "@/lib/i18n";
-import { brand, shopStatuses, shopTone, useColors } from "@/lib/theme";
-import { Chip, ErrorView, haptic, Loading, pick, QuickActions, Row, Screen, Section, T } from "@/components/ui";
+import { shopStatuses, shopTone, useColors } from "@/lib/theme";
+import { Actions, Card, Chip, ErrorView, haptic, Hero, Loading, Page, pick, Section, Select, Txt } from "@/components/ui";
 import { call, mail, whatsapp } from "@/components/contact";
 
 type O = {
@@ -18,11 +18,12 @@ export default function ShopOrder() {
   const f = fmt(lang);
   const c = useColors();
   const { data, error, loading, reload, setData } = useApi<{ item: O }>(`/shop/${id}`);
-  if (loading) return <Screen><Loading /></Screen>;
-  if (error || !data) return <Screen><ErrorView code={error ?? "error"} onRetry={reload} /></Screen>;
+  if (loading) return <Page back><Loading /></Page>;
+  if (error || !data) return <Page back><ErrorView code={error ?? "error"} onRetry={reload} /></Page>;
   const o = data.item;
   const a = o.shipping_address ?? {};
   const address = [a.line1, a.line2, [a.postal_code, a.city].filter(Boolean).join(" "), a.country].filter(Boolean).join("\n");
+  const st = (s: string) => t.shop.status[s as keyof typeof t.shop.status] ?? s;
 
   const setStatus = (status: string) =>
     api(`/shop/${id}`, { method: "PATCH", body: { status } })
@@ -32,45 +33,52 @@ export default function ShopOrder() {
       })
       .catch(() => haptic.error());
 
+  const line = (label: string, value: string, strong?: boolean) => (
+    <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 }}>
+      <Txt v={strong ? "bodyStrong" : "body"} color={strong ? undefined : c.text2}>{label}</Txt>
+      <Txt v={strong ? "heading" : "body"}>{value}</Txt>
+    </View>
+  );
+
   return (
-    <>
-      <Stack.Screen options={{ title: o.number ?? t.shop.title, headerLargeTitle: false }} />
-      <Screen>
-        <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 6 }}>
-          <T size={25} weight="700">{o.name}</T>
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-            <Chip label={t.shop.status[o.status as keyof typeof t.shop.status] ?? o.status} tone={shopTone[o.status]} />
-            {!o.livemode ? <Chip label={t.shop.test} tone="amber" /> : null}
-            <T size={13} color={c.text2}>{f.dateTime(o.created_at)}</T>
-          </View>
-        </View>
-        <QuickActions
-          actions={[
-            ...(o.phone ? [{ icon: "phone.fill" as const, label: t.common.call, onPress: () => call(o.phone!) }, { icon: "message.fill" as const, label: t.common.whatsapp, onPress: () => whatsapp(o.phone!), color: brand.green }] : []),
-            ...(o.email ? [{ icon: "envelope.fill" as const, label: t.common.email, onPress: () => mail(o.email!, `Ihre Bestellung ${o.number ?? ""}`) }] : []),
-          ]}
-        />
-        <Section>
-          <Row icon="flag.fill" iconColor={brand.magenta} title={t.common.changeStatus} value={t.shop.status[o.status as keyof typeof t.shop.status]} onPress={() => pick(t.common.changeStatus, shopStatuses.map((s) => ({ value: s, label: t.shop.status[s] })), t.common.cancel, setStatus)} last />
-        </Section>
-        <Section title={t.shop.items}>
+    <Page back>
+      <Hero eyebrow={`${o.number ?? ""} · ${f.dateTime(o.created_at)}`} title={o.name ?? "–"} chips={<><Chip label={st(o.status)} tone={shopTone[o.status]} />{!o.livemode ? <Chip label={t.shop.test} tone="amber" /> : null}</>} />
+      <Actions
+        items={[
+          ...(o.phone ? [{ icon: "call" as const, label: t.common.call, onPress: () => call(o.phone!), tone: "blue" as const }, { icon: "logo-whatsapp" as const, label: t.common.whatsapp, onPress: () => whatsapp(o.phone!), tone: "green" as const }] : []),
+          ...(o.email ? [{ icon: "mail" as const, label: t.common.email, onPress: () => mail(o.email!, `Ihre Bestellung ${o.number ?? ""}`), tone: "magenta" as const }] : []),
+        ]}
+      />
+      <Section>
+        <Card padded={false}>
+          <Select icon="flag" label={t.common.status} value={st(o.status)} tone={shopTone[o.status]} onPress={() => pick(t.common.changeStatus, shopStatuses.map((s) => ({ value: s, label: st(s) })), t.common.cancel, setStatus)} />
+        </Card>
+      </Section>
+      <Section title={t.shop.items}>
+        <Card>
           {o.items.map((it, k) => (
-            <Row key={k} title={it.description ?? "–"} subtitle={`${it.quantity ?? 1}×`} value={it.amount !== undefined ? f.cents(it.amount) : undefined} lines={3} last={k === o.items.length - 1} />
-          ))}
-        </Section>
-        <Section>
-          <Row title={t.shop.subtotal} value={f.cents(o.amount_subtotal)} />
-          <Row title={`${t.shop.shipping}${o.shipping_method ? ` · ${o.shipping_method}` : ""}`} value={f.cents(o.amount_shipping)} lines={2} />
-          <Row title={t.shop.total} value={f.cents(o.amount_total)} last />
-        </Section>
-        {address ? (
-          <Section title={t.shop.address}>
-            <View style={{ padding: 16 }}>
-              <T size={16} selectable style={{ lineHeight: 23 }}>{address}</T>
+            <View key={k} style={{ flexDirection: "row", gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.line }}>
+              <View style={{ minWidth: 30, height: 30, borderRadius: 9, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}>
+                <Txt v="label">{`${it.quantity ?? 1}×`}</Txt>
+              </View>
+              <Txt v="body" style={{ flex: 1 }}>{it.description ?? "–"}</Txt>
+              {it.amount !== undefined ? <Txt v="bodyStrong">{f.cents(it.amount)}</Txt> : null}
             </View>
-          </Section>
-        ) : null}
-      </Screen>
-    </>
+          ))}
+          <View style={{ paddingTop: 8 }}>
+            {line(t.shop.subtotal, f.cents(o.amount_subtotal))}
+            {line(`${t.shop.shipping}${o.shipping_method ? ` · ${o.shipping_method}` : ""}`, f.cents(o.amount_shipping))}
+            {line(t.shop.total, f.cents(o.amount_total), true)}
+          </View>
+        </Card>
+      </Section>
+      {address ? (
+        <Section title={t.shop.address}>
+          <Card>
+            <Txt v="body" selectable>{address}</Txt>
+          </Card>
+        </Section>
+      ) : null}
+    </Page>
   );
 }

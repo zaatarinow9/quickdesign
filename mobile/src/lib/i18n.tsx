@@ -32,6 +32,10 @@ const de = {
     by: "von",
     noAccess: "Kein Zugriff für dieses Konto.",
     seeAll: "Alle anzeigen",
+    fresh: "Neu",
+    details: "Details",
+    contact: "Kontakt",
+    actions: "Aktionen",
   },
   login: {
     title: "Willkommen zurück",
@@ -119,6 +123,7 @@ const de = {
     folder: "Ordner",
     note: "Notiz",
     next: "Weiter",
+    step: "Schritt {n} von {total}",
     status: { neu: "Neu", bearbeitung: "In Bearbeitung", freigabe: "Zur Freigabe", druckfertig: "Druckfertig", im_druck: "Im Druck", erledigt: "Erledigt" },
   },
   customer: { title: "Kunden", projects: "Aufträge", inquiries: "Anfragen", documents: "Dokumente", address: "Adresse", kind: { privat: "Privat", firma: "Firma" } },
@@ -187,6 +192,10 @@ const ar: Dict = {
     by: "بواسطة",
     noAccess: "هذا الحساب لا يملك صلاحية.",
     seeAll: "عرض الكل",
+    fresh: "جديد",
+    details: "التفاصيل",
+    contact: "التواصل",
+    actions: "الإجراءات",
   },
   login: {
     title: "أهلاً بعودتك",
@@ -274,6 +283,7 @@ const ar: Dict = {
     folder: "المجلد",
     note: "ملاحظة",
     next: "التالي",
+    step: "المرحلة {n} من {total}",
     status: { neu: "جديد", bearbeitung: "قيد التصميم", freigabe: "بانتظار الموافقة", druckfertig: "جاهز للطباعة", im_druck: "قيد الطباعة", erledigt: "منتهي" },
   },
   customer: { title: "الزبائن", projects: "الأعمال", inquiries: "الاستفسارات", documents: "المستندات", address: "العنوان", kind: { privat: "فرد", firma: "شركة" } },
@@ -352,6 +362,8 @@ export function fmt(lang: Lang) {
   return {
     money: (euro: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR" }).format(euro),
     cents: (c: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR" }).format(c / 100),
+    /** große Beträge ohne Cent (Kennzahlen) */
+    centsShort: (c: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR", maximumFractionDigits: c >= 100000 ? 0 : 2 }).format(c / 100),
     date: (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat(loc, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" }).format(new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso)) : "–"),
     dateTime: (iso: string | null | undefined) =>
       iso ? new Intl.DateTimeFormat(loc, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }).format(new Date(iso)) : "–",

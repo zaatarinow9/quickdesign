@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { useApi } from "@/lib/api";
 import { fmt, useT } from "@/lib/i18n";
 import { inquiryTone } from "@/lib/theme";
-import { Chip, Empty, ErrorView, Loading, Row, Screen, Section, Segments } from "@/components/ui";
+import { Chip, Empty, ErrorView, initials, Item, List, Loading, Page, SearchBar, Section, Segments } from "@/components/ui";
 
 type Inq = { id: string; reference: string; status: string; name: string; company_name: string | null; message: string; created_at: string };
 type Filter = "offen" | "neu" | "in_bearbeitung" | "erledigt" | "archiviert";
@@ -20,40 +20,38 @@ export default function Inquiries() {
   const items = filter === "offen" ? (data?.items ?? []).filter((i) => i.status !== "erledigt") : (data?.items ?? []);
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: t.inquiry.title,
-          headerSearchBarOptions: { placeholder: t.common.search, onChangeText: (e) => setQ(e.nativeEvent.text), hideWhenScrolling: true },
-        }}
+    <Page title={t.inquiry.title} refreshing={refreshing} onRefresh={refresh}>
+      <SearchBar value={q} onChange={setQ} placeholder={t.common.search} />
+      <Segments
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: "offen", label: t.common.open },
+          { value: "neu", label: t.inquiry.status.neu },
+          { value: "in_bearbeitung", label: t.inquiry.status.in_bearbeitung },
+          { value: "erledigt", label: t.inquiry.status.erledigt },
+          { value: "archiviert", label: t.inquiry.status.archiviert },
+        ]}
       />
-      <Screen refreshing={refreshing} onRefresh={refresh}>
-        <Segments
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "offen", label: t.common.open },
-            { value: "neu", label: t.inquiry.status.neu },
-            { value: "in_bearbeitung", label: t.inquiry.status.in_bearbeitung },
-            { value: "erledigt", label: t.inquiry.status.erledigt },
-            { value: "archiviert", label: t.inquiry.status.archiviert },
-          ]}
-        />
-        {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !items.length ? <Empty text={t.common.empty} icon="tray" /> : (
-          <Section>
-            {items.map((i, k) => (
-              <Row
+      {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !items.length ? <Empty text={t.common.empty} icon="mail-open-outline" /> : (
+        <Section style={{ marginTop: 16 }}>
+          <List>
+            {items.map((i) => (
+              <Item
                 key={i.id}
-                title={i.company_name ? `${i.name} · ${i.company_name}` : i.name}
-                subtitle={`${i.reference} · ${f.relative(i.created_at)}\n${i.message.replace(/\s+/g, " ").slice(0, 120)}`}
-                right={<Chip small label={t.inquiry.status[i.status as keyof typeof t.inquiry.status] ?? i.status} tone={inquiryTone[i.status]} />}
+                initials={initials(i.name)}
+                tone={inquiryTone[i.status]}
+                title={i.company_name || i.name}
+                subtitle={i.message.replace(/\s+/g, " ")}
+                meta={`${i.company_name ? `${i.name} · ` : ""}${i.reference} · ${f.relative(i.created_at)}`}
+                trailing={<Chip label={t.inquiry.status[i.status as keyof typeof t.inquiry.status] ?? i.status} tone={inquiryTone[i.status]} />}
                 onPress={() => router.push(`/inquiries/${i.id}`)}
-                last={k === items.length - 1}
+                chevron={false}
               />
             ))}
-          </Section>
-        )}
-      </Screen>
-    </>
+          </List>
+        </Section>
+      )}
+    </Page>
   );
 }

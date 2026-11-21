@@ -1,10 +1,11 @@
-import { Pressable, View } from "react-native";
-import { router, Stack } from "expo-router";
+import { View } from "react-native";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmt, useT } from "@/lib/i18n";
-import { brand, inquiryTone, projectTone, shopTone, useColors } from "@/lib/theme";
-import { Chip, Empty, ErrorView, Icon, Loading, Row, Screen, Section, Stat, T } from "@/components/ui";
+import { brand, inquiryTone, projectTone, radius, shopTone, space } from "@/lib/theme";
+import { Chip, Empty, ErrorView, Icon, Item, Kpi, List, Loading, Page, Section, Txt, typeIcon } from "@/components/ui";
 
 type Dash = {
   date: string;
@@ -15,10 +16,10 @@ type Dash = {
   sales: { today: number; month: number } | null;
 };
 
+
 export default function Home() {
-  const { t, lang } = useT();
+  const { t, lang, rtl } = useT();
   const f = fmt(lang);
-  const c = useColors();
   const { state, refreshMe } = useAuth();
   const me = state.status === "ready" ? state.me : null;
   const unread = state.status === "ready" ? state.unread : 0;
@@ -26,109 +27,124 @@ export default function Home() {
   const first = (me?.name || me?.email || "").split(/[\s@]/)[0];
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: t.tabs.home,
-          headerRight: () => (
-            <Pressable onPress={() => router.push("/notifications")} hitSlop={10} style={{ padding: 4 }}>
-              <View>
-                <Icon name={unread ? "bell.badge.fill" : "bell"} size={22} color={brand.magenta} />
-              </View>
-            </Pressable>
-          ),
-        }}
-      />
-      <Screen
-        refreshing={refreshing}
-        onRefresh={() => {
-          void refresh();
-          void refreshMe();
-        }}
-      >
-        <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
-          <T size={15} color={c.text2}>{data ? f.weekday(data.date) : " "}</T>
-          <T size={24} weight="700" style={{ marginTop: 2 }}>
+    <Page
+      actions={[{ icon: "notifications-outline", onPress: () => router.push("/notifications"), badge: unread }]}
+      refreshing={refreshing}
+      onRefresh={() => {
+        void refresh();
+        void refreshMe();
+      }}
+    >
+      {/* Begrüßung mit Tagesüberblick */}
+      <View style={{ paddingHorizontal: space.page, marginTop: 8 }}>
+        <LinearGradient colors={["#1A1C22", "#111317"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.xl, padding: 20, overflow: "hidden" }}>
+          <View style={{ position: "absolute", top: -40, [rtl ? "left" : "right"]: -30, width: 160, height: 160, borderRadius: 80, backgroundColor: `${brand.magenta}33` }} />
+          <View style={{ position: "absolute", bottom: -50, [rtl ? "left" : "right"]: 50, width: 120, height: 120, borderRadius: 60, backgroundColor: `${brand.cyan}26` }} />
+          <Txt v="meta" color="#ffffffa6">{data ? f.weekday(data.date) : " "}</Txt>
+          <Txt v="display" color="#fff" style={{ marginTop: 2 }}>
             {t.home.hello}
-            {first ? `, ${first}` : ""} 👋
-          </T>
-        </View>
-        {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : data ? (
-          <>
-            <View style={{ flexDirection: "row", gap: 12, marginHorizontal: 16, marginTop: 18 }}>
-              <Stat label={t.home.newInquiries} value={data.counts.newInquiries} icon="tray.full.fill" color={brand.magenta} onPress={() => router.push("/inquiries")} />
-              <Stat label={t.home.todayPlan} value={data.counts.todayTasks} icon="calendar" color={brand.cyan} onPress={() => router.push("/work")} />
+            {first ? `, ${first}` : ""}
+          </Txt>
+          <View style={{ flexDirection: "row", gap: 18, marginTop: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+              <Icon name="calendar" size={16} color={brand.cyan} />
+              <Txt v="label" color="#fff">{data?.counts.todayTasks ?? "–"} {t.home.todayPlan}</Txt>
             </View>
-            <View style={{ flexDirection: "row", gap: 12, marginHorizontal: 16, marginTop: 12 }}>
-              <Stat label={t.home.activeFiles} value={data.counts.activeFiles} icon="printer.fill" color={brand.amber} onPress={() => router.push("/files")} />
-              <Stat label={t.home.openShop} value={data.counts.openShop} icon="bag.fill" color={brand.violet} onPress={() => router.push("/more/shop")} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+              <Icon name="mail-unread" size={16} color={brand.magenta} />
+              <Txt v="label" color="#fff">{data?.counts.newInquiries ?? "–"} {t.home.newInquiries}</Txt>
             </View>
-            {data.counts.myFiles ? (
-              <Section>
-                <Row icon="person.crop.circle.badge.checkmark" iconColor={brand.amber} title={t.home.myFiles} value={String(data.counts.myFiles)} onPress={() => router.push({ pathname: "/files", params: { mine: "1" } })} last />
-              </Section>
-            ) : null}
-            {data.sales ? (
-              <View style={{ flexDirection: "row", gap: 12, marginHorizontal: 16, marginTop: 12 }}>
-                <Stat label={t.home.salesToday} value={f.cents(data.sales.today)} icon="eurosign" color={brand.green} />
-                <Stat label={t.home.salesMonth} value={f.cents(data.sales.month)} icon="chart.bar.fill" color={brand.green} />
-              </View>
-            ) : null}
+          </View>
+          {/* CMYK-Akzent */}
+          <View style={{ flexDirection: "row", gap: 4, marginTop: 18 }}>
+            {[brand.cyan, brand.magenta, brand.yellow, "#ffffff"].map((col) => <View key={col} style={{ width: 18, height: 3, borderRadius: 2, backgroundColor: col }} />)}
+          </View>
+        </LinearGradient>
+      </View>
 
-            <Section title={t.home.todayPlan}>
-              {data.today.length ? (
-                data.today.map((p, i) => (
-                  <Row
+      {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : data ? (
+        <>
+          <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: space.page, marginTop: 14 }}>
+            <Kpi label={t.home.newInquiries} value={data.counts.newInquiries} icon="mail-unread" tone="magenta" onPress={() => router.push("/inquiries")} />
+            <Kpi label={t.home.activeFiles} value={data.counts.activeFiles} icon="print" tone="amber" onPress={() => router.push("/files")} />
+          </View>
+          <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: space.page, marginTop: 12 }}>
+            <Kpi label={t.home.openShop} value={data.counts.openShop} icon="bag-handle" tone="violet" onPress={() => router.push("/more/shop")} />
+            <Kpi label={t.home.myFiles} value={data.counts.myFiles} icon="person-circle" tone="blue" onPress={() => router.push({ pathname: "/files", params: { mine: "1" } })} />
+          </View>
+          {data.sales ? (
+            <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: space.page, marginTop: 12 }}>
+              <Kpi label={t.home.salesToday} value={f.centsShort(data.sales.today)} icon="trending-up" tone="green" />
+              <Kpi label={t.home.salesMonth} value={f.centsShort(data.sales.month)} icon="stats-chart" tone="green" />
+            </View>
+          ) : null}
+
+          <Section title={t.home.todayPlan} action={{ label: t.common.seeAll, onPress: () => router.push("/work") }}>
+            {data.today.length ? (
+              <List>
+                {data.today.map((p) => (
+                  <Item
                     key={p.id}
-                    icon={p.type === "montage" ? "hammer.fill" : p.type === "lieferung" ? "shippingbox.fill" : p.type === "abholung" ? "figure.walk" : "checklist"}
-                    iconColor={brand.cyan}
+                    icon={typeIcon(p.type)}
+                    tone="blue"
                     title={p.title}
-                    subtitle={[p.time, p.customer, p.city].filter(Boolean).join(" · ")}
-                    right={<Chip small label={t.project.status[p.status as keyof typeof t.project.status] ?? p.status} tone={projectTone[p.status]} />}
+                    subtitle={[p.customer, p.city].filter(Boolean).join(" · ")}
+                    meta={p.time ?? undefined}
+                    trailing={<Chip label={t.project.status[p.status as keyof typeof t.project.status] ?? p.status} tone={projectTone[p.status]} />}
                     onPress={() => router.push(`/work/${p.id}`)}
-                    last={i === data.today.length - 1}
-                  />
-                ))
-              ) : (
-                <Row title={t.home.nothingToday} icon="sun.max.fill" iconColor={brand.yellow} last />
-              )}
-            </Section>
-
-            <Section title={t.home.recentInquiries} action={{ label: t.common.seeAll, onPress: () => router.push("/inquiries") }}>
-              {data.recentInquiries.length ? (
-                data.recentInquiries.map((q, i) => (
-                  <Row
-                    key={q.id}
-                    title={q.company_name ? `${q.name} · ${q.company_name}` : q.name}
-                    subtitle={`${f.relative(q.created_at)} · ${q.message.replace(/\s+/g, " ").slice(0, 80)}`}
-                    right={<Chip small label={t.inquiry.status[q.status as keyof typeof t.inquiry.status] ?? q.status} tone={inquiryTone[q.status]} />}
-                    onPress={() => router.push(`/inquiries/${q.id}`)}
-                    last={i === data.recentInquiries.length - 1}
-                  />
-                ))
-              ) : (
-                <Empty text={t.common.empty} />
-              )}
-            </Section>
-
-            {data.recentShop.length ? (
-              <Section title={t.home.recentShop} action={{ label: t.common.seeAll, onPress: () => router.push("/more/shop") }}>
-                {data.recentShop.map((o, i) => (
-                  <Row
-                    key={o.id}
-                    title={`${o.number ?? ""} · ${o.name ?? ""}`}
-                    subtitle={f.relative(o.created_at)}
-                    value={f.cents(o.amount_total)}
-                    right={<Chip small label={t.shop.status[o.status as keyof typeof t.shop.status] ?? o.status} tone={shopTone[o.status]} />}
-                    onPress={() => router.push(`/more/shop/${o.id}`)}
-                    last={i === data.recentShop.length - 1}
+                    chevron={false}
                   />
                 ))}
-              </Section>
-            ) : null}
-          </>
-        ) : null}
-      </Screen>
-    </>
+              </List>
+            ) : (
+              <List>
+                <Item icon="sunny" tone="amber" title={t.home.nothingToday} />
+              </List>
+            )}
+          </Section>
+
+          <Section title={t.home.recentInquiries} action={{ label: t.common.seeAll, onPress: () => router.push("/inquiries") }}>
+            {data.recentInquiries.length ? (
+              <List>
+                {data.recentInquiries.map((q) => (
+                  <Item
+                    key={q.id}
+                    initials={q.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()}
+                    tone={inquiryTone[q.status]}
+                    title={q.company_name || q.name}
+                    subtitle={q.message.replace(/\s+/g, " ")}
+                    meta={`${q.reference} · ${f.relative(q.created_at)}`}
+                    trailing={<Chip label={t.inquiry.status[q.status as keyof typeof t.inquiry.status] ?? q.status} tone={inquiryTone[q.status]} />}
+                    onPress={() => router.push(`/inquiries/${q.id}`)}
+                    chevron={false}
+                  />
+                ))}
+              </List>
+            ) : (
+              <Empty text={t.common.empty} />
+            )}
+          </Section>
+
+          {data.recentShop.length ? (
+            <Section title={t.home.recentShop} action={{ label: t.common.seeAll, onPress: () => router.push("/more/shop") }}>
+              <List>
+                {data.recentShop.map((o) => (
+                  <Item
+                    key={o.id}
+                    icon="bag-handle"
+                    tone={shopTone[o.status]}
+                    title={o.name ?? "–"}
+                    subtitle={`${o.number ?? ""} · ${f.relative(o.created_at)}`}
+                    value={f.cents(o.amount_total)}
+                    onPress={() => router.push(`/more/shop/${o.id}`)}
+                    chevron={false}
+                  />
+                ))}
+              </List>
+            </Section>
+          ) : null}
+        </>
+      ) : null}
+    </Page>
   );
 }
