@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type Area = { x: number; y: number; w: number; h: number };
@@ -11,6 +11,12 @@ type Area = { x: number; y: number; w: number; h: number };
  */
 export function GarmentPreview({ blank, area, motif, alt = "", className, priority }: { blank: string; area: Area; motif?: string | null; alt?: string; className?: string; priority?: boolean }) {
   const [ratio, setRatio] = useState<Record<string, number>>({});
+  const imgRef = useRef<HTMLImageElement>(null);
+  // Bild kann vor der Hydration fertig geladen sein – dann feuert onLoad nicht mehr
+  useEffect(() => {
+    const im = imgRef.current;
+    if (motif && im?.complete && im.naturalWidth) setRatio((r) => (r[motif] ? r : { ...r, [motif]: im.naturalWidth / im.naturalHeight }));
+  }, [motif]);
   const a = motif ? ratio[motif] : undefined;
   let rect: Area | null = null;
   if (motif && a) {
@@ -29,6 +35,7 @@ export function GarmentPreview({ blank, area, motif, alt = "", className, priori
           {/* eslint-disable-next-line @next/next/no-img-element -- Größe aus natürlichem Seitenverhältnis */}
           <img
             key={motif}
+            ref={imgRef}
             src={motif}
             alt=""
             draggable={false}

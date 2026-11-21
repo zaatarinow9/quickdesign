@@ -13,17 +13,19 @@
   --mint: #daf2e6;
   --gold: #b9a779;
   --red: #c4161c;
-  font-family: var(--font-qatar), var(--font-qomra), system-ui, sans-serif;
-  font-synthesis: none;
+  font-family: var(--font-qomra), system-ui, sans-serif;
   background: var(--paper);
   color: var(--ink);
 }
 .shop-root h1,
 .shop-root h2,
-.shop-root h3 {
+.shop-root h3,
+.shop-root .qd-display {
   font-family: var(--font-ar-display);
-  font-weight: 900;
+  font-weight: 700;
+  font-synthesis: none;
   letter-spacing: 0;
+  line-height: 1.35;
 }
 /* Zahlen, Preise, Daten nie spiegeln */
 .shop-root .ltr-num {

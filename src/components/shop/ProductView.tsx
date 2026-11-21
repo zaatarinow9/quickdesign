@@ -185,7 +185,7 @@ function StandardView({
         <h1 className="text-3xl leading-tight sm:text-[2.6rem]">{p.name[lang]}</h1>
         <p className="mt-2 text-[var(--muted)]">{p.tagline[lang]}</p>
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="ltr-num text-2xl font-medium">{money(prePct ? reduce(unit) : unit)}</span>
+          <span className="qd-display ltr-num text-2xl">{money(prePct ? reduce(unit) : unit)}</span>
           {prePct ? <span className="ltr-num text-[var(--muted)] line-through">{money(unit)}</span> : null}
           <span className="text-sm text-[var(--muted)]">{taxNote}</span>
         </p>
