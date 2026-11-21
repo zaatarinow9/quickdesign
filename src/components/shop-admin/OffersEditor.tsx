@@ -136,12 +136,16 @@ export function OffersEditor({ initial, products }: { initial: Offer[]; products
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-8">
               <Toggle checked={o.active} onChange={(active) => upd(i, { active })} label="فعّال" />
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-stone-dark">من</span>
-                <input type="date" className="adm-input" value={o.starts} onChange={(e) => upd(i, { starts: e.target.value })} />
-                <span className="text-stone-dark">إلى</span>
-                <input type="date" className="adm-input" value={o.ends} onChange={(e) => upd(i, { ends: e.target.value })} />
-                <span className="text-xs text-stone-dark">(فارغ = بدون حد)</span>
+              <div className="flex flex-wrap items-end gap-3 text-sm">
+                <label className="block">
+                  <span className="adm-label">يبدأ في</span>
+                  <input type="date" className="adm-input" value={o.starts} onChange={(e) => upd(i, { starts: e.target.value })} />
+                </label>
+                <label className="block">
+                  <span className="adm-label">ينتهي في</span>
+                  <input type="date" className="adm-input" value={o.ends} onChange={(e) => upd(i, { ends: e.target.value })} />
+                </label>
+                <span className="basis-full text-xs text-stone-dark">اترك التاريخ فارغاً إذا لم يكن للعرض حدّ زمني.</span>
               </div>
             </div>
             <LField label="اسم العرض (في السلة والصفحة الرئيسية)" value={o.name} onChange={(name) => upd(i, { name })} />
