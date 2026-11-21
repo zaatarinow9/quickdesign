@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "QuickDesign Team",
+    "slug": "quick-design",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "quickdesign-team",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "de.quickdesign24.team",
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": [
+          "de",
+          "ar"
+        ],
+        "CFBundleDevelopmentRegion": "de"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0b0b0c",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "de.quickdesign24.team"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 110,
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/splash-icon-dark.png"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#df1986"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "QuickDesign Team braucht Zugriff auf deine Fotos, um Dateien für Aufträge hochzuladen.",
+          "cameraPermission": "QuickDesign Team nutzt die Kamera, um Fotos von Aufträgen und Vorlagen hochzuladen.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "owner": "quickdesigns"
+  }
+}
