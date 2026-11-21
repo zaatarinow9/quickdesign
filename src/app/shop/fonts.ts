@@ -12,3 +12,13 @@ export const qomra = localFont({
   variable: "--font-qomra",
   display: "swap",
 });
+
+/** Qatar 2022 Arabic – Hauptschrift des Shops (nur Bold und Heavy vorhanden; dünnere Schnitte nutzen Bold). */
+export const qatar = localFont({
+  src: [
+    { path: "./fonts/qatar-ar-Bold.woff2", weight: "100 700", style: "normal" },
+    { path: "./fonts/qatar-ar-Heavy.woff2", weight: "800 900", style: "normal" },
+  ],
+  variable: "--font-qatar",
+  display: "swap",
+});
