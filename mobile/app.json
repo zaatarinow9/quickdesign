@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "QuickDesign Team",
-    "slug": "quickdesign-team",
+    "slug": "quick-design",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -65,6 +65,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "owner": "quickdesigns"
   }
 }
