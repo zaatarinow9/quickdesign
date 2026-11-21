@@ -138,7 +138,7 @@ export function Stat({ label, value, icon, color, onPress }: { label: string; va
         <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${color}22`, alignItems: "center", justifyContent: "center" }}>
           <Icon name={icon} size={17} color={color} weight="semibold" />
         </View>
-        <Text style={{ fontSize: 28, fontWeight: "700", color: c.text as string, fontVariant: ["tabular-nums"] }}>{value}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ flexShrink: 1, marginStart: 8, fontSize: String(value).length > 6 ? 22 : 28, fontWeight: "700", color: c.text as string, fontVariant: ["tabular-nums"], textAlign: "right" }}>{value}</Text>
       </View>
       <T size={13} color={c.text2} lines={2}>{label}</T>
     </Pressable>

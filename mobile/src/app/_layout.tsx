@@ -8,6 +8,7 @@ import { LangProvider, useT } from "@/lib/i18n";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { listenForTaps, registerPush } from "@/lib/push";
 import { useColors } from "@/lib/theme";
+import { DEMO } from "@/lib/demo";
 import { LoginScreen, MfaScreen } from "@/components/login";
 
 void SplashScreen.preventAutoHideAsync();
@@ -47,8 +48,8 @@ function SignedIn() {
   const { lang } = useT();
   // Push anmelden (bei Sprachwechsel neu, damit die Texte passen) und Tippen auf Hinweise verarbeiten
   useEffect(() => {
-    void registerPush(lang).catch(() => {});
+    if (!DEMO) void registerPush(lang).catch(() => {});
   }, [lang]);
-  useEffect(() => listenForTaps(), []);
+  useEffect(() => (DEMO ? undefined : listenForTaps()), []);
   return <Stack screenOptions={{ headerShown: false }} />;
 }
