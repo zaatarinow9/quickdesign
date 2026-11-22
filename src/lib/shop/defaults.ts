@@ -109,6 +109,11 @@ const designers: Product[] = [
       de: "Sweatshirt ohne Kapuze in Schwarz, Weiß oder Olivgrün. Motiv mittig, klein auf der linken Brust oder auf dem Rücken.",
       ar: "سويتشيرت بلا قبّعة بالأسود أو الأبيض أو الأخضر الزيتي. التصميم في المنتصف، أو صغيراً على الصدر يساراً، أو على الظهر.",
     },
+    details: [
+      { de: "80 % Bio-Baumwolle, 20 % recyceltes Polyester, ca. 300 g/m²", ar: "80% قطن عضوي و20% بوليستر معاد تدويره، حوالي 300 غ/م²" },
+      { de: "Rundhals ohne Kapuze, innen weich angeraut, Rippbündchen", ar: "رقبة دائرية بلا قبّعة، ناعم من الداخل، أطراف مضلّعة" },
+      { de: "Langlebiger Druck, in Saarbrücken veredelt", ar: "طباعة متينة، تُنفّذ في زاربروكن" },
+    ],
     variants: base("hoodie-wahid").variants.map((v) => ({ ...v, priceCents: 4490 })),
     colors: blankColors("sweat"),
     gallery: [],
