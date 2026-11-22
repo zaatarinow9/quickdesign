@@ -49,9 +49,9 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
   }));
 
   const stats = [
-    { icon: Printer, big: "100%", text: ar ? "طباعة في زاربروكن" : "in Saarbrücken gedruckt" },
+    { icon: Printer, big: "100%", text: ar ? "تُطبع في زاربروكن" : "in Saarbrücken gedruckt" },
     s.shipping.express.enabled ? { icon: Zap, big: s.shipping.express.days, text: ar ? "أيام عمل للشحن السريع" : "Werktage Express" } : null,
-    s.shipping.freeFromCents ? { icon: Truck, big: money(s.shipping.freeFromCents), text: ar ? "شحن مجاني فوق هذا المبلغ" : "ab hier versandkostenfrei" } : null,
+    s.shipping.freeFromCents ? { icon: Truck, big: money(s.shipping.freeFromCents), text: ar ? "شحنٌ مجاني ابتداءً من هذا المبلغ" : "ab hier versandkostenfrei" } : null,
   ].filter(Boolean) as { icon: typeof Printer; big: string; text: string }[];
 
   const faq = ar
@@ -62,7 +62,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
           a: `الشحن العادي ${s.shipping.deliveryDays} أيام عمل داخل ألمانيا${s.shipping.express.enabled ? `، والشحن السريع ${s.shipping.express.days} أيام عمل مقابل ${money(s.shipping.express.cents)}` : ""}.${s.campaign.lastOrderDay ? ` ليصلك الطلب قبل 8 كانون الأول اطلب قبل ${dateLong(s.campaign.lastOrderDay, lang)}.` : ""}`,
         },
         { q: "هل يمكنني استلام الطلب بنفسي؟", a: s.shipping.pickup.enabled ? `نعم، الاستلام مجاني من محلنا: ${s.shipping.pickup.address}. سنبلغك فور جهوز طلبك.` : "حالياً نرسل الطلبات بالشحن فقط." },
-        { q: "هل يمكن طلب تصميم خاص أو كمية كبيرة؟", a: "بالتأكيد – راسلنا عبر واتساب ونطبع لك باسم جمعيتك أو شعارك بالكمية التي تريدها." },
+        { q: "هل يمكنني طلب تصميمٍ خاص أو كميةٍ كبيرة؟", a: "بكل سرور — راسلنا عبر واتساب، ونطبع لك باسم جمعيتك أو شعارك، وبالكمية التي تريدها." },
       ]
     : [
         { q: "Welche Zahlungsarten gibt es?", a: "Karte, Apple Pay, Google Pay, PayPal und Klarna – sicher über Stripe." },
@@ -98,7 +98,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
 
       {/* Bereiche */}
       <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
-        <h2 className="text-3xl">{ar ? "الأقسام" : "Bereiche"}</h2>
+        <h2 className="text-3xl">{ar ? "تسـوّق حسب القسم" : "Bereiche"}</h2>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {sections.map((x, i) => {
             const Icon = categoryIcon[x.slug];
@@ -121,7 +121,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
       <section id="produkte" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-16 sm:px-6">
         <Reveal>
           <p className="text-sm text-[var(--gold)]">{t.sections.collection.eyebrow}</p>
-          <h2 className="mt-1 text-3xl sm:text-4xl">{ar ? "تسوّق المجموعة" : "Die Kollektion"}</h2>
+          <h2 className="mt-1 text-3xl sm:text-4xl">{ar ? "مجمـوعة الذكرى" : "Die Kollektion"}</h2>
         </Reveal>
         <div className="mt-6">
           <CollectionTabs
@@ -148,7 +148,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
               <h2 className="mt-4 text-4xl leading-tight sm:text-5xl">{s.story.title[lang] || s.story.title.de}</h2>
               <p className="mt-4 leading-relaxed text-white/80">{s.story.paragraphs[0]?.[lang]}</p>
               <Link href={href("/hikaya")} className="mt-7 inline-flex h-11 w-fit items-center rounded-full bg-white px-6 font-medium text-[var(--green)] transition-colors hover:bg-[var(--mint)]">
-                {ar ? "اقرأ الحكاية" : "Zur Geschichte"}
+                {ar ? "اقرأ الحكاية كاملة" : "Zur Geschichte"}
               </Link>
             </div>
             <div className="relative min-h-[240px]">
@@ -175,7 +175,7 @@ export default async function ShopHome({ params }: { params: Promise<{ lang: str
 
       {/* Häufige Fragen */}
       <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-        <h2 className="text-center text-3xl">{ar ? "الأسئلة الشائعة" : "Häufige Fragen"}</h2>
+        <h2 className="text-center text-3xl">{ar ? "أسئلـةٌ تهمّك" : "Häufige Fragen"}</h2>
         <div className="mt-8 space-y-3">
           {faq.map((f) => (
             <details key={f.q} className="group rounded-2xl border border-[var(--line)] bg-white px-5 py-4 open:border-[var(--green)]">

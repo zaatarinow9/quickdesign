@@ -8,7 +8,7 @@ import { getStore } from "@/lib/shop/store";
 import { Reveal } from "@/components/shop/Reveal";
 import { WavingFlag } from "@/components/brand/WavingFlag";
 
-export const metadata: Metadata = { title: "يومٌ لن ننساه", alternates: { canonical: "/ar/hikaya" } };
+export const metadata: Metadata = { title: "فجرُ الحُريّة", alternates: { canonical: "/ar/hikaya" } };
 
 export default async function StoryPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
@@ -64,7 +64,7 @@ export default async function StoryPage({ params }: { params: Promise<{ lang: st
 
       <div className="pb-20 text-center">
         <Link href={`${base}/${lang}`} className="inline-flex h-12 items-center rounded-full bg-[var(--green)] px-7 font-medium text-white transition-colors hover:bg-[var(--green-2)]">
-          {ar ? "تسوّق مجموعة الذكرى" : "Zur Kollektion"}
+          {ar ? "اكتشف مجموعة الذكرى" : "Zur Kollektion"}
         </Link>
       </div>
     </>

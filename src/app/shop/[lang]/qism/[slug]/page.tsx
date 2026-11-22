@@ -60,7 +60,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ lang:
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <h2 className="text-xl">{ar ? "أقسام أخرى" : "Weitere Bereiche"}</h2>
+        <h2 className="text-xl">{ar ? "أقسـامٌ أخرى" : "Weitere Bereiche"}</h2>
         <div className="mt-4 grid grid-cols-3 gap-3">
           {others.map((x) => {
             const Icon = categoryIcon[x.slug];

@@ -2,6 +2,7 @@
  * Startdaten des Shops – werden verwendet, solange in der Verwaltung noch nichts gespeichert wurde.
  * Danach gilt ausschließlich der Stand aus public.shop_store.
  */
+import { arHero, arProducts, arSections, arSlides, arStory } from "./copy-ar";
 import { products as seed } from "./catalog";
 import type { Product, ShopStore } from "./schema";
 
@@ -95,7 +96,7 @@ const motifs = [
   motif("sticker-hurriya", "Sticker Hurriya", "ستيكر حرية"),
 ];
 
-export const defaultStore: ShopStore = {
+const baseStore: ShopStore = {
   version: 1,
   products,
   motifs,
@@ -237,3 +238,29 @@ export const defaultStore: ShopStore = {
     ],
   },
 };
+
+/** Gehobene arabische Texte über die Startwerte legen */
+function withArabicCopy(s: ShopStore): ShopStore {
+  return {
+    ...s,
+    products: s.products.map((p) => {
+      const c = arProducts[p.id];
+      return c ? { ...p, tagline: { ...p.tagline, ar: c.tagline }, description: { ...p.description, ar: c.description } } : p;
+    }),
+    settings: {
+      ...s.settings,
+      hero: { ...s.settings.hero, eyebrow: { ...s.settings.hero.eyebrow, ar: arHero.eyebrow }, title: { ...s.settings.hero.title, ar: arHero.title }, text: { ...s.settings.hero.text, ar: arHero.text } },
+      story: {
+        ...s.settings.story,
+        eyebrow: { ...s.settings.story.eyebrow, ar: arStory.eyebrow },
+        title: { ...s.settings.story.title, ar: arStory.title },
+        quote: { ...s.settings.story.quote, ar: arStory.quote },
+        paragraphs: s.settings.story.paragraphs.map((x, i) => ({ ...x, ar: arStory.paragraphs[i] ?? x.ar })),
+      },
+      slides: s.settings.slides.map((x, i) => (arSlides[i] ? { ...x, title: { ...x.title, ar: arSlides[i].title }, text: { ...x.text, ar: arSlides[i].text } } : x)),
+      sections: s.settings.sections.map((x) => (arSections[x.slug] ? { ...x, title: { ...x.title, ar: arSections[x.slug].title }, text: { ...x.text, ar: arSections[x.slug].text } } : x)),
+    },
+  };
+}
+
+export const defaultStore: ShopStore = withArabicCopy(baseStore);
