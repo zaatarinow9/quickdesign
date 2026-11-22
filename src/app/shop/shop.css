@@ -19,6 +19,12 @@
   background: var(--paper);
   color: var(--ink);
 }
+/* Kaschida/Schwungformen der Thmanyah (ss01) – nur in großen Überschriften */
+.shop-root h1,
+.shop-root h2,
+.shop-root .qd-kashida {
+  font-feature-settings: "ss01" 1;
+}
 .shop-root h1,
 .shop-root h2,
 .shop-root h3,

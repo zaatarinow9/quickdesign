@@ -8,7 +8,7 @@ import { kinds, type Product } from "@/lib/shop/schema";
 import { Card } from "@/components/admin/ui";
 import { ImageField, LField, MoneyInput, NumberInput, SaveBar, Toggle } from "./fields";
 
-const kindLabel: Record<string, string> = { tshirt: "تيشرت", hoodie: "هودي", flag: "علم", banner: "لافتة", foil: "ملصق فينيل / سيارة", sticker: "ستيكر", other: "أخرى" };
+const kindLabel: Record<string, string> = { tshirt: "تيشرت", polo: "بولو", hoodie: "هودي", sweatshirt: "سويتشيرت (بدون قبّعة)", flag: "علم", banner: "لافتة", foil: "ملصق فينيل / سيارة", sticker: "ستيكر", other: "أخرى" };
 const SIZE_PRESET = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
 const empty = { de: "", ar: "" };
 
@@ -76,7 +76,7 @@ export function ProductEditor({ initial, isNew, base, defaults }: { initial: Pro
       </Card>
 
       {/* Bilder */}
-      {p.kind === "tshirt" || p.kind === "hoodie" ? (
+      {["tshirt", "polo", "hoodie", "sweatshirt"].includes(p.kind) ? (
         <Card title="التصميم الحر (الزبون يختار التصميم ومكان الطباعة)">
           <div className="space-y-4">
             <Toggle

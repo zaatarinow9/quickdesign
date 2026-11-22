@@ -13,7 +13,7 @@ const pct = z.number().int().min(0).max(100);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal(""));
 
 export const categories = ["textil", "druck"] as const;
-export const kinds = ["tshirt", "hoodie", "flag", "banner", "foil", "sticker", "other"] as const;
+export const kinds = ["tshirt", "polo", "hoodie", "sweatshirt", "flag", "banner", "foil", "sticker", "other"] as const;
 
 export const variantSchema = z.object({
   id: z.string().trim().min(1).max(30),
@@ -110,8 +110,8 @@ export const categorySlugs = ["tshirts", "hoodies", "flags", "stickers"] as cons
 export type CategorySlug = (typeof categorySlugs)[number];
 /** Welche Produktarten zu welchem Shop-Bereich gehören */
 export const categoryKinds: Record<CategorySlug, Kind[]> = {
-  tshirts: ["tshirt"],
-  hoodies: ["hoodie"],
+  tshirts: ["tshirt", "polo"],
+  hoodies: ["hoodie", "sweatshirt"],
   flags: ["flag", "banner"],
   stickers: ["sticker", "foil", "other"],
 };
@@ -193,11 +193,23 @@ export const offerLive = (o: Offer, now: number) => o.active && (!o.starts || no
 export const preorderLive = (s: ShopSettings, now: number) => s.preorder.enabled && s.preorder.pct > 0 && (!s.preorder.until || now <= dayEnd(s.preorder.until));
 export const preorderEndsAt = (s: ShopSettings) => (s.preorder.until ? dayEnd(s.preorder.until) : null);
 
-/** Druckbereich je Art und Seite (Prozent des Rohling-Bildes) */
-export const printAreas: Record<"tshirt" | "hoodie", Record<"front" | "back", { x: number; y: number; w: number; h: number }>> = {
-  tshirt: { front: { x: 32.06, y: 28.1, w: 35.88, h: 35.88 }, back: { x: 31.6, y: 25.71, w: 36.8, h: 40.48 } },
-  hoodie: { front: { x: 36.2, y: 36.38, w: 27.6, h: 21.34 }, back: { x: 31.6, y: 29.94, w: 36.8, h: 40.48 } },
+/** Druckbereiche je Kleidungsart (Prozent des Rohling-Bildes): Brustmitte, linke Brust (vom Träger aus), Rücken */
+type Area = { x: number; y: number; w: number; h: number };
+export type GarmentKind = "tshirt" | "polo" | "hoodie" | "sweatshirt";
+export type FrontPos = "center" | "chest";
+export const garmentKinds: GarmentKind[] = ["tshirt", "polo", "hoodie", "sweatshirt"];
+export const isGarment = (k: string): k is GarmentKind => (garmentKinds as string[]).includes(k);
+export const printAreas: Record<GarmentKind, { front: Area; chest: Area; back: Area }> = {
+  tshirt: { front: { x: 38, y: 19, w: 24, h: 24 }, chest: { x: 57, y: 19, w: 9, h: 9 }, back: { x: 37, y: 17, w: 26, h: 28 } },
+  polo: { front: { x: 39, y: 33, w: 22, h: 19 }, chest: { x: 57.5, y: 25, w: 8, h: 8 }, back: { x: 37, y: 18, w: 26, h: 26 } },
+  hoodie: { front: { x: 39, y: 42, w: 22, h: 12 }, chest: { x: 56, y: 36, w: 8, h: 8 }, back: { x: 36, y: 26, w: 28, h: 28 } },
+  sweatshirt: { front: { x: 38, y: 17, w: 24, h: 24 }, chest: { x: 57, y: 17, w: 9, h: 9 }, back: { x: 37, y: 15, w: 26, h: 28 } },
 };
+/** Druckbereich für Ansicht + Position */
+export function areaFor(kind: string, side: "front" | "back", pos: FrontPos = "center"): Area {
+  const a = printAreas[isGarment(kind) ? kind : "tshirt"];
+  return side === "back" ? a.back : pos === "chest" ? a.chest : a.front;
+}
 export const isDarkHex = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -207,7 +219,7 @@ export const motifById = (s: ShopStore, id?: string) => (id ? s.motifs.find((m) 
 export const motifImage = (m: Motif, darkFabric: boolean) => (darkFabric ? m.light || m.dark : m.dark || m.light);
 
 /** Warenkorbzeile gegen den Katalog prüfen (Preise nie aus dem Browser) */
-export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number; front?: string; back?: string }) {
+export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number; front?: string; back?: string; frontPos?: string }) {
   const product = productById(s, line.slug);
   if (!product) return null;
   const color = product.colors.length ? (product.colors.find((c) => c.id === line.color) ?? null) : null;
@@ -225,6 +237,7 @@ export function resolveLine(s: ShopStore, line: { slug: string; color: string; s
     if ((line.front && !front) || (line.back && !back) || (!front && !back)) return null;
     if (front && back) extraCents = product.custom.extraSideCents;
   }
-  return { product, color, variant, qty, front, back, extraCents };
+  const frontPos: FrontPos = front && line.frontPos === "chest" ? "chest" : "center";
+  return { product, color, variant, qty, front, back, frontPos, extraCents };
 }
 export type ResolvedLine = NonNullable<ReturnType<typeof resolveLine>>;

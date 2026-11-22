@@ -2,6 +2,7 @@
  * Startdaten des Shops – werden verwendet, solange in der Verwaltung noch nichts gespeichert wurde.
  * Danach gilt ausschließlich der Stand aus public.shop_store.
  */
+import { arHero, arProducts, arSections, arSlides, arStory } from "./copy-ar";
 import { products as seed } from "./catalog";
 import type { Product, ShopStore } from "./schema";
 
@@ -32,7 +33,7 @@ const seedProducts: Product[] = seed.map((p) => ({
 }));
 
 /** Gestalter-Produkte: Farbe, Seite (vorne/hinten/beide) und Motiv frei wählbar */
-const blankColors = (kind: "tshirt" | "hoodie") =>
+const blankColors = (kind: "tshirt" | "polo" | "hoodie" | "sweat") =>
   ([
     ["schwarz", "#1d1d1f", { de: "Schwarz", ar: "أسود" }],
     ["weiss", "#f4f2ed", { de: "Weiß", ar: "أبيض" }],
@@ -41,10 +42,10 @@ const blankColors = (kind: "tshirt" | "hoodie") =>
     id,
     name: { ...name },
     hex,
-    image: `/shop/blank-${kind}-${id}-front.webp`,
+    image: `/shop/garments/${kind}-${id}-front.webp`,
     detail: "",
-    blankFront: `/shop/blank-${kind}-${id}-front.webp`,
-    blankBack: `/shop/blank-${kind}-${id}-back.webp`,
+    blankFront: `/shop/garments/${kind}-${id}-front.webp`,
+    blankBack: `/shop/garments/${kind}-${id}-back.webp`,
   }));
 const base = (id: string) => seedProducts.find((p) => p.id === id)!;
 const designers: Product[] = [
@@ -76,6 +77,43 @@ const designers: Product[] = [
     gallery: [],
     custom: { enabled: true, extraSideCents: 790 },
   },
+  {
+    ...base("tshirt-hurriya"),
+    id: "polo-gestalten",
+    kind: "polo",
+    featured: true,
+    name: { de: "Polo selbst gestalten", ar: "صمّم بولو" },
+    tagline: { de: "Elegant mit Kragen – dein Motiv auf Brust oder Rücken", ar: "أناقةُ الياقة… وتصميمُك على الصدر أو الظهر" },
+    description: {
+      de: "Klassisches Poloshirt in Schwarz, Weiß oder Olivgrün. Motiv klein auf der linken Brust, mittig oder auf dem Rücken – live in der Vorschau.",
+      ar: "قميص بولو كلاسيكي بالأسود أو الأبيض أو الأخضر الزيتي. التصميم صغيرٌ على الصدر يساراً، أو في المنتصف، أو على الظهر — وشاهده مباشرةً في المعاينة.",
+    },
+    details: [
+      { de: "Piqué-Baumwolle, ca. 210 g/m², Knopfleiste mit 3 Knöpfen", ar: "قطن بيكيه حوالي 210 غ/م²، ياقة بثلاثة أزرار" },
+      { de: "Langlebiger Druck, in Saarbrücken veredelt", ar: "طباعة متينة، تُنفّذ في زاربروكن" },
+      { de: "Waschen bei 30 °C auf links", ar: "غسيل على 30 درجة مقلوباً" },
+    ],
+    variants: base("tshirt-hurriya").variants.map((v) => ({ ...v, priceCents: 3490 })),
+    colors: blankColors("polo"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
+  {
+    ...base("hoodie-wahid"),
+    id: "sweat-gestalten",
+    kind: "sweatshirt",
+    featured: true,
+    name: { de: "Sweatshirt selbst gestalten", ar: "صمّم سويتشيرت" },
+    tagline: { de: "Ohne Kapuze, warm und schlicht – mit deinem Motiv", ar: "بلا قبّعة… دافئٌ وبسيط، وبتصميمك" },
+    description: {
+      de: "Sweatshirt ohne Kapuze in Schwarz, Weiß oder Olivgrün. Motiv mittig, klein auf der linken Brust oder auf dem Rücken.",
+      ar: "سويتشيرت بلا قبّعة بالأسود أو الأبيض أو الأخضر الزيتي. التصميم في المنتصف، أو صغيراً على الصدر يساراً، أو على الظهر.",
+    },
+    variants: base("hoodie-wahid").variants.map((v) => ({ ...v, priceCents: 4490 })),
+    colors: blankColors("sweat"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
 ];
 const products: Product[] = [...designers, ...seedProducts];
 
@@ -95,7 +133,7 @@ const motifs = [
   motif("sticker-hurriya", "Sticker Hurriya", "ستيكر حرية"),
 ];
 
-export const defaultStore: ShopStore = {
+const baseStore: ShopStore = {
   version: 1,
   products,
   motifs,
@@ -237,3 +275,29 @@ export const defaultStore: ShopStore = {
     ],
   },
 };
+
+/** Gehobene arabische Texte über die Startwerte legen */
+function withArabicCopy(s: ShopStore): ShopStore {
+  return {
+    ...s,
+    products: s.products.map((p) => {
+      const c = arProducts[p.id];
+      return c ? { ...p, tagline: { ...p.tagline, ar: c.tagline }, description: { ...p.description, ar: c.description } } : p;
+    }),
+    settings: {
+      ...s.settings,
+      hero: { ...s.settings.hero, eyebrow: { ...s.settings.hero.eyebrow, ar: arHero.eyebrow }, title: { ...s.settings.hero.title, ar: arHero.title }, text: { ...s.settings.hero.text, ar: arHero.text } },
+      story: {
+        ...s.settings.story,
+        eyebrow: { ...s.settings.story.eyebrow, ar: arStory.eyebrow },
+        title: { ...s.settings.story.title, ar: arStory.title },
+        quote: { ...s.settings.story.quote, ar: arStory.quote },
+        paragraphs: s.settings.story.paragraphs.map((x, i) => ({ ...x, ar: arStory.paragraphs[i] ?? x.ar })),
+      },
+      slides: s.settings.slides.map((x, i) => (arSlides[i] ? { ...x, title: { ...x.title, ar: arSlides[i].title }, text: { ...x.text, ar: arSlides[i].text } } : x)),
+      sections: s.settings.sections.map((x) => (arSections[x.slug] ? { ...x, title: { ...x.title, ar: arSections[x.slug].title }, text: { ...x.text, ar: arSections[x.slug].text } } : x)),
+    },
+  };
+}
+
+export const defaultStore: ShopStore = withArabicCopy(baseStore);
