@@ -1,6 +1,6 @@
 /* Nur im Shop geladen – Farben und Schrift der neuen syrischen Staatsidentität */
 .shop-root {
-  --font-ar-display: var(--font-qatar), var(--font-qomra), system-ui, sans-serif;
+  --font-ar-display: var(--font-thmanyah-serif), var(--font-qomra), system-ui, serif;
   --paper: #ffffff;
   --paper-2: #f8f8f8;
   --card: #ffffff;
@@ -13,7 +13,7 @@
   --mint: #daf2e6;
   --gold: #b9a779;
   --red: #c4161c;
-  font-family: var(--font-qomra), system-ui, sans-serif;
+  font-family: var(--font-thmanyah-serif), var(--font-qomra), system-ui, serif;
   background: var(--paper);
   color: var(--ink);
 }

@@ -6,7 +6,7 @@ import { shopBase } from "@/lib/shop/server";
 import { getStore } from "@/lib/shop/store";
 import { preorderLive } from "@/lib/shop/schema";
 import { dateLong } from "@/lib/shop/format";
-import { qatar, qomra } from "../fonts";
+import { qomra, thmanyahSerif } from "../fonts";
 import { ShopProvider } from "@/components/shop/ShopProvider";
 import { ShopHeader } from "@/components/shop/ShopHeader";
 import { ShopFooter } from "@/components/shop/ShopFooter";
@@ -53,7 +53,7 @@ export default async function ShopLayout({ children, params }: { children: React
   const pre = store.settings.preorder;
   const showPre = preorderLive(store.settings, nowMs());
   return (
-    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${qatar.variable} ${qomra.variable} min-h-screen antialiased`}>
+    <div lang={lang} dir={dirOf(lang)} className={`shop-root ${thmanyahSerif.variable} ${qomra.variable} min-h-screen antialiased`}>
       <div className="shop-tricolor h-[3px]" aria-hidden />
       <div className="border-b border-[var(--line)] bg-[var(--paper-2)] text-xs text-[var(--muted)]">
         <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
