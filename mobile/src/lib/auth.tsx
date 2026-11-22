@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, ApiError, onAuthProblem } from "./api";
 import { supabase } from "./supabase";
 import { unregisterPush } from "./push";
+import { DEMO } from "./demo";
 
 export type Me = { email: string; name: string | null; role: "owner" | "admin" | "manager"; full: boolean };
 
@@ -49,6 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sitzung beim Start prüfen
   useEffect(() => {
+    if (DEMO) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Vorschau: Beispielkonto sofort laden
+      void loadMe();
+      return;
+    }
     (async () => {
       try {
         const sb = await supabase();

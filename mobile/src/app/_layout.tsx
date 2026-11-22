@@ -4,10 +4,12 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useFonts, IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import { LangProvider, useT } from "@/lib/i18n";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { listenForTaps, registerPush } from "@/lib/push";
 import { useColors } from "@/lib/theme";
+import { DEMO } from "@/lib/demo";
 import { LoginScreen, MfaScreen } from "@/components/login";
 
 void SplashScreen.preventAutoHideAsync();
@@ -29,10 +31,11 @@ function Gate() {
   const { state } = useAuth();
   const { ready } = useT();
   const c = useColors();
+  const [fonts] = useFonts({ IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold });
   useEffect(() => {
-    if (state.status !== "loading" && ready) void SplashScreen.hideAsync();
-  }, [state.status, ready]);
-  if (state.status === "loading" || !ready)
+    if (state.status !== "loading" && ready && fonts) void SplashScreen.hideAsync();
+  }, [state.status, ready, fonts]);
+  if (state.status === "loading" || !ready || !fonts)
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg }}>
         <ActivityIndicator />
@@ -47,8 +50,8 @@ function SignedIn() {
   const { lang } = useT();
   // Push anmelden (bei Sprachwechsel neu, damit die Texte passen) und Tippen auf Hinweise verarbeiten
   useEffect(() => {
-    void registerPush(lang).catch(() => {});
+    if (!DEMO) void registerPush(lang).catch(() => {});
   }, [lang]);
-  useEffect(() => listenForTaps(), []);
+  useEffect(() => (DEMO ? undefined : listenForTaps()), []);
   return <Stack screenOptions={{ headerShown: false }} />;
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { qatar, qomra } from "../shop/fonts";
+import { thmanyahSans } from "../shop/fonts";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 
 export default function ShopAdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`adm shop-adm ${qatar.variable} ${qomra.variable}`} dir="rtl" lang="ar">
+    <div className={`adm shop-adm ${thmanyahSans.variable}`} dir="rtl" lang="ar">
       <style>{`
-        .shop-adm { --font-display: var(--font-qatar), var(--font-qomra), system-ui, sans-serif; }
-        .shop-adm, .shop-adm input, .shop-adm select, .shop-adm textarea, .shop-adm button { font-family: var(--font-qomra), system-ui, sans-serif; }
-        .shop-adm h1, .shop-adm h2, .shop-adm h3 { font-family: var(--font-qatar), var(--font-qomra), system-ui, sans-serif !important; font-synthesis: none; letter-spacing: 0 !important; }
+        .shop-adm { --font-display: var(--font-thmanyah), system-ui, sans-serif; --font-sans: var(--font-thmanyah), system-ui, sans-serif; --font-mono: var(--font-thmanyah), ui-monospace, monospace; }
+        .shop-adm, .shop-adm input, .shop-adm select, .shop-adm textarea, .shop-adm button { font-family: var(--font-thmanyah), system-ui, sans-serif; }
+        .shop-adm h1, .shop-adm h2, .shop-adm h3 { font-family: var(--font-thmanyah), system-ui, sans-serif !important; font-synthesis: none; letter-spacing: 0 !important; }
         .shop-adm .adm-table th, .shop-adm .adm-table td { text-align: right; }
         .shop-adm .ltr { direction: ltr; unicode-bidi: isolate; }
         /* Kräftigeres Erscheinungsbild: Karten mit grünem Akzent, klarere Felder */

@@ -1,15 +1,24 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { Image } from "expo-image";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useApi } from "@/lib/api";
 import { fmt, useT } from "@/lib/i18n";
 import { pickFile, uploadFile } from "@/lib/upload";
-import { brand, fileStatuses, fileTone, tone as tones, useColors } from "@/lib/theme";
-import { Chip, Empty, ErrorView, haptic, Icon, Loading, pick, Screen, Section, Segments, T } from "@/components/ui";
+import { fileStatuses, fileTone, radius, space, tone as tones, useColors } from "@/lib/theme";
+import { Badge, Chip, Empty, ErrorView, haptic, Loading, Page, pick, SearchBar, Segments, shadow, Txt } from "@/components/ui";
 
-type F = { id: string; name: string; size: number; status: string; folder: string; assigned_to: string | null; uploaded_by: string | null; created_at: string; thumb: string | null; message: string | null };
+type F = { id: string; name: string; size: number; status: string; folder: string; assigned_to: string | null; uploaded_by: string | null; created_at: string; thumb: string | null; content_type?: string | null };
 type Counts = Record<string, number>;
+
+const kindIcon = (name: string) => {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (["jpg", "jpeg", "png", "webp", "heic", "tif", "tiff"].includes(ext)) return "image" as const;
+  if (ext === "pdf") return "document-text" as const;
+  if (["ai", "eps", "svg", "psd", "indd"].includes(ext)) return "color-palette" as const;
+  if (["mp4", "mov"].includes(ext)) return "videocam" as const;
+  return "document" as const;
+};
 
 export default function Files() {
   const { t, lang } = useT();
@@ -26,73 +35,66 @@ export default function Files() {
   const { data, error, loading, refreshing, refresh, reload } = useApi<{ items: F[]; counts: Counts }>(`/files?${qs}`);
 
   const upload = () =>
-    pick(t.file.upload, [
-      { value: "camera" as const, label: t.file.uploadPhoto },
-      { value: "library" as const, label: t.file.uploadLibrary },
-      { value: "document" as const, label: t.file.uploadDocument },
-    ], t.common.cancel, async (src) => {
-      const file = await pickFile(src);
-      if (!file) return;
-      setUploading(true);
-      try {
-        await uploadFile(file);
-        haptic.success();
-        void reload();
-      } catch {
-        haptic.error();
-        Alert.alert(t.common.error);
-      }
-      setUploading(false);
-    });
+    pick(
+      t.file.upload,
+      [
+        { value: "camera" as const, label: t.file.uploadPhoto },
+        { value: "library" as const, label: t.file.uploadLibrary },
+        { value: "document" as const, label: t.file.uploadDocument },
+      ],
+      t.common.cancel,
+      async (src) => {
+        const file = await pickFile(src);
+        if (!file) return;
+        setUploading(true);
+        try {
+          await uploadFile(file);
+          haptic.success();
+          void reload();
+        } catch {
+          haptic.error();
+          Alert.alert(t.common.error);
+        }
+        setUploading(false);
+      },
+    );
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: t.file.title,
-          headerSearchBarOptions: { placeholder: t.common.search, onChangeText: (e) => setQ(e.nativeEvent.text), hideWhenScrolling: true },
-          headerRight: () => (
-            <Pressable onPress={upload} hitSlop={10} disabled={uploading} style={{ padding: 4 }}>
-              {uploading ? <ActivityIndicator /> : <Icon name="plus.circle.fill" size={24} color={brand.magenta} />}
-            </Pressable>
-          ),
-        }}
+    <Page title={t.file.title} actions={[{ icon: "cloud-upload-outline", onPress: upload, loading: uploading }]} refreshing={refreshing} onRefresh={refresh}>
+      <SearchBar value={q} onChange={setQ} placeholder={t.common.search} />
+      <Segments
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: "aktiv", label: t.common.open, count: data?.counts.aktiv },
+          { value: "mine", label: t.file.mine },
+          ...fileStatuses.map((s) => ({ value: s, label: t.file.status[s], count: data?.counts[s] })),
+        ]}
       />
-      <Screen refreshing={refreshing} onRefresh={refresh}>
-        <Segments
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "aktiv", label: t.common.open, count: data?.counts.aktiv },
-            { value: "mine", label: t.file.mine },
-            ...fileStatuses.map((s) => ({ value: s, label: t.file.status[s], count: data?.counts[s] })),
-          ]}
-        />
-        {uploading ? (
-          <View style={{ flexDirection: "row", gap: 10, alignItems: "center", marginHorizontal: 20, marginTop: 14 }}>
-            <ActivityIndicator />
-            <T size={14} color={c.text2}>{t.file.uploading}</T>
-          </View>
-        ) : null}
-        {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !data?.items.length ? <Empty text={t.common.empty} icon="folder" /> : (
-          <Section>
-            {data.items.map((x, k) => (
-              <Pressable key={x.id} onPress={() => router.push(`/files/${x.id}`)} style={({ pressed }) => ({ backgroundColor: pressed ? (c.fill as string) : "transparent" })}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingStart: 12, paddingVertical: 10 }}>
-                  <View style={{ width: 52, height: 52, borderRadius: 10, overflow: "hidden", backgroundColor: c.fill as string, alignItems: "center", justifyContent: "center" }}>
-                    {x.thumb ? <Image source={{ uri: x.thumb }} style={{ width: 52, height: 52 }} contentFit="cover" transition={150} /> : <Icon name="doc.fill" size={22} color={tones[fileTone[x.status] ?? "gray"]} />}
-                  </View>
-                  <View style={{ flex: 1, gap: 3, paddingEnd: 12, borderBottomWidth: k === data.items.length - 1 ? 0 : 0.5, borderBottomColor: c.line as string, paddingBottom: 10, marginBottom: -10 }}>
-                    <T size={15} weight="500" lines={1}>{x.name}</T>
-                    <T size={12} color={c.text2} lines={1}>{[x.folder, f.relative(x.created_at), f.bytes(x.size)].filter(Boolean).join(" · ")}</T>
-                    <Chip small label={t.file.status[x.status as keyof typeof t.file.status] ?? x.status} tone={fileTone[x.status]} />
+      {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !data?.items.length ? <Empty text={t.common.empty} icon="folder-open-outline" /> : (
+        <View style={{ paddingHorizontal: space.page, marginTop: 16, gap: 10 }}>
+          {data.items.map((x) => {
+            const idx = fileStatuses.indexOf(x.status as (typeof fileStatuses)[number]);
+            return (
+              <Pressable key={x.id} onPress={() => router.push(`/files/${x.id}`)} style={({ pressed }) => ({ flexDirection: "row", gap: 12, padding: 12, borderRadius: radius.lg, backgroundColor: c.card, opacity: pressed ? 0.75 : 1, ...shadow(c.dark) })}>
+                <View style={{ width: 58, height: 58, borderRadius: 14, overflow: "hidden", backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}>
+                  {x.thumb ? <Image source={{ uri: x.thumb }} style={{ width: 58, height: 58 }} contentFit="cover" transition={150} /> : <Badge icon={kindIcon(x.name)} tone={fileTone[x.status] ?? "gray"} size={58} />}
+                </View>
+                <View style={{ flex: 1, gap: 4, justifyContent: "center" }}>
+                  <Txt v="bodyStrong" lines={1}>{x.name}</Txt>
+                  <Txt v="caption" color={c.text3} lines={1}>{[x.folder, f.relative(x.created_at), f.bytes(x.size)].filter(Boolean).join(" · ")}</Txt>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Chip label={t.file.status[x.status as keyof typeof t.file.status] ?? x.status} tone={fileTone[x.status]} />
+                    <View style={{ flex: 1, flexDirection: "row", gap: 3 }}>
+                      {fileStatuses.map((s, i) => <View key={s} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= idx ? tones[fileTone[x.status] ?? "gray"] : c.fill }} />)}
+                    </View>
                   </View>
                 </View>
               </Pressable>
-            ))}
-          </Section>
-        )}
-      </Screen>
-    </>
+            );
+          })}
+        </View>
+      )}
+    </Page>
   );
 }

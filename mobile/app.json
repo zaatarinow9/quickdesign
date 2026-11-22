@@ -66,6 +66,14 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "quickdesigns"
+    "owner": "quickdesigns",
+    "extra": {
+      "eas": {
+        "projectId": "afd053bf-76f0-46c9-b8b0-9efa9949a718"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

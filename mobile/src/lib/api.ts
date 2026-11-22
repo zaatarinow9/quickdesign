@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { API_URL } from "./config";
 import { accessToken, supabase } from "./supabase";
+import { DEMO, demoApi } from "./demo";
 
 export class ApiError extends Error {
   constructor(
@@ -23,6 +24,7 @@ export const onAuthProblem = (fn: Listener) => {
 };
 
 export async function api<T = unknown>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  if (DEMO) return demoApi(path) as T;
   const call = async (token: string | null) =>
     fetch(`${API_URL}${path}`, {
       method: init.method ?? "GET",

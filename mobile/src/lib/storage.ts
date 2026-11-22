@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
 /**
@@ -35,7 +36,8 @@ export const secureStorage = {
 };
 
 /** kleine Einstellungen (Sprache …) */
+const web = Platform.OS === "web";
 export const prefs = {
-  get: (k: string) => SecureStore.getItemAsync(safe(`pref.${k}`), opts),
-  set: (k: string, v: string) => SecureStore.setItemAsync(safe(`pref.${k}`), v, opts),
+  get: async (k: string) => (web ? globalThis.localStorage?.getItem(`pref.${k}`) ?? null : SecureStore.getItemAsync(safe(`pref.${k}`), opts)),
+  set: async (k: string, v: string) => (web ? globalThis.localStorage?.setItem(`pref.${k}`, v) : SecureStore.setItemAsync(safe(`pref.${k}`), v, opts)),
 };
