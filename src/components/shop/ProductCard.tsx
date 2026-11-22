@@ -14,7 +14,7 @@ import {
   motifImage,
   offerLive,
   preorderLive,
-  printAreas,
+  areaFor,
   type Product,
   type ShopStore,
 } from "@/lib/shop/schema";
@@ -58,7 +58,7 @@ export function ProductCard({
       ms.find((m) => m.id.startsWith("nisr")) ?? ms[ms.length > 1 ? 1 : 0];
     return {
       c,
-      area: printAreas[p.kind === "hoodie" ? "hoodie" : "tshirt"],
+      area: { front: areaFor(p.kind, "front"), back: areaFor(p.kind, "back") },
       front: motifImage(ms[0], dark),
       back: motifImage(back, dark),
     };

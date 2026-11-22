@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, Minus, Plus, X } from "lucide-react";
-import { imageOf, isDarkHex, motifImage, printAreas, resolveLine, type ResolvedLine } from "@/lib/shop/schema";
+import { areaFor, imageOf, isDarkHex, motifImage, resolveLine, type ResolvedLine } from "@/lib/shop/schema";
 import { GarmentPreview } from "./GarmentPreview";
 import { money } from "@/lib/shop/format";
 import { fill } from "@/lib/shop/i18n";
@@ -57,13 +57,13 @@ export function CartDrawer() {
   };
 
   const describe = (r: ResolvedLine) =>
-    [r.color?.name[lang], r.variant.label[lang], r.front ? `أمام: ${r.front.name[lang] || r.front.name.de}` : "", r.back ? `خلف: ${r.back.name[lang] || r.back.name.de}` : ""].filter(Boolean).join(" · ");
+    [r.color?.name[lang], r.variant.label[lang], r.front ? `${r.frontPos === "chest" ? "صدر يسار" : "أمام"}: ${r.front.name[lang] || r.front.name.de}` : "", r.back ? `خلف: ${r.back.name[lang] || r.back.name.de}` : ""].filter(Boolean).join(" · ");
   const thumb = (r: ResolvedLine) => {
     const side = r.front ? "front" : "back";
     const m = r.front ?? r.back;
     const blank = side === "front" ? r.color?.blankFront : r.color?.blankBack;
     if (!m || !blank) return null;
-    return <GarmentPreview blank={blank} area={printAreas[r.product.kind === "hoodie" ? "hoodie" : "tshirt"][side]} motif={motifImage(m, isDarkHex(r.color?.hex ?? "#fff"))} className="absolute inset-0" />;
+    return <GarmentPreview blank={blank} area={areaFor(r.product.kind, side, r.frontPos)} motif={motifImage(m, isDarkHex(r.color?.hex ?? "#fff"))} className="absolute inset-0" />;
   };
   const waText = encodeURIComponent(`${t.product.whatsappMsg}\n\n${rows.map(({ r }) => `• ${r.qty}× ${r.product.name[lang]} – ${describe(r)}`).join("\n")}`);
   const side = lang === "ar" ? "-100%" : "100%";

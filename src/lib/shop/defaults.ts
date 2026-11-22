@@ -33,7 +33,7 @@ const seedProducts: Product[] = seed.map((p) => ({
 }));
 
 /** Gestalter-Produkte: Farbe, Seite (vorne/hinten/beide) und Motiv frei wählbar */
-const blankColors = (kind: "tshirt" | "hoodie") =>
+const blankColors = (kind: "tshirt" | "polo" | "hoodie" | "sweat") =>
   ([
     ["schwarz", "#1d1d1f", { de: "Schwarz", ar: "أسود" }],
     ["weiss", "#f4f2ed", { de: "Weiß", ar: "أبيض" }],
@@ -42,10 +42,10 @@ const blankColors = (kind: "tshirt" | "hoodie") =>
     id,
     name: { ...name },
     hex,
-    image: `/shop/blank-${kind}-${id}-front.webp`,
+    image: `/shop/garments/${kind}-${id}-front.webp`,
     detail: "",
-    blankFront: `/shop/blank-${kind}-${id}-front.webp`,
-    blankBack: `/shop/blank-${kind}-${id}-back.webp`,
+    blankFront: `/shop/garments/${kind}-${id}-front.webp`,
+    blankBack: `/shop/garments/${kind}-${id}-back.webp`,
   }));
 const base = (id: string) => seedProducts.find((p) => p.id === id)!;
 const designers: Product[] = [
@@ -74,6 +74,43 @@ const designers: Product[] = [
       ar: "هوديك للذكرى: اختر اللون والتصميم على الصدر أو كبيراً على الظهر – وشاهده مباشرة في المعاينة.",
     },
     colors: blankColors("hoodie"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
+  {
+    ...base("tshirt-hurriya"),
+    id: "polo-gestalten",
+    kind: "polo",
+    featured: true,
+    name: { de: "Polo selbst gestalten", ar: "صمّم بولو" },
+    tagline: { de: "Elegant mit Kragen – dein Motiv auf Brust oder Rücken", ar: "أناقةُ الياقة… وتصميمُك على الصدر أو الظهر" },
+    description: {
+      de: "Klassisches Poloshirt in Schwarz, Weiß oder Olivgrün. Motiv klein auf der linken Brust, mittig oder auf dem Rücken – live in der Vorschau.",
+      ar: "قميص بولو كلاسيكي بالأسود أو الأبيض أو الأخضر الزيتي. التصميم صغيرٌ على الصدر يساراً، أو في المنتصف، أو على الظهر — وشاهده مباشرةً في المعاينة.",
+    },
+    details: [
+      { de: "Piqué-Baumwolle, ca. 210 g/m², Knopfleiste mit 3 Knöpfen", ar: "قطن بيكيه حوالي 210 غ/م²، ياقة بثلاثة أزرار" },
+      { de: "Langlebiger Druck, in Saarbrücken veredelt", ar: "طباعة متينة، تُنفّذ في زاربروكن" },
+      { de: "Waschen bei 30 °C auf links", ar: "غسيل على 30 درجة مقلوباً" },
+    ],
+    variants: base("tshirt-hurriya").variants.map((v) => ({ ...v, priceCents: 3490 })),
+    colors: blankColors("polo"),
+    gallery: [],
+    custom: { enabled: true, extraSideCents: 790 },
+  },
+  {
+    ...base("hoodie-wahid"),
+    id: "sweat-gestalten",
+    kind: "sweatshirt",
+    featured: true,
+    name: { de: "Sweatshirt selbst gestalten", ar: "صمّم سويتشيرت" },
+    tagline: { de: "Ohne Kapuze, warm und schlicht – mit deinem Motiv", ar: "بلا قبّعة… دافئٌ وبسيط، وبتصميمك" },
+    description: {
+      de: "Sweatshirt ohne Kapuze in Schwarz, Weiß oder Olivgrün. Motiv mittig, klein auf der linken Brust oder auf dem Rücken.",
+      ar: "سويتشيرت بلا قبّعة بالأسود أو الأبيض أو الأخضر الزيتي. التصميم في المنتصف، أو صغيراً على الصدر يساراً، أو على الظهر.",
+    },
+    variants: base("hoodie-wahid").variants.map((v) => ({ ...v, priceCents: 4490 })),
+    colors: blankColors("sweat"),
     gallery: [],
     custom: { enabled: true, extraSideCents: 790 },
   },

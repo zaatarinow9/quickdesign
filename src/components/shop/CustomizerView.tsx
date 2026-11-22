@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Maximize2, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { activeVariants, isDarkHex, motifImage, printAreas, type Motif, type Product } from "@/lib/shop/schema";
+import Link from "next/link";
+import { activeVariants, areaFor, garmentKinds, isDarkHex, motifImage, type FrontPos, type Motif, type Product } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { useShop } from "./ShopProvider";
 import { GarmentPreview } from "./GarmentPreview";
@@ -12,6 +13,7 @@ import { ProductExtras, SizeQty } from "./ProductView";
 import { cn } from "@/lib/utils";
 
 type Side = "front" | "back";
+const typeName: Record<string, string> = { tshirt: "تيشرت", polo: "بولو", hoodie: "هودي", sweatshirt: "سويتشيرت" };
 type Place = "front" | "back" | "both";
 
 /** Selbstgestalten: Farbe → Druckseite(n) → Motiv je Seite → Größen; Vorschau live auf dem Rohling */
@@ -30,13 +32,16 @@ export function CustomizerView({
   prePct: number;
   whatsapp: string;
 }) {
-  const { lang, add, store } = useShop();
+  const { lang, add, store, href } = useShop();
+  const area = (side: Side) => areaFor(p.kind, side, frontPos);
+  // Gestalter je Kleidungsart (T-Shirt, Polo, Hoodie, Sweatshirt)
+  const types = garmentKinds.map((k) => store.products.find((x) => x.active && x.custom.enabled && x.kind === k)).filter((x): x is Product => !!x);
   const motifs = useMemo(() => store.motifs.filter((m) => m.active), [store.motifs]);
   const variants = activeVariants(p);
-  const area = printAreas[p.kind === "hoodie" ? "hoodie" : "tshirt"];
 
   const [colorId, setColorId] = useState(p.colors[0]?.id ?? "");
   const [place, setPlace] = useState<Place>("front");
+  const [frontPos, setFrontPos] = useState<FrontPos>("center");
   const [front, setFront] = useState<string>(motifs[0]?.id ?? "");
   const [back, setBack] = useState<string>(motifs[0]?.id ?? "");
   const [editing, setEditing] = useState<Side>("front");
@@ -98,7 +103,7 @@ export function CustomizerView({
   const onAdd = () => {
     const lines = variants
       .filter((v) => (qtys[v.id] ?? 0) > 0)
-      .map((v) => ({ slug: p.id, color: colorId, size: v.id, qty: qtys[v.id], front: sideOn("front") ? front : undefined, back: sideOn("back") ? back : undefined }));
+      .map((v) => ({ slug: p.id, color: colorId, size: v.id, qty: qtys[v.id], front: sideOn("front") ? front : undefined, frontPos: sideOn("front") ? frontPos : undefined, back: sideOn("back") ? back : undefined }));
     if (!lines.length) {
       setHint(true);
       return;
@@ -123,7 +128,7 @@ export function CustomizerView({
       {/* Vorschau */}
       <div className="lg:sticky lg:top-24 lg:self-start">
         <div className="relative overflow-hidden rounded-2xl">
-          <GarmentPreview key={`${colorId}-${view}`} blank={blank(view)} area={area[view]} motif={motifFor(view)} alt={`${L(p.name)} – ${color ? L(color.name) : ""}`} priority className="qd-fade" />
+          <GarmentPreview key={`${colorId}-${view}`} blank={blank(view)} area={area(view)} motif={motifFor(view)} alt={`${L(p.name)} – ${color ? L(color.name) : ""}`} priority className="qd-fade" />
           {prePct ? (
             <span className="absolute end-4 top-4">
               <DiscountSeal pct={prePct} size="lg" label="طلب مسبق" />
@@ -153,7 +158,7 @@ export function CustomizerView({
               onClick={() => setView(s)}
               className={cn("overflow-hidden rounded-xl text-start transition", view === s ? "ring-2 ring-[var(--ink)]" : "ring-1 ring-[var(--line)] hover:ring-[var(--muted)]")}
             >
-              <GarmentPreview blank={blank(s)} area={area[s]} motif={motifFor(s)} />
+              <GarmentPreview blank={blank(s)} area={area(s)} motif={motifFor(s)} />
               <span className="flex items-center justify-between bg-[var(--card)] px-3 py-2 text-xs">
                 {sideName(s)}
                 <span className={sideOn(s) ? "text-[var(--green)]" : "text-[var(--muted)]"}>{sideOn(s) ? L(byId(s === "front" ? front : back)?.name ?? { de: "", ar: "" }) : "بدون طباعة"}</span>
@@ -173,6 +178,29 @@ export function CustomizerView({
           <span className="text-sm text-[var(--muted)]">{taxNote}</span>
         </p>
         <p className="mt-5 leading-relaxed text-[#3d3a35]">{L(p.description)}</p>
+
+        {/* Kleidungsart */}
+        {types.length > 1 ? (
+          <div className="mt-7 grid grid-cols-4 gap-2">
+            {types.map((x) => {
+              const on = x.id === p.id;
+              const c0 = x.colors.find((c) => c.id === colorId) ?? x.colors[0];
+              return (
+                <Link
+                  key={x.id}
+                  href={href(`/produkt/${x.id}`)}
+                  scroll={false}
+                  aria-current={on ? "page" : undefined}
+                  className={cn("overflow-hidden rounded-xl bg-[var(--card)] text-center ring-1 transition", on ? "ring-2 ring-[var(--green)]" : "ring-[var(--line)] hover:ring-[var(--muted)]")}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- kleine Vorschau */}
+                  <img src={c0?.blankFront || c0?.image} alt="" className="aspect-square w-full object-cover" />
+                  <span className={cn("block truncate px-1 py-1.5 text-xs", on ? "font-medium text-[var(--green)]" : "")}>{typeName[x.kind] ?? L(x.name)}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
 
         {/* 1 Farbe */}
         {p.colors.length ? (
@@ -220,6 +248,30 @@ export function CustomizerView({
               </button>
             ))}
           </div>
+          {sideOn("front") ? (
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-[var(--paper-2)] p-1.5" role="radiogroup" aria-label="مكان التصميم في الأمام">
+              {(
+                [
+                  ["center", "منتصف الصدر"],
+                  ["chest", "الصدر – يسار"],
+                ] as const
+              ).map(([k, t]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={frontPos === k}
+                  onClick={() => {
+                    setFrontPos(k);
+                    setView("front");
+                  }}
+                  className={cn("flex-1 rounded-lg px-3 py-2 text-sm transition", frontPos === k ? "bg-white font-medium text-[var(--green)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--ink)]")}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {/* 3 Motiv */}
