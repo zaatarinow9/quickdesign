@@ -405,3 +405,50 @@ export async function deleteFiles(ids: string[]): Promise<{ ok?: string; error?:
   paths();
   return { ok: `${rows.length} Datei${rows.length === 1 ? "" : "en"} gelöscht.` };
 }
+
+/* ------------------------------ Herunterladen ------------------------------ */
+
+export type DownloadItem = { path: string; size: number; url: string };
+
+/**
+ * Download-Liste für einen Ordner (inkl. Unterordner) oder ausgewählte Dateien:
+ * relative Pfade + kurzlebige Download-Links. Der Browser speichert die Dateien
+ * direkt in einen gewählten Ordner (oder packt sie als Fallback in ein ZIP).
+ */
+export async function downloadList(input: { folder?: string; ids?: string[] }): Promise<{ name?: string; items?: DownloadItem[]; error?: string }> {
+  await assertAdmin();
+  const { presignDownload, isR2Configured } = await import("@/lib/files/r2");
+  if (!isR2Configured()) return { error: "Speicher nicht verbunden." };
+  const client = db();
+  let rows: { id: string; name: string; size: number; folder: string; object_key: string }[] = [];
+  let base = "";
+  let name = "Dateien";
+  if (input.ids?.length) {
+    const ids = z.array(uuid).min(1).max(5000).safeParse(input.ids);
+    if (!ids.success) return { error: "Ungültige Auswahl." };
+    const { data } = await client.from("files").select("id, name, size, folder, object_key").in("id", ids.data).eq("complete", true);
+    rows = (data ?? []) as typeof rows;
+    // gemeinsamer Elternordner → Struktur relativ dazu
+    const dirs = [...new Set(rows.map((r) => String(r.folder ?? "")))];
+    base = dirs.length === 1 ? dirs[0] : "";
+    name = base ? base.split("/").pop()! : "Auswahl";
+  } else {
+    const folder = normalizeFolder(input.folder ?? "");
+    let q = client.from("files").select("id, name, size, folder, object_key").eq("complete", true).limit(20000);
+    if (folder) q = q.like("folder", `${folder.slice(0, 1)}%`);
+    const { data } = await q;
+    rows = ((data ?? []) as typeof rows).filter((r) => !folder || r.folder === folder || String(r.folder).startsWith(`${folder}/`));
+    base = folder;
+    name = folder ? folder.split("/").pop()! : "Alle Dateien";
+  }
+  if (!rows.length) return { error: "Keine Dateien zum Herunterladen." };
+  const rel = (r: (typeof rows)[number]) => {
+    const dir = String(r.folder ?? "");
+    const sub = base && (dir === base || dir.startsWith(`${base}/`)) ? dir.slice(base.length).replace(/^\//, "") : dir;
+    return sub ? `${sub}/${r.name}` : r.name;
+  };
+  const items = await Promise.all(
+    rows.map(async (r) => ({ path: rel(r), size: Number(r.size ?? 0), url: await presignDownload(r.object_key, r.name, { seconds: 6 * 3600 }) })),
+  );
+  return { name, items };
+}

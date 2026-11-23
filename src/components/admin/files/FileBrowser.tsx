@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpDown,
@@ -24,6 +24,7 @@ import {
   createFolder,
   deleteFiles,
   deleteFolder,
+  downloadList,
   moveFiles,
   moveFolder,
   renameFolder,
@@ -49,6 +50,7 @@ import {
   type ViewMode,
 } from "@/lib/files/shared";
 import { FileIcon } from "./FileIcon";
+import { canSaveFolders, downloadFolder, type DownloadProgress } from "./download";
 import { FileStatusSelect } from "./FileStatusSelect";
 import { cn } from "@/lib/utils";
 
@@ -166,6 +168,37 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
       }
     });
   };
+  // Herunterladen (Ordner mit Struktur oder Auswahl)
+  const [dl, setDl] = useState<(DownloadProgress & { state: "läuft" | "fertig" | "fehler"; error?: string }) | null>(null);
+  const dlAbort = useRef<AbortController | null>(null);
+  const lastPaint = useRef(0);
+  const download = async (input: { folder?: string; ids?: string[] }) => {
+    if (dl?.state === "läuft") return;
+    const ctrl = new AbortController();
+    dlAbort.current = ctrl;
+    try {
+      await downloadFolder(
+        () => {
+          setDl({ done: 0, total: 0, bytes: 0, totalBytes: 0, mode: canSaveFolders() ? "ordner" : "zip", state: "läuft" });
+          return downloadList(input);
+        },
+        (p) => {
+          const now = Date.now();
+          if (now - lastPaint.current < 150 && p.done < p.total) return;
+          lastPaint.current = now;
+          setDl({ ...p, state: "läuft" });
+        },
+        ctrl.signal,
+      );
+      setDl((d) => (d ? { ...d, done: d.total, bytes: d.totalBytes, state: "fertig" } : null));
+      setTimeout(() => setDl((d) => (d?.state === "fertig" ? null : d)), 6000);
+    } catch (e) {
+      // Ordnerauswahl abgebrochen → still beenden
+      if (e instanceof DOMException && e.name === "AbortError") return setDl(null);
+      setDl((d) => ({ ...(d ?? { done: 0, total: 0, bytes: 0, totalBytes: 0, mode: "ordner" }), state: "fehler", error: e instanceof Error ? e.message : "Download fehlgeschlagen" }));
+    }
+  };
+
   /** Dateien sofort ausblenden (Löschen/Verschieben), bei Fehler wieder zeigen */
   const hide = (ids: string[]) => {
     setGone((g) => new Set([...g, ...ids]));
@@ -198,6 +231,11 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
         {!flat ? (
           <button type="button" onClick={() => setDialog({ type: "neu" })} className="adm-btn adm-btn-ghost adm-btn-sm">
             <FolderPlus className="size-4" aria-hidden /> Neuer Ordner
+          </button>
+        ) : null}
+        {!flat && (files.length || folders.length) ? (
+          <button type="button" onClick={() => download({ folder })} className="adm-btn adm-btn-ghost adm-btn-sm" title="Ganzen Ordner mit Unterordnern herunterladen">
+            <Download className="size-4" aria-hidden /> {folder ? "Ordner herunterladen" : "Alles herunterladen"}
           </button>
         ) : null}
         {categories.length ? (
@@ -264,6 +302,9 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
       {selected.size ? (
         <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-accent/20 bg-accent/[0.06] px-4 py-2.5 text-sm backdrop-blur sm:px-5">
           <span className="font-semibold">{selected.size} ausgewählt</span>
+          <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm bg-white" onClick={() => download({ ids: [...selected] })}>
+            <Download className="size-4" aria-hidden /> Herunterladen
+          </button>
           <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm bg-white" onClick={() => setDialog({ type: "verschieben" })}>
             <FolderInput className="size-4" aria-hidden /> Verschieben
           </button>
@@ -334,7 +375,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                   </span>
                 ) : null}
               </Link>
-              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} />
+              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} onDownload={() => download({ folder: f.path })} />
             </div>
           ))}
           {shownFiles.map((f) => {
@@ -421,7 +462,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                     {f.fileCount} Datei{f.fileCount === 1 ? "" : "en"}
                   </td>
                   <td className="relative py-2.5 pr-4 text-right">
-                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} />
+                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} onDownload={() => download({ folder: f.path })} />
                   </td>
                 </tr>
               ))}
@@ -465,6 +506,52 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
           </table>
         </div>
       )}
+
+      {/* Download-Fortschritt */}
+      {dl ? (
+        <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,22rem)] rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-ink/10" role="status">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">
+                {dl.state === "fertig" ? "Download fertig ✓" : dl.state === "fehler" ? "Download fehlgeschlagen" : dl.total ? `Herunterladen … ${dl.done} / ${dl.total}` : "Wird vorbereitet …"}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-dark">
+                {dl.state === "fehler"
+                  ? dl.error
+                  : dl.mode === "ordner"
+                    ? "Direkt in den gewählten Ordner – ohne ZIP"
+                    : "Dieser Browser kann keine Ordner speichern – ZIP wird erstellt (Chrome/Edge speichern direkt)"}
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label={dl.state === "läuft" ? "Abbrechen" : "Schließen"}
+              onClick={() => {
+                if (dl.state === "läuft") dlAbort.current?.abort();
+                setDl(null);
+              }}
+              className="grid size-7 shrink-0 place-items-center rounded-md text-stone-dark hover:bg-ink/[0.06]"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          {dl.state !== "fehler" ? (
+            <>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/[0.07]">
+                <div
+                  className={cn("h-full rounded-full transition-[width] duration-200", dl.state === "fertig" ? "bg-emerald-500" : "bg-accent")}
+                  style={{ width: `${dl.totalBytes ? Math.min(100, Math.round((dl.bytes / dl.totalBytes) * 100)) : dl.state === "fertig" ? 100 : 3}%` }}
+                />
+              </div>
+              {dl.totalBytes ? (
+                <p className="mt-1.5 text-right text-[0.7rem] tabular-nums text-stone-dark">
+                  {formatBytes(dl.bytes)} / {formatBytes(dl.totalBytes)}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Dialoge */}
       {dialog?.type === "neu" ? (
@@ -579,7 +666,19 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
   );
 }
 
-function FolderMenu({ f, onPick, onDelete, inline }: { f: FolderEntry; onPick: (mode: "umbenennen" | "verschieben" | "farbe") => void; onDelete: () => void; inline?: boolean }) {
+function FolderMenu({
+  f,
+  onPick,
+  onDelete,
+  onDownload,
+  inline,
+}: {
+  f: FolderEntry;
+  onPick: (mode: "umbenennen" | "verschieben" | "farbe") => void;
+  onDelete: () => void;
+  onDownload: () => void;
+  inline?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className={cn(inline ? "relative inline-block" : "absolute right-2 top-2")}>
@@ -615,6 +714,16 @@ function FolderMenu({ f, onPick, onDelete, inline }: { f: FolderEntry; onPick: (
                 <Icon className="size-4 text-stone-dark" aria-hidden /> {label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDownload();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 hover:bg-ink/[0.04]"
+            >
+              <Download className="size-4 text-stone-dark" aria-hidden /> Herunterladen
+            </button>
             <button
               type="button"
               onClick={() => {
