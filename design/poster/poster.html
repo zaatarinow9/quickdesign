@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>عيد التحرير – بوستر</title>
+<style>
+  @font-face { font-family: Th; src: url(../../src/app/shop/fonts/thmanyah-sans-Light.woff2); font-weight: 300; }
+  @font-face { font-family: Th; src: url(../../src/app/shop/fonts/thmanyah-sans-Regular.woff2); font-weight: 400; }
+  @font-face { font-family: Th; src: url(../../src/app/shop/fonts/thmanyah-sans-Medium.woff2); font-weight: 500; }
+  @font-face { font-family: Th; src: url(../../src/app/shop/fonts/thmanyah-sans-Bold.woff2); font-weight: 700; }
+  @font-face { font-family: Th; src: url(../../src/app/shop/fonts/thmanyah-sans-Black.woff2); font-weight: 900; }
+  :root {
+    --green: #054239; --green-2: #0b5a4c; --deep: #002623;
+    --gold: #b9a779; --gold-2: #988561; --ivory: #edebe0; --paper: #f5f3ea;
+    --ink: #161616; --red: #c4161c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1188px; height: 1680px; background: var(--ivory); }
+  body { font-family: Th, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .poster { position: relative; width: 1188px; height: 1680px; overflow: hidden;
+    background: radial-gradient(120% 70% at 50% 38%, var(--paper) 0%, var(--ivory) 62%, #e4e0cf 100%); }
+
+  /* Muster: achtzackige Sterne (wie die Ornamente der neuen Identität), nur am Rand sichtbar */
+  .pattern { position: absolute; inset: 0; opacity: .5;
+    -webkit-mask-image: radial-gradient(62% 52% at 50% 44%, transparent 55%, #000 100%); }
+  .frame { position: absolute; inset: 28px; border: 1.5px solid rgba(152,133,97,.55); border-radius: 6px; pointer-events: none; }
+  .frame::after { content: ""; position: absolute; inset: 7px; border: 1px solid rgba(152,133,97,.25); border-radius: 3px; }
+
+  header { position: absolute; top: 64px; inset-inline: 84px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { width: 190px; display: block; }
+  .date-tag { display: flex; align-items: center; gap: 14px; font-weight: 500; font-size: 21px; color: var(--green); letter-spacing: .02em; }
+  .date-tag .stars { color: var(--red); font-size: 15px; letter-spacing: 4px; }
+  .date-tag b { font-weight: 700; font-size: 23px; direction: ltr; letter-spacing: .12em; }
+
+  .head { position: absolute; top: 196px; inset-inline: 0; text-align: center; }
+  .eagle { width: 118px; display: block; margin: 0 auto 6px; }
+  .kicker { font-weight: 500; font-size: 26px; color: var(--gold-2); letter-spacing: .01em; }
+  h1 { font-weight: 900; font-size: 168px; line-height: 1.02; color: var(--green); margin-top: 2px;
+    font-feature-settings: "ss01" 1; }
+  .sub { font-weight: 400; font-size: 31px; color: #3d3a3b; margin-top: 10px; }
+  .sub b { font-weight: 700; color: var(--green); }
+  .rule { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 22px; }
+  .rule i { display: block; width: 120px; height: 1.5px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .rule i:last-child { transform: scaleX(-1); }
+  .rule span { width: 11px; height: 11px; background: var(--gold); transform: rotate(45deg); }
+
+  /* Kleidung */
+  .stage { position: absolute; top: 700px; left: 0; right: 0; height: 520px; }
+  .g { position: absolute; width: 470px; height: 470px; filter: drop-shadow(0 22px 26px rgba(0,38,35,.18)); }
+  .g img.base { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .g .m { position: absolute; display: flex; align-items: center; justify-content: center; }
+  .g .m img { max-width: 100%; max-height: 100%; }
+  .g.c { width: 540px; height: 540px; left: 324px; top: -26px; z-index: 2; }
+  .g.r { right: 30px; top: 40px; transform: rotate(4deg); }
+  .g.l { left: 30px; top: 40px; transform: rotate(-4deg); }
+
+  .sticker { position: absolute; z-index: 3; filter: drop-shadow(0 10px 14px rgba(0,38,35,.20)); }
+
+  /* Aufruf */
+  .cta { position: absolute; top: 1222px; inset-inline: 0; text-align: center; }
+  .cta h2 { font-weight: 700; font-size: 50px; color: var(--deep); }
+  .cta h2 em { font-style: normal; color: var(--green); }
+  .cats { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+  .cats span { font-weight: 500; font-size: 21px; color: var(--green); padding: 9px 20px; border: 1.5px solid rgba(5,66,57,.28); border-radius: 999px; background: rgba(255,255,255,.55); }
+
+  /* Fußbereich */
+  .foot { position: absolute; bottom: 84px; inset-inline: 84px; height: 214px; display: flex; gap: 0;
+    background: var(--green); border-radius: 26px; color: #fff; overflow: hidden; }
+  .foot .offer { flex: 1; padding: 34px 40px; position: relative; }
+  .foot .offer small { display: block; font-weight: 500; font-size: 19px; color: var(--gold); letter-spacing: .02em; }
+  .foot .offer strong { display: block; font-weight: 900; font-size: 40px; line-height: 1.2; white-space: nowrap; margin-top: 6px; }
+  .foot .offer strong bdi { color: var(--gold); }
+  .foot .offer p { font-size: 20px; margin-top: 12px; color: rgba(255,255,255,.86); display: flex; align-items: center; gap: 10px; }
+  .foot .offer p svg { flex: none; }
+  .foot .qr { width: 400px; background: var(--paper); color: var(--green); display: flex; align-items: center; gap: 22px; padding: 0 28px; }
+  .foot .qr .code { width: 150px; height: 150px; padding: 10px; background: #fff; border-radius: 14px; flex: none; }
+  .foot .qr .code img { width: 100%; height: 100%; display: block; }
+  .foot .qr b { display: block; font-weight: 900; font-size: 32px; }
+  .foot .qr span { display: block; font-size: 17px; color: #3d3a3b; margin-top: 6px; line-height: 1.4; }
+  .foot .qr .url { direction: ltr; font-weight: 700; font-size: 17px; color: var(--green); margin-top: 8px; }
+  .foot .pat { position: absolute; inset: 0; opacity: .09; }
+
+  .bottom { position: absolute; bottom: 44px; inset-inline: 84px; display: flex; justify-content: space-between; font-size: 16px; color: #6b6656; }
+  .bottom bdi { direction: ltr; }
+  .flagline { position: absolute; bottom: 0; left: 0; right: 0; height: 12px; display: flex; flex-direction: column; }
+  .flagline i { flex: 1; } .flagline i:nth-child(1){background:#007a3d} .flagline i:nth-child(2){background:#fff} .flagline i:nth-child(3){background:#111}
+</style>
+</head>
+<body>
+<div class="poster">
+  <svg class="pattern" width="1188" height="1680">
+    <defs>
+      <pattern id="star" width="84" height="84" patternUnits="userSpaceOnUse">
+        <g fill="none" stroke="#b9a779" stroke-width="1.1">
+          <rect x="22" y="22" width="40" height="40" />
+          <rect x="22" y="22" width="40" height="40" transform="rotate(45 42 42)" />
+          <circle cx="42" cy="42" r="6" />
+          <path d="M0 0 L12 12 M84 0 L72 12 M0 84 L12 72 M84 84 L72 72" />
+        </g>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#star)" />
+  </svg>
+  <div class="frame"></div>
+
+  <header>
+    <div class="date-tag"><span class="stars">★★★</span> الثامن من كانون الأول <b>8.12.2024</b></div>
+    <img class="logo" src="logo-green.png" alt="QuickDesign" />
+  </header>
+
+  <section class="head">
+    <img class="eagle" src="../../public/shop/motifs/nisr-gold-light.webp" alt="" />
+    <div class="kicker">الذكرى الثانية لتحرير سوريا</div>
+    <h1>عيـدُ التحـرير</h1>
+    <p class="sub">احتفل بالحُريّة… <b>والبسها بتصميمك</b></p>
+    <div class="rule"><i></i><span></span><i></i></div>
+  </section>
+
+  <section class="stage">
+    <!-- rechts: Sweatshirt schwarz, 8.12 -->
+    <div class="g r">
+      <img class="base" src="cut/sweat-schwarz.png" alt="" />
+      <div class="m" style="left:38%;top:17%;width:24%;height:24%"><img src="../../public/shop/motifs/acht-light.webp" alt="" /></div>
+    </div>
+    <!-- links: T-Shirt weiß, حرية -->
+    <div class="g l">
+      <img class="base" src="cut/tshirt-weiss.png" alt="" />
+      <div class="m" style="left:38%;top:19%;width:24%;height:24%"><img src="../../public/shop/motifs/hurriya-dark.webp" alt="" /></div>
+    </div>
+    <!-- Mitte: Hoodie olivgrün, goldener Adler -->
+    <div class="g c">
+      <img class="base" src="cut/hoodie-gruen.png" alt="" />
+      <div class="m" style="left:38%;top:40%;width:24%;height:15%"><img src="../../public/shop/motifs/nisr-gold-light.webp" alt="" /></div>
+    </div>
+
+    <img class="sticker" src="../../public/shop/motifs/sticker-acht-light.webp" style="width:122px;right:96px;top:-52px;transform:rotate(9deg)" alt="" />
+    <img class="sticker" src="../../public/shop/motifs/sticker-siegel-light.webp" style="width:128px;left:92px;top:-46px;transform:rotate(-10deg)" alt="" />
+    <img class="sticker" src="../../public/shop/motifs/sticker-fahne-light.webp" style="width:122px;left:300px;top:418px;transform:rotate(-6deg)" alt="" />
+    <img class="sticker" src="../../public/shop/motifs/sticker-hurriya-light.webp" style="width:112px;right:300px;top:412px;transform:rotate(8deg)" alt="" />
+  </section>
+
+  <section class="cta">
+    <h2>اطلب <em>كنزتك</em> الآن… بتصميمك وألوانك</h2>
+    <div class="cats">
+      <span>تيشرتات وبولو</span><span>هوديات وسويتشيرت</span><span>أعلام ولافتات</span><span>ستيكرات وملصقات سيارات</span>
+    </div>
+  </section>
+
+  <section class="foot">
+    <svg class="pat" width="100%" height="100%"><rect width="100%" height="100%" fill="url(#star2)" />
+      <defs><pattern id="star2" width="64" height="64" patternUnits="userSpaceOnUse"><g fill="none" stroke="#fff" stroke-width="1"><rect x="17" y="17" width="30" height="30"/><rect x="17" y="17" width="30" height="30" transform="rotate(45 32 32)"/></g></pattern></defs>
+    </svg>
+    <div class="offer">
+      <small>عرض عيد التحرير على الملابس</small>
+      <strong>قطعتان… والثالثة <bdi>بنصف السعر</bdi></strong>
+      <p>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b9a779" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        استلامٌ مجاني من محلّنا في زاربروكن — أو توصيل إلى باب بيتك
+      </p>
+    </div>
+    <div class="qr">
+      <div class="code"><img src="qr.svg" alt="QR" /></div>
+      <div>
+        <b>اطلب أونلاين</b>
+        <span>امسح الرمز، صمّم قطعتك<br />وادفع بسهولة</span>
+        <div class="url">shop.quickdesign24.de</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bottom">
+    <span>QuickDesign · Richard-Wagner-Straße 73–75 · 66111 Saarbrücken</span>
+    <span>واتساب <bdi>+49 157 72785677</bdi></span>
+  </div>
+  <div class="flagline"><i></i><i></i><i></i></div>
+</div>
+</body>
+</html>
