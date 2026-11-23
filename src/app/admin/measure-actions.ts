@@ -38,7 +38,7 @@ export async function createMeasurement(input: {
     const { data, error } = await client
       .from("customers")
       .insert({ name: nc.name.trim().slice(0, 160), company_name: nc.company?.trim().slice(0, 160) || null, phone: nc.phone?.trim().slice(0, 60) || null, kind: nc.company ? "firma" : "privat", status: "lead", source: "aufmass", created_by: admin.email })
-      .select("id, name, company_name, customer_number")
+      .select("id, name, company_name, customer_number, created_at")
       .single();
     if (error || !data) return { error: "Kunde konnte nicht angelegt werden." };
     customerId = data.id;
@@ -143,7 +143,7 @@ export async function saveMeasureItem(input: z.input<typeof itemSchema>): Promis
     const markedKey = d.markedKey;
     const itemId = id!;
     after(async () => {
-      const { data: m } = await client.from("measurements").select("number, customer_id, customer:customers(id, name, company_name, customer_number, folder_path)").eq("id", d.measurementId).maybeSingle();
+      const { data: m } = await client.from("measurements").select("number, customer_id, customer:customers(id, name, company_name, customer_number, folder_path, created_at)").eq("id", d.measurementId).maybeSingle();
       const cust = m && (Array.isArray(m.customer) ? m.customer[0] : m.customer);
       if (!m || !cust) return;
       const root = await ensureCustomerFolder(cust as never);

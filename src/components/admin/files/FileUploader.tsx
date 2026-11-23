@@ -332,7 +332,7 @@ export function FileUploader({
   const folderLabel = (p: string) => (p ? p.split("/").pop() : "Alle Dateien");
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {/* Ziel: hier, Druck-Tagesordner oder anderer Ordner */}
       {allFolders ? (
         <div className="flex flex-wrap items-center gap-1.5 text-sm">
@@ -450,17 +450,17 @@ export function FileUploader({
       ) : null}
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed text-center transition-colors",
-          compact ? "px-4 py-6" : "px-6 py-9",
+          "flex items-center gap-3 rounded-2xl border-2 border-dashed transition-colors",
+          compact ? "order-first flex-row flex-wrap px-4 py-3 text-left" : "flex-col justify-center px-6 py-9 text-center",
           drag ? "border-accent bg-accent/[0.06]" : "border-ink/15 bg-white",
         )}
       >
-        <CloudUpload className={cn("text-accent", compact ? "size-7" : "size-10")} aria-hidden />
-        <div>
-          <p className="font-semibold">Dateien oder ganze Ordner hierher ziehen</p>
-          <p className="mt-0.5 text-xs text-stone-dark">Der Upload startet sofort · jede Datei bis 5 GB · Ordnerstruktur bleibt erhalten</p>
+        <CloudUpload className={cn("shrink-0 text-accent", compact ? "size-6" : "size-10")} aria-hidden />
+        <div className={cn(compact && "min-w-0 flex-1")}>
+          <p className="font-semibold">{compact ? "Dateien oder Ordner irgendwo auf die Seite ziehen" : "Dateien oder ganze Ordner hierher ziehen"}</p>
+          <p className="mt-0.5 text-xs text-stone-dark">Upload startet sofort · bis 5 GB je Datei · Ordnerstruktur bleibt erhalten</p>
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className={cn("flex flex-wrap gap-2", !compact && "justify-center")}>
           <button type="button" onClick={() => fileInput.current?.click()} className="adm-btn adm-btn-primary adm-btn-sm">
             <CloudUpload className="size-4" aria-hidden /> Dateien wählen
           </button>

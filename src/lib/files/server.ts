@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
-import { isFileStatus, type FileStatus, type FolderEntry, type StoredFile } from "./shared";
+import { fileTypeGroups, isFileStatus, type FileStatus, type FolderEntry, type StoredFile } from "./shared";
 
 const COLS = "id, name, size, content_type, folder, category, status_changed_at, project_id, message, status, assigned_to, uploaded_by, created_at, project:projects(id, number, title, customer_name, company_name)";
 
@@ -17,20 +17,32 @@ function normalize(row: Record<string, unknown>): StoredFile {
   };
 }
 
-export async function listFiles(opts: { status?: FileStatus; q?: string; projectId?: string; assignedTo?: string; folder?: string; category?: string; limit?: number } = {}): Promise<StoredFile[]> {
+export type FileQuery = { status?: FileStatus; q?: string; projectId?: string; assignedTo?: string; folder?: string; category?: string; limit?: number; type?: string; since?: string; under?: string };
+
+/** Dateien laden – mit Tiefensuche (Name, Ordnerpfad, Kunde, Nachricht, Kategorie, Hochgeladen von) und Filtern */
+export async function listFiles(opts: FileQuery = {}): Promise<StoredFile[]> {
   let q = db().from("files").select(COLS).eq("complete", true);
   if (opts.category) q = q.eq("category", opts.category);
   if (opts.folder !== undefined) q = q.eq("folder", opts.folder);
+  if (opts.under) q = q.or(`folder.eq.${quote(opts.under)},folder.like.${quote(`${opts.under.replace(/[%_*]/g, "")}/*`)}`);
   if (opts.status) q = q.eq("status", opts.status);
   if (opts.projectId) q = q.eq("project_id", opts.projectId);
   if (opts.assignedTo) q = q.eq("assigned_to", opts.assignedTo);
+  if (opts.since) q = q.gte("created_at", opts.since);
+  if (opts.type && fileTypeGroups[opts.type]) q = q.or(fileTypeGroups[opts.type].ext.map((e) => `name.ilike.*.${e}`).join(","));
   if (opts.q) {
-    const t = opts.q.replace(/[%,()]/g, " ").trim();
-    if (t) q = q.or(`name.ilike.%${t}%,message.ilike.%${t}%,uploaded_by.ilike.%${t}%`);
+    // mehrere Wörter: jedes muss irgendwo vorkommen (Name, Ordner, Nachricht, Kategorie, Person)
+    for (const word of opts.q.replace(/[%,()*"\\]/g, " ").split(/\s+/).filter(Boolean).slice(0, 5)) {
+      const w = `*${word}*`;
+      q = q.or(`name.ilike.${w},folder.ilike.${w},message.ilike.${w},category.ilike.${w},uploaded_by.ilike.${w},assigned_to.ilike.${w}`);
+    }
   }
   const { data } = await q.order("created_at", { ascending: false }).limit(opts.limit ?? 300);
   return (data ?? []).map(normalize);
 }
+
+/** Wert für PostgREST-Filter in Anführungszeichen */
+const quote = (v: string) => `"${v.replace(/"/g, "")}"`;
 
 export async function getFileRow(id: string) {
   const { data } = await db().from("files").select("*").eq("id", id).maybeSingle();
@@ -191,4 +203,20 @@ export async function workflowFiles(): Promise<StoredFile[]> {
     db().from("files").select(COLS).eq("complete", true).eq("status", "erledigt").gte("status_changed_at", since).order("status_changed_at", { ascending: false }).limit(100),
   ]);
   return [...(open.data ?? []), ...(done.data ?? [])].map(normalize);
+}
+
+/** Alle Ordner mit Farbe/Kunde – für den Ordnerbaum */
+export async function folderIndex(): Promise<{ path: string; color: string | null; customer: boolean }[]> {
+  const [{ data: a }, { data: b }] = await Promise.all([db().from("file_folders").select("path, color, customer_id"), db().from("file_folder_stats").select("folder")]);
+  const map = new Map<string, { path: string; color: string | null; customer: boolean }>();
+  for (const r of a ?? []) map.set(String(r.path), { path: String(r.path), color: (r.color as string) ?? null, customer: !!r.customer_id });
+  for (const r of b ?? []) {
+    // auch Zwischenebenen von Dateipfaden
+    const segs = String(r.folder ?? "").split("/").filter(Boolean);
+    for (let i = 1; i <= segs.length; i++) {
+      const p = segs.slice(0, i).join("/");
+      if (!map.has(p)) map.set(p, { path: p, color: null, customer: false });
+    }
+  }
+  return [...map.values()].sort((x, y) => x.path.localeCompare(y.path, "de", { numeric: true }));
 }

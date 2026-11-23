@@ -333,7 +333,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
 /* ------------------------------ Dateien des Kunden ------------------------------ */
 
-async function CustomerFiles({ customer, folderParam }: { customer: { id: string; name: string; company_name: string | null; customer_number: string | null; folder_path: string | null }; folderParam?: string }) {
+async function CustomerFiles({ customer, folderParam }: { customer: { id: string; name: string; company_name: string | null; customer_number: string | null; folder_path: string | null; created_at: string }; folderParam?: string }) {
   const root = await ensureCustomerFolder(customer);
   const wanted = normalizeFolder(folderParam);
   const folder = wanted && (wanted === root || wanted.startsWith(`${root}/`)) ? wanted : root;
