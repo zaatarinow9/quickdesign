@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Download, UserPlus, Users } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { DeleteButton, Row, RowCheck, SelectAll, Selection } from "@/components/admin/DeleteControls";
+import { CategoryChip, CategoryManager } from "@/components/admin/CustomerCategories";
+import { customerCategories } from "@/lib/customers/folder";
 import { db } from "@/lib/supabase/admin";
 import { formatDateDE } from "@/lib/documents/format";
 import { Badge, Card, EmptyState, FilterTabs, PageHeader, Pagination, SearchForm, statusTone } from "@/components/admin/ui";
@@ -27,7 +29,8 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   if (status) query = query.eq("status", status);
   if (tag) query = query.contains("tags", [tag]);
   if (q) query = query.or(`name.ilike.*${q}*,company_name.ilike.*${q}*,email.ilike.*${q}*,customer_number.ilike.*${q}*,city.ilike.*${q}*,phone.ilike.*${q}*`);
-  const [{ data, count }, all] = await Promise.all([query, db().from("customers").select("status, tags").limit(20000)]);
+  const [{ data, count }, all, categories] = await Promise.all([query, db().from("customers").select("status, tags").limit(20000), customerCategories()]);
+  const colorOf = (t: string) => categories.find((c) => c.name === t)?.color;
   const counts: Record<string, number> = {};
   const tagCounts = new Map<string, number>();
   for (const r of all.data ?? []) {
@@ -47,6 +50,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         description="Zentrale Kundendatenbank – Interessenten aus dem Kontaktformular werden automatisch angelegt."
         actions={
           <>
+            <CategoryManager categories={categories} counts={Object.fromEntries(tagCounts)} />
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Datei-Download */}
             <a href="/admin/kunden/export" className="adm-btn adm-btn-ghost">
               <Download className="size-4" aria-hidden /> CSV-Export
@@ -70,22 +74,16 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
           />
           <SearchForm defaultValue={q} placeholder="Name, Firma, E-Mail, Ort, Nr. …" hidden={{ status, tag }} />
         </div>
-        {tagCounts.size ? (
-          <div className="flex flex-wrap gap-1.5 border-b border-ink/[0.06] px-4 py-3">
-            {tag ? (
-              <Link href={href({ tag: undefined })} className="rounded-full bg-ink px-3 py-1 text-xs text-paper">
-                #{tag} ✕
+        {categories.length || tagCounts.size ? (
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-ink/[0.06] px-4 py-3">
+            <Link href={href({ tag: undefined, seite: undefined })} className={tag ? "rounded-full px-3 py-1 text-sm text-stone-dark hover:bg-ink/[0.05]" : "rounded-full bg-ink px-3 py-1 text-sm text-paper"}>
+              Alle Kategorien
+            </Link>
+            {[...new Set([...categories.map((c) => c.name), ...tagCounts.keys()])].map((t) => (
+              <Link key={t} href={href({ tag: tag === t ? undefined : t, seite: undefined })} className="inline-flex items-center gap-1">
+                <CategoryChip name={`${t} · ${tagCounts.get(t) ?? 0}`} color={colorOf(t)} active={!tag || tag === t} small />
               </Link>
-            ) : null}
-            {[...tagCounts.entries()]
-              .filter(([t]) => t !== tag)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 15)
-              .map(([t, n]) => (
-                <Link key={t} href={href({ tag: t, seite: undefined })} className="rounded-full bg-ink/[0.05] px-3 py-1 text-xs text-stone-dark hover:bg-ink/10">
-                  #{t} <span className="text-stone">{n}</span>
-                </Link>
-              ))}
+            ))}
           </div>
         ) : null}
         {data?.length ? (
@@ -124,6 +122,13 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                         {c.customer_number}
                         {c.company_name ? ` · ${c.name}` : ""}
                       </span>
+                      {c.tags?.length ? (
+                        <span className="mt-1 flex flex-wrap gap-1">
+                          {(c.tags as string[]).slice(0, 3).map((t) => (
+                            <CategoryChip key={t} name={t} color={colorOf(t)} small />
+                          ))}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="hidden max-w-[14rem] md:table-cell">
                       <span className="block truncate">{c.email ?? "–"}</span>

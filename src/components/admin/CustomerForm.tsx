@@ -5,6 +5,7 @@ import { Check, Loader2 } from "lucide-react";
 import { saveCustomer } from "@/app/admin/customer-actions";
 import type { ActionState } from "@/app/admin/document-actions";
 import { Notice } from "@/components/admin/ui";
+import { CategoryPicker, type Category } from "./CustomerCategories";
 
 export type CustomerData = {
   id?: string;
@@ -37,7 +38,7 @@ function F({ id, label, children, className }: { id: string; label: string; chil
   );
 }
 
-export function CustomerForm({ customer }: { customer?: CustomerData }) {
+export function CustomerForm({ customer, categories = [] }: { customer?: CustomerData; categories?: Category[] }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveCustomer, {});
   const c = customer ?? {};
   return (
@@ -96,9 +97,10 @@ export function CustomerForm({ customer }: { customer?: CustomerData }) {
         <F id="website" label="Website" className="sm:col-span-2">
           <input id="website" name="website" defaultValue={c.website ?? ""} className="adm-input" />
         </F>
-        <F id="tags" label="Schlagwörter (kommagetrennt, z. B. Gastronomie, Stammkunde)" className="sm:col-span-4">
-          <input id="tags" name="tags" defaultValue={(c.tags ?? []).join(", ")} className="adm-input" />
-        </F>
+        <div className="sm:col-span-4">
+          <span className="adm-label">Kategorien</span>
+          <CategoryPicker value={c.tags ?? []} categories={categories} />
+        </div>
         <F id="birthday" label="Geburtstag / Firmenjubiläum" className="sm:col-span-2">
           <input id="birthday" name="birthday" type="date" defaultValue={c.birthday ?? ""} className="adm-input" />
         </F>

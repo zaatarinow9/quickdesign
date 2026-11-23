@@ -5,6 +5,8 @@ import { customerOptions, listCatalog, newDraft } from "@/lib/documents/queries"
 import { kindLabels, type DocumentKind } from "@/lib/documents/format";
 import { DocumentEditor } from "./DocumentEditor";
 import { PageHeader } from "@/components/admin/ui";
+import { getMeasurement } from "@/lib/measure/server";
+import { areaM2, fmtCm } from "@/lib/measure/shared";
 
 const isUuid = (v?: string) => !!v && /^[0-9a-f-]{36}$/.test(v);
 
@@ -16,6 +18,25 @@ export async function NewDocumentPage({ kind, searchParams }: { kind: DocumentKi
     customerOptions(),
     getSettings(),
   ]);
+  // Aus einem Aufmaß: jede Position als Zeile (Menge = Fläche in m²)
+  if (kind === "angebot" && isUuid(searchParams.aufmass)) {
+    const am = await getMeasurement(searchParams.aufmass!);
+    if (am) {
+      draft.title = `Angebot – ${am.m.title}`;
+      draft.reference = `Aufmaß ${am.m.number}`;
+      draft.items = am.items.map((i) => {
+        const area = Math.round(areaM2(i) * 100) / 100;
+        return {
+          description: `Pos. ${i.position}: ${i.label || "Position"}`,
+          details: [`${fmtCm(i.width_cm)} × ${fmtCm(i.height_cm)}${i.quantity > 1 ? ` · ${i.quantity} Stück` : ""}`, i.material, i.notes].filter(Boolean).join("\n"),
+          quantity: area || i.quantity,
+          unit: area ? "m²" : "Stk.",
+          unit_price: 0,
+          vat_rate: settings.tax.defaultVatRate,
+        };
+      }) as typeof draft.items;
+    }
+  }
   return (
     <>
       <PageHeader

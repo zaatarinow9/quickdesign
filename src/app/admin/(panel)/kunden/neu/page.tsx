@@ -3,11 +3,13 @@ import { ArrowLeft } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { CustomerForm } from "@/components/admin/CustomerForm";
 import { Card, PageHeader } from "@/components/admin/ui";
+import { customerCategories } from "@/lib/customers/folder";
 
 export const metadata = { title: "Neuer Kunde" };
 
 export default async function NewCustomerPage() {
   await requireAdmin();
+  const categories = await customerCategories();
   return (
     <>
       <PageHeader
@@ -19,7 +21,7 @@ export default async function NewCustomerPage() {
         title="Neuer Kunde"
       />
       <Card>
-        <CustomerForm />
+        <CustomerForm categories={categories} />
       </Card>
     </>
   );

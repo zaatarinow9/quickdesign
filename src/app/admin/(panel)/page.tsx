@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowUpRight, Eye, FileText, Inbox, Megaphone, Receipt, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, CalendarPlus, Eye, FilePlus2, FileText, FolderUp, Inbox, Megaphone, Receipt, Ruler, TrendingUp, UserPlus, Users, Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { overviewStats } from "@/lib/admin/stats";
 import { formatDateDE, formatDateTime, formatEuro } from "@/lib/documents/format";
@@ -43,6 +43,27 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           </>
         }
       />
+
+      {/* Schnellaktionen */}
+      <div className="mb-6 grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+        {(
+          [
+            ["/admin/kunden/neu", UserPlus, "Kunde"],
+            ["/admin/aufmass/neu", Ruler, "Aufmaß"],
+            ["/admin/dateien", FolderUp, "Dateien"],
+            ["/admin/angebote/neu", FilePlus2, "Angebot"],
+            ["/admin/rechnungen/neu", Receipt, "Rechnung"],
+            ["/admin/projekte/neu", CalendarPlus, "Termin"],
+          ] as const
+        ).map(([href, Icon, label]) => (
+          <Link key={href} href={href} className="group flex flex-col items-center gap-2 rounded-2xl bg-white px-2 py-3.5 text-center shadow-sm ring-1 ring-ink/[0.06] transition hover:-translate-y-0.5 hover:shadow-md">
+            <span className="grid size-10 place-items-center rounded-xl bg-accent/10 text-accent transition group-hover:bg-accent group-hover:text-white">
+              <Icon className="size-5" aria-hidden />
+            </span>
+            <span className="text-[0.8rem] font-semibold">{label === "Dateien" ? "Hochladen" : `+ ${label}`}</span>
+          </Link>
+        ))}
+      </div>
 
       {sp["kein-zugriff"] ? (
         <div className="mb-6">
