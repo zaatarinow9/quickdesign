@@ -66,12 +66,17 @@ type Props = {
   allFolders: string[];
   customers: { id: string; label: string }[];
   team: { email: string; name: string }[];
+  /** Basis-Link für Ordner (Standard: /admin/dateien) */
+  baseHref?: string;
+  /** Schnell-Ordner (ein Klick legt sie im aktuellen Ordner an) */
+  quickFolders?: string[];
 };
 
 const setPref = (k: string, v: string) => {
   document.cookie = `${k}=${encodeURIComponent(v)}; path=/admin; max-age=31536000; samesite=lax`;
 };
-const folderHref = (p: string) => (p ? `/admin/dateien?ordner=${encodeURIComponent(p)}` : "/admin/dateien");
+/** Link zu einem Ordner – in der Dateiverwaltung oder z. B. im Dateien-Reiter eines Kunden */
+const makeFolderHref = (base: string) => (p: string) => (p ? `${base}${base.includes("?") ? "&" : "?"}ordner=${encodeURIComponent(p)}` : base);
 const ext = (n: string) => n.split(".").pop()?.toLowerCase() ?? "";
 
 function sortFiles(files: StoredFile[], sort: SortKey) {
@@ -124,8 +129,9 @@ function FolderGlyph({ color, className }: { color: string | null; className?: s
 
 /* ------------------------------ Hauptkomponente ------------------------------ */
 
-export function FileBrowser({ files, folders, thumbs, folder, flat, initialView, initialSort, allFolders, customers, team }: Props) {
+export function FileBrowser({ files, folders, thumbs, folder, flat, initialView, initialSort, allFolders, customers, team, baseHref = "/admin/dateien", quickFolders = [] }: Props) {
   const router = useRouter();
+  const folderHref = makeFolderHref(baseHref);
   const [view, setView] = useState<ViewMode>(initialView);
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [category, setCategory] = useState<string>("");
@@ -251,6 +257,29 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
             <FolderPlus className="size-4" aria-hidden /> Neuer Ordner
           </button>
         ) : null}
+        {!flat && quickFolders.length
+          ? quickFolders
+              .filter((q) => !folders.some((f) => f.name.toLowerCase() === q.toLowerCase()))
+              .slice(0, 8)
+              .map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    start(async () => {
+                      const r = await createFolder({ parent: folder, name: q });
+                      if (r.error) toast(r.error, { tone: "error" });
+                      else router.refresh();
+                    })
+                  }
+                  className="inline-flex h-8 items-center gap-1 rounded-full border border-dashed border-ink/20 px-3 text-xs text-stone-dark hover:border-accent hover:text-accent"
+                  title={`Ordner „${q}“ anlegen`}
+                >
+                  <FolderPlus className="size-3.5" aria-hidden /> {q}
+                </button>
+              ))
+          : null}
         {!flat && (files.length || folders.length) ? (
           <button type="button" onClick={() => download({ folder })} className="adm-btn adm-btn-ghost adm-btn-sm" title="Ganzen Ordner mit Unterordnern herunterladen">
             <Download className="size-4" aria-hidden /> {folder ? "Ordner herunterladen" : "Alles herunterladen"}

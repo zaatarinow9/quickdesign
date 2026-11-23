@@ -7,6 +7,7 @@ import { z } from "zod";
 import { assertAdmin, assertFullAccess } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { logActivity } from "@/lib/admin/log";
+import { ensureCustomerFolder, syncCustomerFolderName } from "@/lib/customers/folder";
 import { logConsent, startDoubleOptIn } from "@/lib/marketing/server";
 import type { ActionState } from "./document-actions";
 
@@ -66,14 +67,19 @@ export async function saveCustomer(_prev: ActionState, fd: FormData): Promise<Ac
   }
   if (id) {
     if (!z.uuid().safeParse(id).success) return { error: "Ungültiger Kunde." };
-    const { error } = await client.from("customers").update(parsed.data).eq("id", id);
-    if (error) return { error: "Speichern fehlgeschlagen." };
+    const { data: saved, error } = await client.from("customers").update(parsed.data).eq("id", id).select("id, name, company_name, customer_number, folder_path").maybeSingle();
+    if (error || !saved) return { error: "Speichern fehlgeschlagen." };
+    await syncCustomerFolderName(saved);
+    // neue Kategorien automatisch in die Liste aufnehmen
+    if (parsed.data.tags.length) await client.from("customer_categories").upsert(parsed.data.tags.map((name) => ({ name, sort: 100 })), { onConflict: "name", ignoreDuplicates: true });
     revalidatePath(`/admin/kunden/${id}`);
     revalidatePath("/admin/kunden");
     return { ok: "Kunde gespeichert." };
   }
-  const { data, error } = await client.from("customers").insert({ ...parsed.data, source: "manuell", created_by: admin.email }).select("id, customer_number").single();
+  const { data, error } = await client.from("customers").insert({ ...parsed.data, source: "manuell", created_by: admin.email }).select("id, customer_number, name, company_name").single();
   if (error || !data) return { error: "Kunde konnte nicht angelegt werden." };
+  await ensureCustomerFolder(data);
+  if (parsed.data.tags.length) await client.from("customer_categories").upsert(parsed.data.tags.map((name) => ({ name, sort: 100 })), { onConflict: "name", ignoreDuplicates: true });
   await logActivity(admin.email, "erstellt", "kunde", data.id, `Kunde ${data.customer_number} – ${parsed.data.company_name || parsed.data.name}`);
   revalidatePath("/admin/kunden");
   redirect(`/admin/kunden/${data.id}`);
@@ -141,4 +147,50 @@ export async function deleteInquiry(fd: FormData) {
   await logActivity(admin.email, "gelöscht", "anfrage", id.data, `Anfrage ${r?.label ?? ""} in den Papierkorb`);
   revalidatePath("/admin/anfragen");
   redirect("/admin/anfragen");
+}
+
+/* ------------------------------ Kategorien ------------------------------ */
+
+export async function saveCategory(input: { name: string; color: string; previous?: string }): Promise<{ ok?: string; error?: string }> {
+  await assertAdmin();
+  const name = String(input.name ?? "").trim().slice(0, 40);
+  const color = /^#[0-9a-f]{6}$/i.test(input.color) ? input.color : "#64748b";
+  if (!name) return { error: "Bitte einen Namen angeben." };
+  const client = db();
+  const prev = input.previous?.trim();
+  if (prev && prev !== name) {
+    // umbenennen: Kategorie + alle Kunden mit dieser Kategorie
+    await client.from("customer_categories").upsert({ name, color }, { onConflict: "name" });
+    const { data: list } = await client.from("customers").select("id, tags").contains("tags", [prev]).limit(5000);
+    for (const c of list ?? []) {
+      const tags = [...new Set(((c.tags as string[]) ?? []).map((t) => (t === prev ? name : t)))];
+      await client.from("customers").update({ tags }).eq("id", c.id);
+    }
+    await client.from("customer_categories").delete().eq("name", prev);
+  } else {
+    await client.from("customer_categories").upsert({ name, color }, { onConflict: "name" });
+  }
+  revalidatePath("/admin", "layout");
+  return { ok: "Gespeichert." };
+}
+
+export async function deleteCategory(name: string): Promise<{ ok?: string; error?: string }> {
+  await assertAdmin();
+  const client = db();
+  const { data: list } = await client.from("customers").select("id, tags").contains("tags", [name]).limit(5000);
+  for (const c of list ?? []) await client.from("customers").update({ tags: ((c.tags as string[]) ?? []).filter((t) => t !== name) }).eq("id", c.id);
+  await client.from("customer_categories").delete().eq("name", name);
+  revalidatePath("/admin", "layout");
+  return { ok: `Kategorie „${name}“ entfernt.` };
+}
+
+/** Kategorien eines Kunden direkt umschalten (Chips) */
+export async function setCustomerTags(id: string, tags: string[]): Promise<{ ok?: string; error?: string }> {
+  await assertAdmin();
+  if (!z.uuid().safeParse(id).success) return { error: "Ungültig." };
+  const clean = [...new Set(tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean))].slice(0, 20);
+  await db().from("customers").update({ tags: clean }).eq("id", id);
+  revalidatePath(`/admin/kunden/${id}`);
+  revalidatePath("/admin/kunden");
+  return { ok: "Gespeichert." };
 }

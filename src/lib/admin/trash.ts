@@ -7,7 +7,7 @@ import { db } from "@/lib/supabase/admin";
  *  - relinks: Verweise, die beim Löschen auf NULL gesetzt wurden und wieder verknüpft werden
  * Speicherobjekte (R2) bleiben bis zum endgültigen Löschen erhalten.
  */
-export type TrashKind = "dateien" | "ordner" | "kunde" | "auftrag" | "anfrage" | "dokument";
+export type TrashKind = "dateien" | "ordner" | "kunde" | "auftrag" | "anfrage" | "dokument" | "aufmass";
 type Row = Record<string, unknown>;
 export type Snapshot = {
   inserts: { table: string; rows: Row[]; conflict?: string; dropId?: boolean }[];
@@ -23,6 +23,7 @@ export const trashKindLabel: Record<TrashKind, string> = {
   auftrag: "Auftrag / Termin",
   anfrage: "Anfrage",
   dokument: "Angebot / Entwurf",
+  aufmass: "Aufmaß",
 };
 
 export async function putInTrash(input: { kind: TrashKind; label: string; detail?: string; snapshot: Snapshot; objectKeys?: (string | null | undefined)[]; actor: string }) {

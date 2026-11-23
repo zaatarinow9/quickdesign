@@ -57,7 +57,7 @@ export async function trashCustomer(customerId: string, actor: string, withFiles
   const client = db();
   const { data: customer } = await client.from("customers").select("*").eq("id", customerId).maybeSingle();
   if (!customer) return null;
-  const [consents, recipients, docs, projects, inquiries, linkedFolders, linkedFiles] = await Promise.all([
+  const [consents, recipients, docs, projects, inquiries, linkedFolders, linkedFiles, measures] = await Promise.all([
     rowsWhere("consent_events", "customer_id", [customerId]),
     rowsWhere("campaign_recipients", "customer_id", [customerId]),
     idsWhere("documents", "customer_id", customerId),
@@ -65,6 +65,7 @@ export async function trashCustomer(customerId: string, actor: string, withFiles
     idsWhere("inquiries", "customer_id", customerId),
     rowsWhere("file_folders", "customer_id", [customerId]),
     rowsWhere("files", "customer_id", [customerId]),
+    idsWhere("measurements", "customer_id", customerId),
   ]);
   const snapshot: Snapshot = {
     inserts: [
@@ -76,6 +77,7 @@ export async function trashCustomer(customerId: string, actor: string, withFiles
       { table: "documents", col: "customer_id", key: "id", values: docs, value: customerId },
       { table: "projects", col: "customer_id", key: "id", values: projects, value: customerId },
       { table: "inquiries", col: "customer_id", key: "id", values: inquiries, value: customerId },
+      { table: "measurements", col: "customer_id", key: "id", values: measures, value: customerId },
     ],
   };
   let objectKeys: (string | null)[] = [];
@@ -111,13 +113,16 @@ export async function trashProject(projectId: string, actor: string) {
   const client = db();
   const { data: p } = await client.from("projects").select("*").eq("id", projectId).maybeSingle();
   if (!p) return null;
-  const [events, files] = await Promise.all([rowsWhere("project_events", "project_id", [projectId]), idsWhere("files", "project_id", projectId)]);
+  const [events, files, measures] = await Promise.all([rowsWhere("project_events", "project_id", [projectId]), idsWhere("files", "project_id", projectId), idsWhere("measurements", "project_id", projectId)]);
   const snapshot: Snapshot = {
     inserts: [
       { table: "projects", rows: [p] },
       { table: "project_events", rows: events, dropId: true },
     ],
-    relinks: [{ table: "files", col: "project_id", key: "id", values: files, value: projectId }],
+    relinks: [
+      { table: "files", col: "project_id", key: "id", values: files, value: projectId },
+      { table: "measurements", col: "project_id", key: "id", values: measures, value: projectId },
+    ],
   };
   const label = `${p.number} · ${p.title}`;
   const id = await putInTrash({ kind: "auftrag", label, detail: String(p.company_name || p.customer_name || ""), snapshot, actor });

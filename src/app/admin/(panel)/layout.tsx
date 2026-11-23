@@ -4,6 +4,7 @@ import { signOut } from "@/app/admin/auth-actions";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { AdminLive } from "@/components/admin/AdminLive";
 import { FeedbackProvider } from "@/components/admin/feedback";
+import { CommandPalette } from "@/components/admin/CommandPalette";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function PanelLayout({
           {children}
         </main>
         {modal}
+        <CommandPalette />
       </div>
     </FeedbackProvider>
   );

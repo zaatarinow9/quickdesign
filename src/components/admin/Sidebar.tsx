@@ -20,6 +20,9 @@ import {
   Megaphone,
   Menu,
   Receipt,
+  Search,
+  UserPlus,
+  Ruler,
   Settings,
   ShieldCheck,
   ShoppingBag,
@@ -27,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { openSearch } from "./CommandPalette";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; exact?: boolean };
@@ -36,15 +40,26 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
   return [
     { title: "", items: [{ href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true }] },
     {
-      title: "Tägliche Arbeit",
+      title: "Kunden & Aufträge",
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
-        { href: "/admin/angebote", label: "Angebote", icon: FileText },
+        { href: "/admin/kunden", label: "Kunden", icon: Users },
+        { href: "/admin/aufmass", label: "Aufmaß", icon: Ruler },
         { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
+      ],
+    },
+    {
+      title: "Produktion",
+      items: [
         { href: "/admin/dateien", label: "Dateien", icon: FolderUp },
         { href: "/admin/shop", label: "Shop-Bestellungen", icon: ShoppingBag },
+      ],
+    },
+    {
+      title: "Finanzen",
+      items: [
+        { href: "/admin/angebote", label: "Angebote", icon: FileText },
         { href: "/admin/rechnungen", label: "Rechnungen", icon: Receipt },
-        { href: "/admin/kunden", label: "Kunden", icon: Users },
       ],
     },
     {
@@ -95,10 +110,31 @@ export function Sidebar({
   const [open, setOpen] = useState(false);
 
   const nav = (
-    <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Verwaltung">
-      <Link href="/admin/angebote/neu" onClick={() => setOpen(false)} className="adm-btn adm-btn-accent w-full">
-        <FilePlus2 className="size-4" aria-hidden /> Neues Angebot
-      </Link>
+    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5" aria-label="Verwaltung">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          openSearch();
+        }}
+        className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-paper/[0.07] px-3 text-sm text-paper/60 ring-1 ring-paper/10 transition hover:bg-paper/[0.1] hover:text-paper"
+      >
+        <Search className="size-4" aria-hidden /> <span className="flex-1 text-left">Suchen …</span>
+        <kbd className="rounded bg-paper/10 px-1.5 text-[0.68rem]">Strg K</kbd>
+      </button>
+      <div className="grid grid-cols-3 gap-1.5">
+        {(
+          [
+            ["/admin/kunden/neu", UserPlus, "Kunde"],
+            ["/admin/aufmass/neu", Ruler, "Aufmaß"],
+            ["/admin/angebote/neu", FilePlus2, "Angebot"],
+          ] as const
+        ).map(([href, Icon, label]) => (
+          <Link key={href} href={href} onClick={() => setOpen(false)} className="flex flex-col items-center gap-1 rounded-xl bg-accent/90 py-2 text-[0.72rem] font-semibold text-white transition hover:bg-accent" title={`Neu: ${label}`}>
+            <Icon className="size-4" aria-hidden /> + {label}
+          </Link>
+        ))}
+      </div>
       {groups(fullAccess, newInquiries).map((g) => (
         <div key={g.title || "root"}>
           {g.title ? <p className="mb-1.5 px-3 text-[0.7rem] font-medium uppercase tracking-wider text-paper/35">{g.title}</p> : null}

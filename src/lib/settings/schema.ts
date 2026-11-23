@@ -58,6 +58,14 @@ export const settingsSchema = z.object({
   security: z.object({
     require2fa: z.boolean().default(false),
   }).prefault({}),
+  files: z.object({
+    /** Oberordner für Kundenordner */
+    customerRoot: z.string().trim().min(1).max(60).default("Kunden"),
+    /** Unterordner, die jeder neue Kundenordner automatisch erhält */
+    customerSubfolders: z.array(z.string().trim().min(1).max(60)).max(20).default(["Aufmaß & Fotos", "Entwürfe", "Druckdaten", "Dokumente"]),
+    /** Schnellvorschläge für Projekt-Ordner (ein Klick legt sie an) */
+    projectFolders: z.array(z.string().trim().min(1).max(60)).max(30).default(["Speisekarte", "Schaufensterfolie", "Werbeschild", "Fahrzeugbeschriftung", "Flyer & Karten", "Banner", "Textil"]),
+  }).prefault({}),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
