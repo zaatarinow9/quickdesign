@@ -72,7 +72,7 @@ export function priceCart(store: ShopStore, lines: ResolvedLine[], now = Date.no
   const pre = store.settings.preorder;
   let preorderCents = 0;
   if (preorderLive(store.settings, now) && lines.length) {
-    const label: Localized = { de: `Vorbestellrabatt ${pre.pct} %`, ar: `خصم الطلب المسبق ⁦${pre.pct}%⁩` };
+    const label: Localized = { de: `Rabatt ${pre.pct} % zum Tag der Befreiung`, ar: `خصم عيد التحرير ⁦${pre.pct}%⁩` };
     if (pre.combine) {
       preorderCents = Math.round(((subtotal - offerCents) * pre.pct) / 100);
     } else {

@@ -17,9 +17,9 @@ const de = {
     scroll: "Scrollen",
   },
   preorder: {
-    bar: "Jetzt vorbestellen: {pct} % auf alles – nur bis {date}",
-    badge: "−{pct} % Vorbestellung",
-    price: "Vorbestellpreis",
+    bar: "Zum Tag der Befreiung: {pct} % auf Ihre gesamte Bestellung",
+    badge: "−{pct} % auf die ganze Bestellung",
+    price: "Preis mit {pct} % Rabatt",
   },
   sections: {
     collection: { eyebrow: "Kollektion 8.12.", title: "Tragen, hissen, verschenken." },
@@ -112,9 +112,9 @@ const ar: Dict = {
     scroll: "مرّر",
   },
   preorder: {
-    bar: `احجز قطعتك مبكراً ووفّر ${I("{pct}%")} — العرض حتى {date}`,
-    badge: `${I("−{pct}%")} طلب مسبق`,
-    price: "سعر الطلب المسبق",
+    bar: `بمناسبة عيد التحرير: خصم ${I("{pct}%")} على طلبك كاملاً`,
+    badge: `خصم ${I("{pct}%")} على الطلب كاملاً`,
+    price: "السعر بعد خصم {pct}%",
   },
   sections: {
     collection: { eyebrow: "مجموعة 8.12", title: "البَسها. ارفَعها. أهدِها." },

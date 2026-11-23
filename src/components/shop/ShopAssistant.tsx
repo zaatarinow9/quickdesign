@@ -108,11 +108,11 @@ export function ShopAssistant() {
         ? [
             {
               id: "pre",
-              label: "خصم الطلب المسبق",
+              label: "خصم عيد التحرير",
               keys: ["خصم", "عرض", "عروض", "تخفيض", "مسبق", "حسم", "كوبون", "اوفر"],
               answer: () => {
                 const offers = store.offers.filter((o) => o.active).map((o) => o.name.ar || o.name.de);
-                return `حالياً خصم الطلب المسبق ${s.preorder.pct}% على كل المنتجات حتى ${s.preorder.until.split("-").reverse().join(".")}.${offers.length ? ` إضافةً إلى: ${offers.join("، ")}.` : ""} ويُحتسب الخصم تلقائياً في السلة.`;
+                return `حالياً خصم ${s.preorder.pct}% على طلبك كاملاً بمناسبة عيد التحرير${s.preorder.until ? ` حتى ${s.preorder.until.split("-").reverse().join(".")}` : ""}.${offers.length ? ` إضافةً إلى: ${offers.join("، ")}.` : ""} ويُحتسب الخصم تلقائياً في السلة.`;
               },
             },
           ]

@@ -7,6 +7,7 @@ export const money = (cents: number) => `\u2066${eur.format(cents / 100)}\u2069`
 
 /** Datum: Arabisch mit lateinischen Ziffern (ar-u-nu-latn), Deutsch normal */
 export function dateLong(iso: string, lang: Lang) {
+  if (!iso || Number.isNaN(Date.parse(iso.length === 10 ? `${iso}T12:00:00Z` : iso))) return "";
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
   const out = new Intl.DateTimeFormat(lang === "ar" ? "ar-SY-u-nu-latn" : "de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" }).format(d);
   return `\u2068${out}\u2069`;

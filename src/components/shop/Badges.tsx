@@ -29,3 +29,15 @@ export function OfferTag({ text }: { text: string }) {
     </span>
   );
 }
+
+/** Schlanke Rabatt-Pille (Produktkarten und -seiten) */
+export function DiscountPill({ pct, size = "md" }: { pct: number; size?: "md" | "lg" }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full bg-[var(--green)] font-bold text-[#f1e6c4] shadow-[0_6px_14px_-8px_rgba(5,66,57,0.7)] ring-1 ring-[#b9a779]/70 ${size === "lg" ? "h-9 px-3.5 text-[0.95rem]" : "h-7 px-2.5 text-[0.78rem]"}`}
+      aria-label={`−${pct}%`}
+    >
+      <span className="ltr-num">−{pct}%</span>
+    </span>
+  );
+}
