@@ -221,7 +221,22 @@ function StopDialog({ entry, secs, customers, pending, onClose, onStop }: { entr
       <label className="adm-label mt-4" htmlFor="t-done">
         Was wurde gemacht?
       </label>
-      <textarea id="t-done" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="z. B. Entwurf Speisekarte, 2 Korrekturen" className="adm-input" />
+      <textarea
+        id="t-done"
+        autoFocus
+        rows={3}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onStop(note, customerId);
+          }
+        }}
+        placeholder="z. B. Entwurf Speisekarte, 2 Korrekturen"
+        className="adm-input"
+      />
+      <p className="mt-1 text-[0.7rem] text-stone-dark">Enter = speichern · Umschalt+Enter = neue Zeile</p>
       <div className="mt-5 flex items-center gap-2">
         <button type="button" onClick={() => (sure ? onStop(note, customerId, true) : setSure(true))} className={cn("inline-flex h-12 items-center gap-1.5 rounded-xl px-3 text-sm", sure ? "bg-red-600 font-semibold text-white" : "text-stone-dark hover:bg-red-50 hover:text-red-600")}>
           <Trash2 className="size-4" aria-hidden /> {sure ? "Wirklich verwerfen" : "Verwerfen"}

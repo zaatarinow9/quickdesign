@@ -60,13 +60,20 @@ export async function fileCounts() {
   return counts;
 }
 
-/** Kollegen, denen man eine Datei zuweisen kann (Inhaber + aktive Mitarbeiter) */
-export async function teamMembers(): Promise<{ email: string; name: string }[]> {
-  const { data } = await db().from("admin_users").select("email, full_name, active").eq("active", true).order("full_name");
+/** Kollegen (Inhaber + aktive Mitarbeiter) – mit Profilbild und Anzeigename */
+export async function teamMembers(): Promise<{ email: string; name: string; avatar: string | null }[]> {
+  const [{ data }, { data: profiles }] = await Promise.all([
+    db().from("admin_users").select("email, full_name, active").eq("active", true).order("full_name"),
+    db().from("staff_profiles").select("email, avatar_url, display_name"),
+  ]);
   const list = new Map<string, string>();
   for (const e of env.adminEmails) list.set(e.toLowerCase(), e);
   for (const u of data ?? []) list.set(String(u.email).toLowerCase(), (u.full_name as string) || String(u.email));
-  return [...list.entries()].map(([email, name]) => ({ email, name }));
+  const prof = new Map((profiles ?? []).map((p) => [String(p.email).toLowerCase(), p]));
+  return [...list.entries()].map(([email, name]) => {
+    const p = prof.get(email);
+    return { email, name: (p?.display_name as string) || name, avatar: (p?.avatar_url as string) ?? null };
+  });
 }
 
 /** Aktive Aufträge/Termine zur Auswahl beim Hochladen */

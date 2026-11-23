@@ -34,13 +34,15 @@ import {
 import { Logo } from "@/components/brand/Logo";
 import { openSearch } from "./CommandPalette";
 import { NavLink } from "./NavLink";
+import { NotificationBell } from "./NotificationBell";
+import { ProfileDialog } from "./ProfileDialog";
 import { openTimer } from "./time/TimerDock";
 import { cn } from "@/lib/utils";
 
-type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; exact?: boolean };
+type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; badgeMuted?: boolean; exact?: boolean };
 type Group = { title: string; items: Item[] };
 
-function groups(fullAccess: boolean, newInquiries: number, openTasks: number): Group[] {
+function groups(fullAccess: boolean, newInquiries: number, openTasks: number, unreadTasks: number): Group[] {
   return [
     { title: "", items: [{ href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true }] },
     {
@@ -48,7 +50,7 @@ function groups(fullAccess: boolean, newInquiries: number, openTasks: number): G
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
         { href: "/admin/kunden", label: "Kunden", icon: Users },
-        { href: "/admin/aufgaben", label: "Aufgaben", icon: ListChecks, badge: openTasks },
+        { href: "/admin/aufgaben", label: "Aufgaben", icon: ListChecks, badge: unreadTasks || openTasks, badgeMuted: !unreadTasks },
         { href: "/admin/aufmass", label: "Aufmaß", icon: Ruler },
         { href: "/admin/zeiten", label: "Zeiterfassung", icon: Timer },
         { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
@@ -105,17 +107,22 @@ export function Sidebar({
   fullAccess,
   newInquiries,
   openTasks = 0,
+  unreadTasks = 0,
+  notifications,
   user,
   signOut,
 }: {
   fullAccess: boolean;
   newInquiries: number;
   openTasks?: number;
-  user: { name: string; email: string; role: string };
+  unreadTasks?: number;
+  notifications: { items: Parameters<typeof NotificationBell>[0]["items"]; unread: number };
+  user: { name: string; email: string; role: string; avatar?: string | null };
   signOut: () => Promise<void>;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState(false);
 
   const nav = (
     <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5" aria-label="Verwaltung">
@@ -153,7 +160,7 @@ export function Sidebar({
           </Link>
         ))}
       </div>
-      {groups(fullAccess, newInquiries, openTasks).map((g) => (
+      {groups(fullAccess, newInquiries, openTasks, unreadTasks).map((g) => (
         <div key={g.title || "root"}>
           {g.title ? <p className="mb-1.5 px-3 text-[0.7rem] font-medium uppercase tracking-wider text-paper/35">{g.title}</p> : null}
           <ul className="space-y-0.5">
@@ -172,7 +179,7 @@ export function Sidebar({
                   >
                     <it.icon className={cn("size-[1.1rem] shrink-0", active ? "text-accent" : "text-paper/45 group-hover:text-paper/80")} aria-hidden />
                     <span className="flex-1 truncate">{it.label}</span>
-                    {it.badge ? <span className="rounded-full bg-accent px-2 py-0.5 text-[0.7rem] font-semibold text-white">{it.badge}</span> : null}
+                    {it.badge ? <span className={cn("rounded-full px-2 py-0.5 text-[0.7rem] font-semibold", it.badgeMuted ? "bg-paper/10 text-paper/70" : "bg-accent text-white")}>{it.badge}</span> : null}
                   </NavLink>
                 </li>
               );
@@ -186,13 +193,18 @@ export function Sidebar({
   const footer = (
     <div className="border-t border-paper/10 p-3">
       <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-sm font-semibold text-white">
-          {(user.name || user.email).slice(0, 1).toUpperCase()}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-paper">{user.name}</p>
-          <p className="truncate text-xs text-paper/45">{user.email}</p>
-        </div>
+        <button type="button" onClick={() => setProfile(true)} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left hover:opacity-90" title="Profil & Foto bearbeiten">
+          {user.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatar} alt="" className="size-9 shrink-0 rounded-full object-cover ring-2 ring-paper/15" />
+          ) : (
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-sm font-semibold text-white">{(user.name || user.email).slice(0, 1).toUpperCase()}</span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm text-paper">{user.name}</span>
+            <span className="block truncate text-xs text-paper/45">{user.role} · Profil</span>
+          </span>
+        </button>
         <form action={signOut}>
           <button type="submit" className="grid size-9 place-items-center rounded-lg text-paper/50 hover:bg-paper/10 hover:text-paper" aria-label="Abmelden" title="Abmelden">
             <LogOut className="size-4" aria-hidden />
@@ -212,6 +224,9 @@ export function Sidebar({
         <Link href="/admin" aria-label="Übersicht" className="text-paper">
           <Logo className="w-[104px]" />
         </Link>
+        <span className="ml-auto mr-1">
+          <NotificationBell items={notifications.items} unread={notifications.unread} />
+        </span>
         <button type="button" onClick={() => setOpen(true)} className="grid size-10 place-items-center rounded-lg hover:bg-paper/10" aria-label="Menü öffnen">
           <Menu className="size-5" aria-hidden />
         </button>
@@ -219,10 +234,11 @@ export function Sidebar({
 
       {/* Desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col bg-ink text-paper lg:flex print:hidden">
-        <div className="flex h-16 items-center px-5">
+        <div className="flex h-16 items-center justify-between pl-5 pr-3">
           <Link href="/admin" aria-label="Übersicht" className="text-paper">
             <Logo className="w-[120px]" />
           </Link>
+          <NotificationBell items={notifications.items} unread={notifications.unread} />
         </div>
         {nav}
         {footer}
@@ -244,6 +260,7 @@ export function Sidebar({
           </aside>
         </div>
       ) : null}
+      {profile ? <ProfileDialog name={user.name} email={user.email} avatar={user.avatar ?? null} onClose={() => setProfile(false)} /> : null}
     </>
   );
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
+import { displayName } from "@/lib/admin/profile";
 import { elapsedSeconds, hoursLabel } from "@/lib/time/shared";
 
 const uuid = z.uuid();
@@ -12,7 +13,7 @@ const optId = (v?: string | null) => (v && uuid.safeParse(v).success ? v : null)
 
 async function me() {
   const a = await assertAdmin();
-  return { email: a.email.toLowerCase(), name: a.name || a.email };
+  return { email: a.email.toLowerCase(), name: await displayName(a.email, a.name) };
 }
 
 /** Stoppuhr starten (läuft schon eine, wird sie vorher gespeichert) */
