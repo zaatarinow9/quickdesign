@@ -5,6 +5,8 @@ import { Sidebar } from "@/components/admin/Sidebar";
 import { AdminLive } from "@/components/admin/AdminLive";
 import { FeedbackProvider } from "@/components/admin/feedback";
 import { CommandPalette } from "@/components/admin/CommandPalette";
+import { NavProgress } from "@/components/admin/NavProgress";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,9 @@ export default async function PanelLayout({
         </main>
         {modal}
         <CommandPalette />
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
       </div>
     </FeedbackProvider>
   );

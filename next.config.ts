@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Schneller Seitenwechsel: besuchte/vorab geladene Seiten kurz im Browser behalten
+    // (Änderungen kommen trotzdem sofort – das Live-Signal lädt die aktuelle Seite neu)
+    staleTimes: { dynamic: 30, static: 60 },
+  },
   // PDF-Erzeugung serverseitig (Schriften werden aus src/assets/pdf gelesen)
   serverExternalPackages: ["@react-pdf/renderer"],
   outputFileTracingIncludes: {

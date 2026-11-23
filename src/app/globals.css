@@ -349,3 +349,4 @@
 .qd-fade-in { animation: qd-fade-in-kf 160ms ease-out both; }
 .qd-pop-in { animation: qd-pop-in-kf 220ms cubic-bezier(0.2, 0.9, 0.25, 1.1) both; }
 @media (prefers-reduced-motion: reduce) { .qd-fade-in, .qd-pop-in { animation: none; } }
+@keyframes qd-progress { from { width: 0%; } to { width: 80%; } }

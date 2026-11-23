@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { openSearch } from "./CommandPalette";
+import { NavLink } from "./NavLink";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; exact?: boolean };
@@ -143,7 +144,7 @@ export function Sidebar({
               const active = isActive(it, pathname);
               return (
                 <li key={it.href}>
-                  <Link
+                  <NavLink
                     href={it.href}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setOpen(false)}
@@ -155,7 +156,7 @@ export function Sidebar({
                     <it.icon className={cn("size-[1.1rem] shrink-0", active ? "text-accent" : "text-paper/45 group-hover:text-paper/80")} aria-hidden />
                     <span className="flex-1 truncate">{it.label}</span>
                     {it.badge ? <span className="rounded-full bg-accent px-2 py-0.5 text-[0.7rem] font-semibold text-white">{it.badge}</span> : null}
-                  </Link>
+                  </NavLink>
                 </li>
               );
             })}
