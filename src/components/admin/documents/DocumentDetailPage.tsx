@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Ban, CheckCircle2, Copy, Download, ExternalLink, FileCheck2, Lock, Receipt, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, Copy, Download, ExternalLink, FileCheck2, Lock, Receipt, XCircle } from "lucide-react";
 import { env } from "@/lib/env";
 import { getSettings } from "@/lib/settings/server";
 import { customerOptions, documentEvents, getDocument, listCatalog, relatedDocuments } from "@/lib/documents/queries";
 import { displayStatus, formatDateDE, formatDateTime, formatEuro, kindLabels, statusLabels, todayBerlin, type DocumentKind } from "@/lib/documents/format";
-import { cancelInvoice, convertToInvoice, deleteDocument, duplicateDocument, finalizeInvoice, setDocumentStatus, setSharing } from "@/app/admin/document-actions";
+import { cancelInvoice, convertToInvoice, duplicateDocument, finalizeInvoice, setDocumentStatus, setSharing } from "@/app/admin/document-actions";
 import { DocumentEditor } from "./DocumentEditor";
 import { ConfirmSubmit, CopyLink, PaymentForm, SendPanel } from "./panels";
 import { Badge, Card, Notice, PageHeader, statusTone } from "@/components/admin/ui";
@@ -271,12 +272,7 @@ export async function DocumentDetailPage({ kind, id, isNew }: { kind: DocumentKi
 
       {!(kind === "rechnung" && doc.number) ? (
         <div className="mt-2 flex justify-end">
-          <form action={deleteDocument}>
-            <input type="hidden" name="id" value={doc.id} />
-            <ConfirmSubmit className="adm-btn adm-btn-danger adm-btn-sm" message={`${label.one} endgültig löschen?`}>
-              <Trash2 className="size-3.5" aria-hidden /> {label.one} löschen
-            </ConfirmSubmit>
-          </form>
+          <DeleteButton kind="dokument" id={doc.id} name={`${label.one} ${doc.number ?? "(Entwurf)"}`} redirectTo={`/admin/${label.path}`} variant="button" label={`${label.one} löschen`} className="adm-btn-sm" />
         </div>
       ) : null}
     </>

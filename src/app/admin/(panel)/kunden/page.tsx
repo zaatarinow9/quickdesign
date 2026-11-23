@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, UserPlus, Users } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { hasFullAccess, requireAdmin } from "@/lib/auth";
+import { DeleteButton, Row, RowCheck, SelectAll, Selection } from "@/components/admin/DeleteControls";
 import { db } from "@/lib/supabase/admin";
 import { formatDateDE } from "@/lib/documents/format";
 import { Badge, Card, EmptyState, FilterTabs, PageHeader, Pagination, SearchForm, statusTone } from "@/components/admin/ui";
@@ -11,7 +12,8 @@ const statusLabel: Record<string, string> = { lead: "Interessent", kunde: "Kunde
 const mktLabel: Record<string, string> = { keine: "–", ausstehend: "DOI offen", bestaetigt: "Werbung ✓", abgemeldet: "Abgemeldet" };
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const canDelete = hasFullAccess(admin.role);
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.seite) || 1);
   const status = ["lead", "kunde", "inaktiv"].includes(sp.status ?? "") ? sp.status : undefined;
@@ -87,21 +89,33 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
           </div>
         ) : null}
         {data?.length ? (
+          <Selection kind="kunde">
           <div className="overflow-x-auto">
             <table className="adm-table">
               <thead>
                 <tr>
+                  {canDelete ? (
+                    <th className="w-10">
+                      <SelectAll ids={data.map((c) => c.id)} />
+                    </th>
+                  ) : null}
                   <th>Kunde</th>
                   <th className="hidden md:table-cell">Kontakt</th>
                   <th className="hidden lg:table-cell">Ort</th>
                   <th>Status</th>
                   <th className="hidden sm:table-cell">Werbung</th>
                   <th className="hidden lg:table-cell">Letzter Kontakt</th>
+                  {canDelete ? <th className="w-12" /> : null}
                 </tr>
               </thead>
               <tbody>
                 {data.map((c) => (
-                  <tr key={c.id}>
+                  <Row key={c.id} id={c.id} className="group">
+                    {canDelete ? (
+                      <td>
+                        <RowCheck id={c.id} label={c.company_name || c.name} />
+                      </td>
+                    ) : null}
                     <td className="max-w-[16rem]">
                       <Link href={`/admin/kunden/${c.id}`} className="block truncate font-medium hover:text-accent">
                         {c.company_name || c.name}
@@ -123,11 +137,17 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                       <Badge tone={statusTone[c.marketing_status]}>{mktLabel[c.marketing_status]}</Badge>
                     </td>
                     <td className="hidden text-stone-dark lg:table-cell">{formatDateDE(c.last_contact_at ?? c.created_at)}</td>
-                  </tr>
+                    {canDelete ? (
+                      <td className="text-right">
+                        <DeleteButton kind="kunde" id={c.id} name={c.company_name || c.name} className="opacity-60 group-hover:opacity-100" />
+                      </td>
+                    ) : null}
+                  </Row>
                 ))}
               </tbody>
             </table>
           </div>
+          </Selection>
         ) : (
           <EmptyState icon={Users} title={q || status || tag ? "Keine Treffer" : "Noch keine Kunden"} text="Kunden entstehen automatisch aus Anfragen, Angeboten und Rechnungen – oder legen Sie sie manuell an." />
         )}

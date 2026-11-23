@@ -124,7 +124,7 @@ const de = {
     note: "Notiz",
     next: "Weiter",
     step: "Schritt {n} von {total}",
-    status: { neu: "Neu", bearbeitung: "In Bearbeitung", freigabe: "Zur Freigabe", druckfertig: "Druckfertig", im_druck: "Im Druck", erledigt: "Erledigt" },
+    status: { neu: "Neu", bearbeitung: "In Arbeit", erledigt: "Fertig" },
   },
   customer: { title: "Kunden", projects: "Aufträge", inquiries: "Anfragen", documents: "Dokumente", address: "Adresse", kind: { privat: "Privat", firma: "Firma" } },
   doc: {
@@ -284,7 +284,7 @@ const ar: Dict = {
     note: "ملاحظة",
     next: "التالي",
     step: "المرحلة {n} من {total}",
-    status: { neu: "جديد", bearbeitung: "قيد التصميم", freigabe: "بانتظار الموافقة", druckfertig: "جاهز للطباعة", im_druck: "قيد الطباعة", erledigt: "منتهي" },
+    status: { neu: "جديد", bearbeitung: "قيد العمل", erledigt: "منتهي" },
   },
   customer: { title: "الزبائن", projects: "الأعمال", inquiries: "الاستفسارات", documents: "المستندات", address: "العنوان", kind: { privat: "فرد", firma: "شركة" } },
   doc: {

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronRight, Folder, Search } from "lucide-react";
 import { updateFiles } from "@/app/admin/file-actions";
 import { fileStatuses, fileStatusInfo, nextFileStatus, type FileStatus, type StoredFile } from "@/lib/files/shared";
@@ -20,7 +19,6 @@ function since(iso: string | null | undefined) {
 
 /** Ablauf-Tafel: jede Spalte eine Phase – Karten per Klick oder Ziehen weiterschieben */
 export function FileBoard({ files, thumbs, me }: { files: StoredFile[]; thumbs: Record<string, string>; me: string }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [over, setOver] = useState<FileStatus | null>(null);
   const [q, setQ] = useState("");
@@ -39,7 +37,6 @@ export function FileBoard({ files, thumbs, me }: { files: StoredFile[]; thumbs: 
     setMoved((m) => ({ ...m, [id]: status }));
     start(async () => {
       await updateFiles({ ids: [id], status });
-      router.refresh();
     });
   };
 
@@ -57,7 +54,7 @@ export function FileBoard({ files, thumbs, me }: { files: StoredFile[]; thumbs: 
       </div>
 
       <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:-mx-7 sm:px-7 lg:-mx-10 lg:px-10">
-        <div className="grid min-w-[1100px] grid-cols-6 gap-3">
+        <div className="grid min-w-[720px] grid-cols-3 gap-4">
           {fileStatuses.map((s) => {
             const col = list.filter((f) => f.status === s);
             return (
@@ -116,7 +113,7 @@ export function FileBoard({ files, thumbs, me }: { files: StoredFile[]; thumbs: 
                             onClick={() => move(f.id, next)}
                             className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-ink/[0.04] py-1.5 text-[0.72rem] font-medium hover:bg-ink hover:text-white"
                           >
-                            {fileStatusInfo[next].short} <ChevronRight className="size-3" aria-hidden />
+                            {fileStatusInfo[next].action} <ChevronRight className="size-3" aria-hidden />
                           </button>
                         ) : null}
                       </article>

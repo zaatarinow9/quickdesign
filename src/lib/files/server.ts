@@ -39,7 +39,7 @@ export async function getFileRow(id: string) {
 
 export async function fileCounts() {
   const { data } = await db().from("files").select("status").eq("complete", true);
-  const counts: Record<FileStatus | "alle" | "aktiv", number> = { alle: 0, aktiv: 0, neu: 0, bearbeitung: 0, freigabe: 0, druckfertig: 0, im_druck: 0, erledigt: 0 };
+  const counts: Record<FileStatus | "alle" | "aktiv", number> = { alle: 0, aktiv: 0, neu: 0, bearbeitung: 0, erledigt: 0 };
   for (const r of data ?? []) {
     counts.alle++;
     if (isFileStatus(r.status)) counts[r.status]++;

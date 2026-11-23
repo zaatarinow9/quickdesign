@@ -1,19 +1,17 @@
 /** Dateien: Typen und Hilfsfunktionen (client- und serverseitig nutzbar). */
 
-export type FileStatus = "neu" | "bearbeitung" | "freigabe" | "druckfertig" | "im_druck" | "erledigt";
-/** Ablauf einer Datei in Reihenfolge */
-export const fileStatuses: FileStatus[] = ["neu", "bearbeitung", "freigabe", "druckfertig", "im_druck", "erledigt"];
+export type FileStatus = "neu" | "bearbeitung" | "erledigt";
+/** Ablauf einer Datei in Reihenfolge: liegt vor → in Arbeit → fertig */
+export const fileStatuses: FileStatus[] = ["neu", "bearbeitung", "erledigt"];
 export const isFileStatus = (v: unknown): v is FileStatus => typeof v === "string" && (fileStatuses as string[]).includes(v);
-export const fileStatusInfo: Record<FileStatus, { label: string; short: string; hint: string; dot: string; chip: string; bar: string }> = {
-  neu: { label: "Neu", short: "Neu", hint: "Gerade hochgeladen", dot: "bg-sky-500", chip: "bg-sky-500/12 text-sky-800", bar: "bg-sky-500" },
-  bearbeitung: { label: "In Bearbeitung", short: "Bearbeitung", hint: "Wird gestaltet / angepasst", dot: "bg-amber-400", chip: "bg-amber-500/14 text-amber-800", bar: "bg-amber-400" },
-  freigabe: { label: "Freigabe Kunde", short: "Freigabe", hint: "Wartet auf Korrektur / Freigabe", dot: "bg-violet-500", chip: "bg-violet-500/12 text-violet-800", bar: "bg-violet-500" },
-  druckfertig: { label: "Druckfertig", short: "Druckfertig", hint: "Freigegeben, bereit für den Druck", dot: "bg-emerald-500", chip: "bg-emerald-500/14 text-emerald-800", bar: "bg-emerald-500" },
-  im_druck: { label: "Im Druck", short: "Druck", hint: "Wird gedruckt / produziert", dot: "bg-accent", chip: "bg-accent/12 text-accent", bar: "bg-accent" },
-  erledigt: { label: "Erledigt", short: "Erledigt", hint: "Fertig – keine Arbeit mehr nötig", dot: "bg-stone-light", chip: "bg-ink/[0.07] text-stone-dark", bar: "bg-stone" },
+export const fileStatusInfo: Record<FileStatus, { label: string; short: string; hint: string; action: string; dot: string; chip: string; bar: string }> = {
+  neu: { label: "Neu", short: "Neu", hint: "Liegt vor – noch nicht begonnen", action: "Zurück auf Neu", dot: "bg-sky-500", chip: "bg-sky-500/12 text-sky-800", bar: "bg-sky-500" },
+  bearbeitung: { label: "In Arbeit", short: "In Arbeit", hint: "Wird bearbeitet / gedruckt", action: "Arbeit beginnen", dot: "bg-amber-400", chip: "bg-amber-500/14 text-amber-800", bar: "bg-amber-400" },
+  erledigt: { label: "Fertig", short: "Fertig", hint: "Abgeschlossen", action: "Als fertig markieren", dot: "bg-emerald-500", chip: "bg-emerald-500/14 text-emerald-800", bar: "bg-emerald-500" },
 };
 /** Fortschritt in Prozent (für Balken) */
 export const fileProgress = (s: FileStatus) => Math.round((fileStatuses.indexOf(s) / (fileStatuses.length - 1)) * 100);
+export const prevFileStatus = (s: FileStatus): FileStatus | null => fileStatuses[fileStatuses.indexOf(s) - 1] ?? null;
 export const nextFileStatus = (s: FileStatus): FileStatus | null => fileStatuses[fileStatuses.indexOf(s) + 1] ?? null;
 
 /** Ein Upload darf bis zu 5 GB groß sein (Grenze für einen einzelnen PUT bei R2) */

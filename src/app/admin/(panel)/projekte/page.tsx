@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { Briefcase, CalendarDays, CalendarPlus, CalendarX2, Hammer, Receipt, TriangleAlert, Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings/server";
@@ -144,8 +145,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <Card padded={false}>
           <ul className="divide-y divide-ink/[0.06]">
             {projects.map((p) => (
-              <li key={p.id}>
-                <Link href={`/admin/projekte/${p.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3.5 hover:bg-ink/[0.02]">
+              <li key={p.id} className="flex items-center pr-3">
+                <Link href={`/admin/projekte/${p.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3.5 hover:bg-ink/[0.02]">
                   <span className="w-24 text-xs tabular-nums text-stone-dark">{p.number}</span>
                   <span className="min-w-0 flex-1 truncate font-medium">
                     {projectHeading(p)}
@@ -153,6 +154,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                   <InvoiceBadge f={fin(p)} />
                   <span className="text-sm tabular-nums">{formatEuro(p.value_gross)}</span>
                 </Link>
+                <DeleteButton kind="auftrag" id={p.id} name={`${p.number} ${p.title}`} />
               </li>
             ))}
           </ul>
@@ -192,11 +194,10 @@ function ProjectCard({ p, f, notify }: { p: Project; f?: ProjectFinance; notify:
         ) : null}
         {p.collect_amount ? <Badge tone="amber">Kassieren {formatEuro(p.collect_amount)}</Badge> : null}
       </div>
-      {next ? (
-        <div className="mt-2.5 flex justify-end border-t border-ink/[0.05] pt-2.5">
-          <QuickAdvance id={p.id} next={next} notify={notify} />
-        </div>
-      ) : null}
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-ink/[0.05] pt-2.5">
+        <DeleteButton kind="auftrag" id={p.id} name={`${p.number} ${p.title}`} className="size-7 opacity-50 hover:opacity-100" />
+        {next ? <QuickAdvance id={p.id} next={next} notify={notify} /> : null}
+      </div>
     </article>
   );
 }

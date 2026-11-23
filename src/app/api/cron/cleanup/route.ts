@@ -29,5 +29,15 @@ export async function GET(request: Request) {
       staleUploads++;
     }
   }
-  return NextResponse.json({ staleUploads, pageViews: views.count ?? 0, rateLimits: limits.count ?? 0, emailLog: emails.count ?? 0, doiReset: doi.error ? "error" : "ok" });
+  // Papierkorb: nach 30 Tagen endgültig löschen (inkl. Speicherobjekte)
+  let trashPurged = 0;
+  {
+    const { data: old } = await client.from("trash_items").select("id, object_keys").lt("deleted_at", new Date(Date.now() - 30 * 864e5).toISOString()).limit(500);
+    for (const t of old ?? []) {
+      if (isR2Configured()) for (const k of (t.object_keys as string[]) ?? []) await deleteObject(k).catch(() => {});
+      await client.from("trash_items").delete().eq("id", t.id);
+      trashPurged++;
+    }
+  }
+  return NextResponse.json({ trashPurged, staleUploads, pageViews: views.count ?? 0, rateLimits: limits.count ?? 0, emailLog: emails.count ?? 0, doiReset: doi.error ? "error" : "ok" });
 }

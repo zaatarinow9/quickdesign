@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye, FilePlus2, FileText, Receipt } from "lucide-react";
 import { db } from "@/lib/supabase/admin";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { displayStatus, formatDateDE, formatEuro, kindLabels, statusLabels, todayBerlin, type DocumentKind } from "@/lib/documents/format";
 import { listDocuments, PAGE_SIZE } from "@/lib/documents/queries";
 import { Badge, Card, EmptyState, FilterTabs, PageHeader, Pagination, SearchForm, Stat, statusTone } from "@/components/admin/ui";
@@ -112,13 +113,14 @@ export async function DocumentListPage({ kind, searchParams }: { kind: DocumentK
                   <th className="hidden sm:table-cell">{kind === "angebot" ? "Gültig bis" : "Fällig"}</th>
                   <th>Status</th>
                   <th className="text-right">Betrag</th>
+                  <th className="w-12" />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
                   const ds = displayStatus(r, today);
                   return (
-                    <tr key={r.id}>
+                    <tr key={r.id} className="group">
                       <td className="whitespace-nowrap font-medium">
                         <Link href={`${base}/${r.id}`} className="hover:text-accent">
                           {r.number ?? <span className="text-stone-dark">Entwurf</span>}
@@ -144,6 +146,11 @@ export async function DocumentListPage({ kind, searchParams }: { kind: DocumentK
                         </span>
                       </td>
                       <td className="whitespace-nowrap text-right font-semibold tabular-nums">{formatEuro(r.gross_total)}</td>
+                      <td className="text-right">
+                        {kind === "rechnung" && r.number ? null : (
+                          <DeleteButton kind="dokument" id={r.id} name={r.number ?? `Entwurf ${r.company_name || r.customer_name}`} className="opacity-50 group-hover:opacity-100" />
+                        )}
+                      </td>
                     </tr>
                   );
                 })}

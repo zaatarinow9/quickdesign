@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, FileText, Receipt, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Receipt } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings/server";
 import { formatDateTime, formatEuro, formatQty, statusLabels, type DocItem } from "@/lib/documents/format";
@@ -16,10 +17,8 @@ import { FileList } from "@/components/admin/files/FileList";
 import { Notice } from "@/components/admin/ui";
 import { customerLabel, formatAppointment, appointmentInfo, projectHeading, projectStatusInfo } from "@/lib/projects/shared";
 import { convertToInvoice } from "@/app/admin/document-actions";
-import { deleteProject } from "@/app/admin/project-actions";
 import { StageControl } from "@/components/admin/projects/StageControl";
 import { ProjectForm } from "@/components/admin/projects/ProjectForm";
-import { ConfirmSubmit } from "@/components/admin/documents/panels";
 import { Badge, Card, PageHeader, statusTone } from "@/components/admin/ui";
 
 export const metadata = { title: "Auftrag / Termin" };
@@ -201,12 +200,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           </Card>
 
           {hasFullAccess(admin.role) ? (
-            <form action={deleteProject}>
-              <input type="hidden" name="id" value={project.id} />
-              <ConfirmSubmit className="adm-btn adm-btn-danger adm-btn-sm" message={`Auftrag ${project.number} löschen? Angebot und Rechnungen bleiben erhalten.`}>
-                <Trash2 className="size-3.5" aria-hidden /> Auftrag löschen
-              </ConfirmSubmit>
-            </form>
+            <DeleteButton kind="auftrag" id={project.id} name={`${project.number} ${project.title}`} redirectTo="/admin/projekte" variant="button" label="Auftrag löschen" className="adm-btn-sm" />
           ) : null}
         </aside>
       </div>

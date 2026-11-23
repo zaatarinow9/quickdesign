@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check, ChevronRight, History, Loader2 } from "lucide-react";
 import { setFileStatus } from "@/app/admin/file-actions";
 import { fileStatuses, fileStatusInfo, nextFileStatus, type FileStatus } from "@/lib/files/shared";
@@ -12,7 +11,6 @@ const when = (iso: string) => new Intl.DateTimeFormat("de-DE", { dateStyle: "sho
 
 /** Phasen einer Datei (klickbar) + Verlauf */
 export function FileWorkflow({ id, status, events }: { id: string; status: FileStatus; events: { id: number; type: string; note: string | null; actor: string | null; created_at: string }[] }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [current, setCurrent] = useState(status);
   const [showLog, setShowLog] = useState(false);
@@ -25,7 +23,6 @@ export function FileWorkflow({ id, status, events }: { id: string; status: FileS
     fd.set("status", s);
     start(async () => {
       await setFileStatus(fd);
-      router.refresh();
     });
   };
 
@@ -56,7 +53,7 @@ export function FileWorkflow({ id, status, events }: { id: string; status: FileS
         </ol>
         {next ? (
           <button type="button" onClick={() => set(next)} disabled={pending} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent px-3.5 text-xs font-semibold text-white hover:bg-accent/90">
-            {pending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null} Weiter: {fileStatusInfo[next].short}
+            {pending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Check className="size-3.5" aria-hidden />} {fileStatusInfo[next].action}
           </button>
         ) : null}
         <button type="button" onClick={() => setShowLog((v) => !v)} className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-white/70 hover:bg-white/10" aria-expanded={showLog}>

@@ -1,11 +1,11 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, Mail, Phone, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, FileText, Mail, Phone, UserRound } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/documents/format";
-import { deleteInquiry, updateInquiry } from "@/app/admin/customer-actions";
-import { ConfirmSubmit } from "@/components/admin/documents/panels";
+import { updateInquiry } from "@/app/admin/customer-actions";
 import { Badge, Card, PageHeader, statusTone } from "@/components/admin/ui";
 
 export const metadata = { title: "Anfrage" };
@@ -133,12 +133,7 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
             </Card>
           ) : null}
           {hasFullAccess(admin.role) ? (
-            <form action={deleteInquiry}>
-              <input type="hidden" name="id" value={r.id} />
-              <ConfirmSubmit className="adm-btn adm-btn-danger adm-btn-sm" message="Anfrage endgültig löschen?">
-                <Trash2 className="size-3.5" aria-hidden /> Anfrage löschen
-              </ConfirmSubmit>
-            </form>
+            <DeleteButton kind="anfrage" id={r.id} name={r.reference} redirectTo="/admin/anfragen" variant="button" label="Anfrage löschen" className="adm-btn-sm" />
           ) : null}
         </div>
       </div>
