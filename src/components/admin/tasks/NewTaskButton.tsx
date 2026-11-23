@@ -5,9 +5,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, Flag, Loader2, Plus, X } from "lucide-react";
 import { createTask } from "@/app/admin/task-actions";
 import { useFeedback } from "@/components/admin/feedback";
+import { DatePicker } from "@/components/admin/DatePicker";
 import { taskPriorities, taskPriorityInfo, type TaskPriority, type TeamMember } from "@/lib/tasks/shared";
 import { cn } from "@/lib/utils";
-import { Avatar } from "./TaskBoard";
+import { Avatar } from "./TaskBits";
 
 /** Neue Aufgabe: Titel, Zuständige, Fälligkeit, Priorität, Kunde, Beschreibung */
 export function NewTaskButton({ team, customers, me, customerId, label = "Neue Aufgabe" }: { team: TeamMember[]; customers: { id: string; label: string }[]; me: string; customerId?: string; label?: string }) {
@@ -69,10 +70,8 @@ export function NewTaskButton({ team, customers, me, customerId, label = "Neue A
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="adm-label" htmlFor="nt-due">
-                  Fällig
-                </label>
-                <input id="nt-due" type="date" value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} className="adm-input" />
+                <span className="adm-label">Fällig</span>
+                <DatePicker value={f.due || null} onChange={(v) => setF({ ...f, due: v ?? "" })} placeholder="Kein Datum" />
               </div>
               <div>
                 <label className="adm-label" htmlFor="nt-cust">

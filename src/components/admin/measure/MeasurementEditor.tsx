@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Check, ChevronLeft, FileText, MapPin, Plus, Printer, Ruler, Trash2, UserRound } from "lucide-react";
+import { Check, ChevronLeft, FileText, MapPin, Plus, Printer, Ruler, Trash2, UserRound } from "lucide-react";
 import { deleteMeasurement, updateMeasurement } from "@/app/admin/measure-actions";
 import { areaM2, defaultArrows, fmtCm, fmtM2, type Arrows, type MeasureItem, type Measurement } from "@/lib/measure/shared";
 import { useFeedback } from "@/components/admin/feedback";
+import { DatePicker } from "@/components/admin/DatePicker";
 import { cn } from "@/lib/utils";
 import { ItemEditor } from "./ItemEditor";
 import { H_COLOR, MeasureCanvas, W_COLOR } from "./MeasureCanvas";
@@ -57,10 +58,7 @@ export function MeasurementEditor({ m, customer, items }: { m: Measurement; cust
                 <UserRound className="size-4" aria-hidden /> Ohne Kunde
               </span>
             )}
-            <label className="inline-flex items-center gap-1.5">
-              <CalendarDays className="size-4" aria-hidden />
-              <input type="date" value={date} onChange={(e) => (setDate(e.target.value), saveHead({ id: m.id, date: e.target.value }))} className="bg-transparent outline-none" aria-label="Datum" />
-            </label>
+            <DatePicker compact value={date} onChange={(v) => v && (setDate(v), saveHead({ id: m.id, date: v }))} className="-ml-2 text-stone-dark" />
             <label className="inline-flex min-w-[14rem] flex-1 items-center gap-1.5">
               <MapPin className="size-4 shrink-0" aria-hidden />
               <input value={address} onChange={(e) => setAddress(e.target.value)} onBlur={() => address !== (m.site_address ?? "") && saveHead({ id: m.id, address })} placeholder="Adresse vor Ort" className="w-full bg-transparent outline-none" aria-label="Adresse" />

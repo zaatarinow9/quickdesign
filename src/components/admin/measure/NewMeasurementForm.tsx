@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Search, UserPlus } from "lucide-react";
 import { createMeasurement } from "@/app/admin/measure-actions";
 import { useFeedback } from "@/components/admin/feedback";
+import { DatePicker } from "@/components/admin/DatePicker";
 import { cn } from "@/lib/utils";
 
 type C = { id: string; label: string; sub: string; address: string };
@@ -103,7 +104,7 @@ export function NewMeasurementForm({ customers, preselect }: { customers: C[]; p
         </div>
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adresse vor Ort" className="adm-input" />
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="adm-input" />
+          <DatePicker value={date} onChange={(v) => v && setDate(v)} className="sm:w-56" />
         </div>
       </section>
 

@@ -2,32 +2,17 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Calendar, CheckCircle2, ChevronDown, Circle, CircleDot, Flag, ListChecks, MessageSquare, Plus, UserRound } from "lucide-react";
+import { ChevronDown, ListChecks, MessageSquare, Plus } from "lucide-react";
 import { createTask, updateTask } from "@/app/admin/task-actions";
 import { useFeedback } from "@/components/admin/feedback";
-import { dueInfo, initials, personColor, taskPriorityInfo, taskStatuses, taskStatusInfo, type Task, type TaskStatus, type TeamMember } from "@/lib/tasks/shared";
+import { taskStatuses, taskStatusInfo, type Task, type TaskStatus, type TeamMember } from "@/lib/tasks/shared";
 import { cn } from "@/lib/utils";
+import { DueMenu, PeopleMenu, PriorityMenu, StatusMenu } from "./TaskInline";
 
 const DND = "application/x-qd-task";
 
-export function Avatar({ email, team, size = 24 }: { email: string; team: TeamMember[]; size?: number }) {
-  const name = team.find((m) => m.email === email)?.name ?? email;
-  return (
-    <span
-      title={name}
-      className="grid shrink-0 place-items-center rounded-full font-bold text-white ring-2 ring-white"
-      style={{ width: size, height: size, background: personColor(email), fontSize: size * 0.4 }}
-    >
-      {initials(name)}
-    </span>
-  );
-}
-
-export function StatusIcon({ status, className }: { status: TaskStatus; className?: string }) {
-  if (status === "erledigt") return <CheckCircle2 className={cn("text-emerald-600", className)} aria-hidden />;
-  if (status === "in_arbeit") return <CircleDot className={cn("text-violet-600", className)} aria-hidden />;
-  return <Circle className={cn("text-stone", className)} aria-hidden />;
-}
+export { Avatar, StatusIcon } from "./TaskBits";
+import { StatusIcon } from "./TaskBits";
 
 /** Aufgabenliste nach Status gruppiert (wie ClickUp) oder als Tafel */
 export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMember[]; view: "liste" | "board" }) {
@@ -36,10 +21,10 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
   const sp = useSearchParams();
   const { toast } = useFeedback();
   const [, start] = useTransition();
-  const [moved, setMoved] = useState<Record<string, TaskStatus>>({});
+  const [patches, setPatches] = useState<Record<string, Partial<Task>>>({});
   const [collapsed, setCollapsed] = useState<Set<TaskStatus>>(new Set());
   const [over, setOver] = useState<TaskStatus | null>(null);
-  const list = useMemo(() => tasks.map((t) => (moved[t.id] ? { ...t, status: moved[t.id] } : t)), [tasks, moved]);
+  const list = useMemo(() => tasks.map((t) => (patches[t.id] ? { ...t, ...patches[t.id] } : t)), [tasks, patches]);
 
   const open = (id: string) => {
     // außerhalb der Aufgabenseite (z. B. Kundenakte): dort öffnen
@@ -48,14 +33,18 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
     p.set("aufgabe", id);
     router.push(`${pathname}?${p}`, { scroll: false });
   };
-  const setStatus = (t: Task, status: TaskStatus) => {
-    setMoved((m) => ({ ...m, [t.id]: status }));
+  /** sofort anzeigen, im Hintergrund speichern */
+  const patch = (t: Task) => (p: Partial<Pick<Task, "status" | "priority" | "assignees" | "due_date">>) => {
+    setPatches((m) => ({ ...m, [t.id]: { ...m[t.id], ...p } }));
     start(async () => {
-      const r = await updateTask({ id: t.id, status });
-      if (r.error) toast(r.error, { tone: "error" });
+      const r = await updateTask({ id: t.id, status: p.status, priority: p.priority, assignees: p.assignees, due: p.due_date === undefined ? undefined : p.due_date });
+      if (r.error) {
+        toast(r.error, { tone: "error" });
+        setPatches((m) => ({ ...m, [t.id]: {} }));
+      } else if (p.assignees) toast("Gespeichert – neue Zuständige werden benachrichtigt.");
     });
   };
-  const toggleDone = (t: Task) => setStatus(t, t.status === "erledigt" ? "offen" : "erledigt");
+  const setStatus = (t: Task, status: TaskStatus) => patch(t)({ status });
 
   if (view === "board")
     return (
@@ -95,9 +84,14 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                       onClick={() => open(t.id)}
                       className="cursor-pointer rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-ink/[0.06] transition hover:shadow-md active:cursor-grabbing"
                     >
-                      <p className={cn("font-medium leading-snug", t.status === "erledigt" && "text-stone-dark line-through")}>{t.title}</p>
+                      <div className="flex items-start gap-1.5">
+                        <span onClick={(e) => e.stopPropagation()} className="-ml-1 -mt-0.5">
+                          <StatusMenu t={t} onPatch={patch(t)} size="sm" />
+                        </span>
+                        <p className={cn("font-medium leading-snug", t.status === "erledigt" && "text-stone-dark line-through")}>{t.title}</p>
+                      </div>
                       {t.customer ? <p className="mt-0.5 truncate text-xs text-sky-700">{t.customer.company_name || t.customer.name}</p> : null}
-                      <Meta t={t} team={team} />
+                      <Meta t={t} team={team} onPatch={patch(t)} />
                     </article>
                   ))}
                   <QuickAdd status={s} />
@@ -145,20 +139,9 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                 </div>
                 <ul className="divide-y divide-ink/[0.05]">
                   {group.map((t) => {
-                    const due = dueInfo(t.due_date, t.status === "erledigt");
                     return (
                       <li key={t.id} className="group grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-4 py-2.5 hover:bg-ink/[0.02] md:grid-cols-[auto_minmax(0,1fr)_8rem_8.5rem_6.5rem_4rem]" onClick={() => open(t.id)}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleDone(t);
-                          }}
-                          className="grid size-6 place-items-center rounded-full hover:bg-ink/[0.06]"
-                          aria-label={t.status === "erledigt" ? "Wieder öffnen" : "Als erledigt markieren"}
-                        >
-                          <StatusIcon status={t.status} className="size-[1.15rem]" />
-                        </button>
+                        <StatusMenu t={t} onPatch={patch(t)} />
                         <span className="min-w-0">
                           <span className={cn("block truncate font-medium", t.status === "erledigt" && "text-stone-dark line-through")}>{t.title}</span>
                           <span className="flex flex-wrap items-center gap-x-3 text-xs text-stone-dark">
@@ -168,17 +151,19 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                                 <ListChecks className="size-3.5" aria-hidden /> {t.checklist_done}/{t.checklist_total}
                               </span>
                             ) : null}
-                            <span className="md:hidden">{due ? due.label : ""}</span>
+                            <span className="md:hidden" onClick={(e) => e.stopPropagation()}>
+                              <DueMenu t={t} onPatch={patch(t)} compact />
+                            </span>
                           </span>
                         </span>
-                        <span className="hidden -space-x-1.5 md:flex">
-                          {t.assignees.length ? t.assignees.slice(0, 4).map((a) => <Avatar key={a} email={a} team={team} />) : <UserRound className="size-5 text-stone-light" aria-hidden />}
+                        <span className="hidden md:flex">
+                          <PeopleMenu key={t.assignees.join()} t={t} team={team} onPatch={patch(t)} />
                         </span>
-                        <span className={cn("hidden items-center gap-1.5 text-sm md:flex", due?.tone === "red" ? "font-semibold text-red-600" : due?.tone === "amber" ? "font-semibold text-amber-600" : "text-stone-dark")}>
-                          <Calendar className="size-3.5" aria-hidden /> {due?.label ?? "–"}
+                        <span className="hidden md:flex">
+                          <DueMenu t={t} onPatch={patch(t)} />
                         </span>
-                        <span className="hidden items-center gap-1.5 text-sm md:flex" style={{ color: taskPriorityInfo[t.priority].color }}>
-                          <Flag className="size-3.5" fill={t.priority === "normal" || t.priority === "niedrig" ? "none" : "currentColor"} aria-hidden /> {taskPriorityInfo[t.priority].label}
+                        <span className="hidden md:flex">
+                          <PriorityMenu t={t} onPatch={patch(t)} />
                         </span>
                         <span className="hidden items-center gap-1 text-sm text-stone-dark md:flex">
                           {t.comment_count ? (
@@ -203,13 +188,12 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
   );
 }
 
-function Meta({ t, team }: { t: Task; team: TeamMember[] }) {
-  const due = dueInfo(t.due_date, t.status === "erledigt");
+function Meta({ t, team, onPatch }: { t: Task; team: TeamMember[]; onPatch: Parameters<typeof StatusMenu>[0]["onPatch"] }) {
   return (
-    <div className="mt-3 flex items-center gap-2 text-xs">
-      <span className="flex -space-x-1.5">{t.assignees.slice(0, 3).map((a) => <Avatar key={a} email={a} team={team} size={22} />)}</span>
-      {due ? <span className={cn("rounded-md px-1.5 py-0.5", due.tone === "red" ? "bg-red-50 font-semibold text-red-600" : due.tone === "amber" ? "bg-amber-50 font-semibold text-amber-700" : "bg-ink/[0.04] text-stone-dark")}>{due.label}</span> : null}
-      <Flag className="size-3.5" style={{ color: taskPriorityInfo[t.priority].color }} fill={t.priority === "dringend" || t.priority === "hoch" ? "currentColor" : "none"} aria-hidden />
+    <div className="mt-2.5 flex items-center gap-1 text-xs" onClick={(e) => e.stopPropagation()}>
+      <PeopleMenu key={t.assignees.join()} t={t} team={team} onPatch={onPatch} max={3} />
+      <DueMenu t={t} onPatch={onPatch} compact />
+      <PriorityMenu t={t} onPatch={onPatch} iconOnly />
       <span className="ml-auto flex items-center gap-2 text-stone-dark">
         {t.checklist_total ? (
           <span className="inline-flex items-center gap-0.5">

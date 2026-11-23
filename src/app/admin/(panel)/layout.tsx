@@ -1,6 +1,9 @@
 import { hasFullAccess, requireAdmin, roleLabels } from "@/lib/auth";
 import { countNewInquiries } from "@/lib/admin/stats";
 import { myOpenTaskCount } from "@/lib/tasks/server";
+import { runningEntry } from "@/lib/time/server";
+import { customerOptionsForFolders } from "@/lib/files/server";
+import { TimerDock } from "@/components/admin/time/TimerDock";
 import { signOut } from "@/app/admin/auth-actions";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { AdminLive } from "@/components/admin/AdminLive";
@@ -19,7 +22,7 @@ export default async function PanelLayout({
   modal: React.ReactNode;
 }) {
   const [admin, newInquiries] = await Promise.all([requireAdmin(), countNewInquiries()]);
-  const openTasks = await myOpenTaskCount(admin.email);
+  const [openTasks, running, customers] = await Promise.all([myOpenTaskCount(admin.email), runningEntry(admin.email), customerOptionsForFolders()]);
   return (
     <FeedbackProvider>
       <div className="min-h-dvh lg:pl-[17rem] print:pl-0">
@@ -43,6 +46,7 @@ export default async function PanelLayout({
         </main>
         {modal}
         <CommandPalette />
+        <TimerDock running={running} customers={customers} />
         <Suspense fallback={null}>
           <NavProgress />
         </Suspense>
