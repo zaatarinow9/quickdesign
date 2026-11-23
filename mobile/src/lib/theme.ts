@@ -47,11 +47,11 @@ export const space = { page: 20 };
 export const inquiryTone: Record<string, Tone> = { neu: "magenta", in_bearbeitung: "amber", erledigt: "green", archiviert: "gray" };
 export const shopTone: Record<string, Tone> = { bezahlt: "magenta", in_produktion: "amber", versendet: "blue", abholbereit: "violet", abgeschlossen: "green", storniert: "gray" };
 export const projectTone: Record<string, Tone> = { angenommen: "blue", in_arbeit: "amber", fertig: "violet", abgeschlossen: "green" };
-export const fileTone: Record<string, Tone> = { neu: "magenta", bearbeitung: "amber", freigabe: "violet", druckfertig: "blue", im_druck: "amber", erledigt: "green" };
+export const fileTone: Record<string, Tone> = { neu: "blue", bearbeitung: "amber", erledigt: "green" };
 const docTones: Record<string, Tone> = { entwurf: "gray", offen: "blue", versendet: "blue", angenommen: "green", bezahlt: "green", teilbezahlt: "amber", ueberfaellig: "red", abgelehnt: "red", storniert: "gray", abgelaufen: "gray" };
 export const docTone = (s: string): Tone => docTones[s] ?? "gray";
 
-export const fileStatuses = ["neu", "bearbeitung", "freigabe", "druckfertig", "im_druck", "erledigt"] as const;
+export const fileStatuses = ["neu", "bearbeitung", "erledigt"] as const;
 export const projectStatuses = ["angenommen", "in_arbeit", "fertig", "abgeschlossen"] as const;
 export const shopStatuses = ["bezahlt", "in_produktion", "versendet", "abholbereit", "abgeschlossen", "storniert"] as const;
 export const inquiryStatuses = ["neu", "in_bearbeitung", "erledigt", "archiviert"] as const;

@@ -14,6 +14,7 @@ import {
   History,
   Inbox,
   KeyRound,
+  Trash2,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -67,7 +68,13 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
           },
         ]
       : []),
-    { title: "Konto", items: [{ href: "/admin/sicherheit", label: "Passwort & Sicherheit", icon: KeyRound }] },
+    {
+      title: "Konto",
+      items: [
+        { href: "/admin/papierkorb", label: "Papierkorb", icon: Trash2 },
+        { href: "/admin/sicherheit", label: "Passwort & Sicherheit", icon: KeyRound },
+      ],
+    },
   ];
 }
 

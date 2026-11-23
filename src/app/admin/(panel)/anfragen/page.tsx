@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Inbox } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { hasFullAccess, requireAdmin } from "@/lib/auth";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { db } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/documents/format";
 import { Badge, Card, EmptyState, FilterTabs, PageHeader, Pagination, SearchForm, statusTone } from "@/components/admin/ui";
@@ -10,7 +11,8 @@ const PAGE = 30;
 const inquiryStatusLabel: Record<string, string> = { neu: "Neu", in_bearbeitung: "In Bearbeitung", erledigt: "Erledigt", archiviert: "Archiviert" };
 
 export default async function InquiriesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const canDelete = hasFullAccess(admin.role);
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.seite) || 1);
   const status = Object.keys(inquiryStatusLabel).includes(sp.status ?? "") ? sp.status : undefined;
@@ -47,7 +49,8 @@ export default async function InquiriesPage({ searchParams }: { searchParams: Pr
         {data?.length ? (
           <ul className="divide-y divide-ink/[0.05]">
             {data.map((r) => (
-              <li key={r.id}>
+              <li key={r.id} className="group relative">
+                {canDelete ? <DeleteButton kind="anfrage" id={r.id} name={r.company_name || r.name} className="absolute right-3 top-3 z-10 bg-white opacity-0 shadow-sm ring-1 ring-ink/10 group-hover:opacity-100 max-sm:opacity-100" /> : null}
                 <Link href={`/admin/anfragen/${r.id}`} className="flex items-start gap-4 px-5 py-4 hover:bg-ink/[0.02]">
                   <span className={`mt-1.5 size-2 shrink-0 rounded-full ${r.status === "neu" ? "bg-accent" : "bg-transparent"}`} aria-hidden />
                   <span className="min-w-0 flex-1">
@@ -61,7 +64,7 @@ export default async function InquiriesPage({ searchParams }: { searchParams: Pr
                     <span className="mt-1 line-clamp-2 block text-sm text-stone-dark">{r.message}</span>
                     {r.interests?.length ? <span className="mt-1 block text-xs text-stone">{r.interests.join(" · ")}</span> : null}
                   </span>
-                  <span className="shrink-0 text-xs text-stone">{formatDateTime(r.created_at)}</span>
+                  <span className="shrink-0 text-xs text-stone sm:group-hover:mr-10">{formatDateTime(r.created_at)}</span>
                 </Link>
               </li>
             ))}

@@ -50,6 +50,7 @@ import {
   type ViewMode,
 } from "@/lib/files/shared";
 import { FileIcon } from "./FileIcon";
+import { useFeedback } from "@/components/admin/feedback";
 import { canSaveFolders, downloadFolder, type DownloadProgress } from "./download";
 import { FileStatusSelect } from "./FileStatusSelect";
 import { cn } from "@/lib/utils";
@@ -132,6 +133,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
   const [dialog, setDialog] = useState<null | { type: "neu" } | { type: "verschieben" } | { type: "kategorie" } | { type: "ordner"; f: FolderEntry; mode: "umbenennen" | "verschieben" | "farbe" }>(null);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const { confirm, toast } = useFeedback();
   // Sofort sichtbare Änderungen (optimistisch) – der Server bestätigt im Hintergrund
   const [gone, setGone] = useState<Set<string>>(new Set());
   const [goneFolders, setGoneFolders] = useState<Set<string>>(new Set());
@@ -209,17 +211,33 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
     setPatches((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, { ...m[id], ...p }])) }));
     return () => setPatches((m) => ({ ...m, ...before }) as Record<string, Partial<StoredFile>>);
   };
-  const removeFolder = (path: string) => {
-    setGoneFolders((g) => new Set([...g, path]));
+  const removeFolder = async (f: FolderEntry) => {
+    const ok = await confirm({ title: `Ordner „${f.name}“ löschen?`, text: `Mit allen Unterordnern und ${f.fileCount} Datei(en).`, danger: true });
+    if (!ok.ok) return;
+    setGoneFolders((g) => new Set([...g, f.path]));
     const fd = new FormData();
-    fd.set("folder", path);
-    run(
-      async () => {
-        await deleteFolder(fd);
-      },
-      undefined,
-      () => setGoneFolders((g) => new Set([...g].filter((x) => x !== path))),
-    );
+    fd.set("folder", f.path);
+    start(async () => {
+      const r = await deleteFolder(fd);
+      if (r.error) {
+        setGoneFolders((g) => new Set([...g].filter((x) => x !== f.path)));
+        toast(r.error, { tone: "error" });
+      } else toast(r.ok ?? "Gelöscht.", { undo: r.trashIds });
+    });
+  };
+  const removeFiles = async (ids: string[]) => {
+    const one = ids.length === 1 ? files.find((f) => f.id === ids[0]) : null;
+    const ok = await confirm({ title: one ? `„${one.name}“ löschen?` : `${ids.length} Dateien löschen?`, danger: true });
+    if (!ok.ok) return;
+    const undo = hide(ids);
+    setSelected(new Set());
+    start(async () => {
+      const r = await deleteFiles(ids);
+      if (r.error) {
+        undo();
+        toast(r.error, { tone: "error" });
+      } else toast(r.ok ?? "Gelöscht.", { undo: r.trashIds });
+    });
   };
 
   const nameOf = (email: string | null) => (email ? (team.find((m) => m.email === email)?.name ?? email) : null);
@@ -333,12 +351,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm bg-white text-red-700"
-            onClick={() => {
-              if (!window.confirm(`${selected.size} Datei(en) endgültig löschen?`)) return;
-              const ids = [...selected];
-              const undo = hide(ids);
-              run(() => deleteFiles(ids), () => setSelected(new Set()), undo);
-            }}
+            onClick={() => void removeFiles([...selected])}
           >
             <Trash2 className="size-4" aria-hidden /> Löschen
           </button>
@@ -375,7 +388,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                   </span>
                 ) : null}
               </Link>
-              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} onDownload={() => download({ folder: f.path })} />
+              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => void removeFolder(f)} onDownload={() => download({ folder: f.path })} />
             </div>
           ))}
           {shownFiles.map((f) => {
@@ -419,6 +432,15 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                 >
                   <Check className="size-4" />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void removeFiles([f.id])}
+                  aria-label={`${f.name} löschen`}
+                  title="Löschen"
+                  className="absolute right-3.5 top-3.5 grid size-7 place-items-center rounded-lg bg-white/90 text-stone-dark opacity-0 shadow-sm ring-1 ring-ink/10 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 max-sm:opacity-100"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
               </div>
             );
           })}
@@ -442,7 +464,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                 <th className="w-24 py-2.5 text-right font-medium">Größe</th>
                 <th className="w-40 py-2.5 pl-5 font-medium">Datum</th>
                 <th className="w-40 py-2.5 font-medium">Status</th>
-                <th className="w-14" />
+                <th className="w-20" />
               </tr>
             </thead>
             <tbody className="divide-y divide-ink/[0.05]">
@@ -462,7 +484,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                     {f.fileCount} Datei{f.fileCount === 1 ? "" : "en"}
                   </td>
                   <td className="relative py-2.5 pr-4 text-right">
-                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} onDownload={() => download({ folder: f.path })} />
+                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => void removeFolder(f)} onDownload={() => download({ folder: f.path })} />
                   </td>
                 </tr>
               ))}
@@ -499,6 +521,9 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                     <a href={`/admin/dateien/${f.id}`} className="inline-grid size-8 place-items-center rounded-md text-stone-dark hover:bg-ink/[0.06]" title="Herunterladen" aria-label="Herunterladen">
                       <Download className="size-4" />
                     </a>
+                    <button type="button" onClick={() => void removeFiles([f.id])} className="inline-grid size-8 place-items-center rounded-md text-stone-dark hover:bg-red-50 hover:text-red-600" title="Löschen" aria-label={`${f.name} löschen`}>
+                      <Trash2 className="size-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -728,7 +753,7 @@ function FolderMenu({
               type="button"
               onClick={() => {
                 setOpen(false);
-                if (window.confirm(`Ordner „${f.name}“ mit allen Dateien und Unterordnern endgültig löschen?`)) onDelete();
+                onDelete();
               }}
               className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50"
             >

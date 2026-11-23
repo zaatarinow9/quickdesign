@@ -24,9 +24,9 @@ const projects = [
 ];
 
 const files = [
-  { id: id(21), name: "Lindenblatt_Schaufenster_final.pdf", size: 18400000, status: "druckfertig", folder: "Kunden/Café Lindenblatt", assigned_to: "max@quickdesign24.de", uploaded_by: "Max", created_at: ago(40), thumb: null, message: "Bitte auf weißer Folie drucken", content_type: "application/pdf", project_id: id(11), width: null, height: null },
+  { id: id(21), name: "Lindenblatt_Schaufenster_final.pdf", size: 18400000, status: "bearbeitung", folder: "Kunden/Café Lindenblatt", assigned_to: "max@quickdesign24.de", uploaded_by: "Max", created_at: ago(40), thumb: null, message: "Bitte auf weißer Folie drucken", content_type: "application/pdf", project_id: id(11), width: null, height: null },
   { id: id(22), name: "Crafter_Seitenansicht.ai", size: 54200000, status: "bearbeitung", folder: "Kunden/Al-Hassan", assigned_to: null, uploaded_by: "Sami", created_at: ago(180), thumb: null, message: null, content_type: "application/postscript", project_id: null, width: null, height: null },
-  { id: id(23), name: "Banner_Wagner_340x173.pdf", size: 9600000, status: "im_druck", folder: "Druck/2026-11-21", assigned_to: null, uploaded_by: "Max", created_at: ago(300), thumb: null, message: null, content_type: "application/pdf", project_id: id(14), width: null, height: null },
+  { id: id(23), name: "Banner_Wagner_340x173.pdf", size: 9600000, status: "bearbeitung", folder: "Druck/2026-11-21", assigned_to: null, uploaded_by: "Max", created_at: ago(300), thumb: null, message: null, content_type: "application/pdf", project_id: id(14), width: null, height: null },
   { id: id(24), name: "Foto Fassade.jpg", size: 3100000, status: "neu", folder: "App-Uploads/2026-11-21", assigned_to: null, uploaded_by: "App", created_at: ago(8), thumb: null, message: null, content_type: "image/jpeg", project_id: null, width: null, height: null },
 ];
 
@@ -42,7 +42,7 @@ const notifications = [
   { id: 2, category: "dokument", title_de: "Angebot AN-2026-0098 angenommen ✓", body_de: "Wagner Bau GmbH", title_ar: "تم قبول العرض AN-2026-0098 ✓", body_ar: "Wagner Bau GmbH", link: null, created_at: ago(120) },
 ];
 
-const counts = { alle: 4, aktiv: 4, neu: 1, bearbeitung: 1, freigabe: 0, druckfertig: 1, im_druck: 1, erledigt: 0 };
+const counts = { alle: 4, aktiv: 4, neu: 1, bearbeitung: 3, erledigt: 0 };
 
 /** Antworten der API im Vorschau-Modus */
 export function demoApi(path: string): unknown {

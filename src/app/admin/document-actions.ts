@@ -1,5 +1,6 @@
 "use server";
 
+import { trashDocument } from "@/lib/admin/delete";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -405,7 +406,7 @@ export async function deleteDocument(fd: FormData) {
   if (!doc) return;
   // Festgeschriebene Rechnungen dürfen nicht gelöscht werden (Aufbewahrungspflicht)
   if (doc.kind === "rechnung" && doc.number) return;
-  await db().from("documents").delete().eq("id", id.data);
+  await trashDocument(id.data, admin.name || admin.email);
   await logActivity(admin.email, "gelöscht", doc.kind, id.data, `${kindLabels[doc.kind as DocumentKind].one} ${doc.number ?? "(Entwurf)"} – ${doc.customer_name}`);
   paths(doc.kind);
   redirect(`/admin/${kindLabels[doc.kind as DocumentKind].path}`);

@@ -3,21 +3,43 @@ import { countNewInquiries } from "@/lib/admin/stats";
 import { signOut } from "@/app/admin/auth-actions";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { AdminLive } from "@/components/admin/AdminLive";
+import { FeedbackProvider } from "@/components/admin/feedback";
 
 export const dynamic = "force-dynamic";
 
-export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  const [admin, newInquiries] = await Promise.all([requireAdmin(), countNewInquiries()]);
+export default async function PanelLayout({
+  children,
+  modal,
+}: {
+  children: React.ReactNode;
+  modal: React.ReactNode;
+}) {
+  const [admin, newInquiries] = await Promise.all([
+    requireAdmin(),
+    countNewInquiries(),
+  ]);
   return (
-    <div className="min-h-dvh lg:pl-[17rem] print:pl-0">
-      <Sidebar
-        fullAccess={hasFullAccess(admin.role)}
-        newInquiries={newInquiries}
-        user={{ name: admin.name ?? admin.email, email: admin.email, role: roleLabels[admin.role] }}
-        signOut={signOut}
-      />
-      <AdminLive url={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} anonKey={process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ""} />
-      <main className="mx-auto w-full max-w-[88rem] px-4 py-7 sm:px-7 lg:px-10 lg:py-10 print:max-w-none print:p-0">{children}</main>
-    </div>
+    <FeedbackProvider>
+      <div className="min-h-dvh lg:pl-[17rem] print:pl-0">
+        <Sidebar
+          fullAccess={hasFullAccess(admin.role)}
+          newInquiries={newInquiries}
+          user={{
+            name: admin.name ?? admin.email,
+            email: admin.email,
+            role: roleLabels[admin.role],
+          }}
+          signOut={signOut}
+        />
+        <AdminLive
+          url={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}
+          anonKey={process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ""}
+        />
+        <main className="mx-auto w-full max-w-[88rem] px-4 py-7 sm:px-7 lg:px-10 lg:py-10 print:max-w-none print:p-0">
+          {children}
+        </main>
+        {modal}
+      </div>
+    </FeedbackProvider>
   );
 }

@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/admin/DeleteControls";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileDown, FileText, FolderOpen, Inbox, Mail, Phone, Receipt, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, FileDown, FileText, FolderOpen, Inbox, Mail, Phone, Receipt, ShieldCheck } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { displayStatus, formatDateDE, formatDateTime, formatEuro, kindLabels, statusLabels, todayBerlin, type DocumentKind } from "@/lib/documents/format";
-import { deleteCustomer, marketingAction } from "@/app/admin/customer-actions";
+import { marketingAction } from "@/app/admin/customer-actions";
 import { CustomerForm } from "@/components/admin/CustomerForm";
 import { ConfirmSubmit } from "@/components/admin/documents/panels";
 import { Badge, Card, PageHeader, Stat, statusTone } from "@/components/admin/ui";
@@ -227,15 +228,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 <FileDown className="size-4" aria-hidden /> Datenauskunft (Art. 15) herunterladen
               </a>
               {hasFullAccess(admin.role) ? (
-                <form action={deleteCustomer}>
-                  <input type="hidden" name="id" value={c.id} />
-                  <ConfirmSubmit
-                    className="adm-btn adm-btn-danger adm-btn-sm w-full"
-                    message="Kunde endgültig löschen (Art. 17 DSGVO)? Anfragen und Einwilligungsnachweise werden gelöscht; Rechnungen bleiben wegen der gesetzlichen Aufbewahrungspflicht archiviert."
-                  >
-                    <Trash2 className="size-4" aria-hidden /> Kunde löschen
-                  </ConfirmSubmit>
-                </form>
+                <DeleteButton kind="kunde" id={c.id} name={c.company_name || c.name} redirectTo="/admin/kunden" variant="button" label="Kunde löschen" className="adm-btn-sm w-full justify-center" />
               ) : null}
             </div>
           </Card>

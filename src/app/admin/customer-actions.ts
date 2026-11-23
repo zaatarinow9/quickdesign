@@ -1,5 +1,6 @@
 "use server";
 
+import { trashCustomer, trashInquiry } from "@/lib/admin/delete";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -82,11 +83,9 @@ export async function deleteCustomer(fd: FormData) {
   const admin = await assertFullAccess();
   const id = z.uuid().safeParse(fd.get("id"));
   if (!id.success) return;
-  const client = db();
-  const { count } = await client.from("documents").select("id", { count: "exact", head: true }).eq("customer_id", id.data).eq("kind", "rechnung").not("number", "is", null);
-  // Kunden mit Rechnungen: Stammdaten bleiben auf den Rechnungen erhalten (Kopie), der Datensatz wird gelöscht.
-  const { data } = await client.from("customers").delete().eq("id", id.data).select("customer_number, name").maybeSingle();
-  await logActivity(admin.email, "gelöscht", "kunde", id.data, `Kunde ${data?.customer_number ?? ""} gelöscht${count ? ` (${count} Rechnungen bleiben archiviert)` : ""} – DSGVO`);
+  // Rechnungen behalten ihre Kopie der Stammdaten; der Kunde landet 30 Tage im Papierkorb
+  const r = await trashCustomer(id.data, admin.name || admin.email, fd.get("withFiles") === "1");
+  await logActivity(admin.email, "gelöscht", "kunde", id.data, `Kunde ${r?.label ?? ""} in den Papierkorb`);
   revalidatePath("/admin/kunden");
   redirect("/admin/kunden");
 }
@@ -138,8 +137,8 @@ export async function deleteInquiry(fd: FormData) {
   const admin = await assertFullAccess();
   const id = z.uuid().safeParse(fd.get("id"));
   if (!id.success) return;
-  const { data } = await db().from("inquiries").delete().eq("id", id.data).select("reference").maybeSingle();
-  await logActivity(admin.email, "gelöscht", "anfrage", id.data, `Anfrage ${data?.reference ?? ""} gelöscht`);
+  const r = await trashInquiry(id.data, admin.name || admin.email);
+  await logActivity(admin.email, "gelöscht", "anfrage", id.data, `Anfrage ${r?.label ?? ""} in den Papierkorb`);
   revalidatePath("/admin/anfragen");
   redirect("/admin/anfragen");
 }

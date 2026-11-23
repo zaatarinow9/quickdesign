@@ -14,6 +14,7 @@ import { fileNotifyEmail } from "@/lib/email/project-templates";
 import { deleteObject, headObject, isR2Configured, presignUpload } from "@/lib/files/r2";
 import { datePrefix, fileStatusInfo, folderColors, formatBytes, isFileStatus, type FileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, parentFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { logProjectEvent } from "@/lib/projects/server";
+import { trashFiles, trashFolder } from "@/lib/admin/delete";
 import type { ActionState } from "./document-actions";
 
 const uuid = z.uuid();
@@ -40,15 +41,6 @@ async function ensureFolders(paths: string[], actor: string, extra?: { color?: s
     if (extra.customerId !== undefined) patch.customer_id = extra.customerId;
     if (Object.keys(patch).length) await db().from("file_folders").update(patch).eq("path", normalizeFolder(paths[0]));
   }
-}
-
-/** Speicherobjekte im Hintergrund löschen – die Oberfläche wartet nicht darauf */
-function purgeObjects(keys: (string | null | undefined)[]) {
-  const list = keys.filter((k): k is string => !!k);
-  if (!list.length) return;
-  after(async () => {
-    for (let i = 0; i < list.length; i += 20) await Promise.all(list.slice(i, i + 20).map((k) => deleteObject(k).catch(() => {})));
-  });
 }
 
 /** Dateiname für den Speicherschlüssel: nur sichere Zeichen */
@@ -195,23 +187,15 @@ export async function completeUploadBatch(input: { ids: string[]; notify: boolea
   return { ok: `${total} Datei${total === 1 ? "" : "en"} hochgeladen.${note}` };
 }
 
-/** Ganzen Ordner (inkl. Unterordner) löschen */
-export async function deleteFolder(fd: FormData) {
+/** Ganzen Ordner (inkl. Unterordner) löschen → Papierkorb */
+export async function deleteFolder(fd: FormData): Promise<{ ok?: string; error?: string; trashIds?: string[] }> {
   const admin = await assertAdmin();
   const folder = normalizeFolder(String(fd.get("folder") ?? ""));
-  if (!folder) return;
-  const client = db();
-  // Ordner selbst + alle Unterordner (Präfix-Vergleich in JS, damit Sonderzeichen keine Rolle spielen)
-  const { data: all } = await client.from("files").select("id, object_key, thumb_key, preview_key, folder").like("folder", `${folder.slice(0, 1)}%`).limit(20000);
-  const data = (all ?? []).filter((r) => r.folder === folder || String(r.folder).startsWith(`${folder}/`));
-  const rows = data ?? [];
-  if (rows.length) await client.from("files").delete().in("id", rows.map((r) => r.id));
-  purgeObjects(rows.flatMap((r) => [r.object_key, r.thumb_key, r.preview_key]));
-  const { data: metas } = await client.from("file_folders").select("path").like("path", `${folder.slice(0, 1)}%`).limit(5000);
-  const gone = (metas ?? []).map((m) => String(m.path)).filter((p) => p === folder || p.startsWith(`${folder}/`));
-  if (gone.length) await client.from("file_folders").delete().in("path", gone);
-  after(() => logActivity(admin.email, "gelöscht", "ordner", null, `Ordner „${folder}“ mit ${rows.length} Datei(en) gelöscht`));
+  if (!folder) return { error: "Kein Ordner." };
+  const r = await trashFolder(folder, admin.name || admin.email);
+  after(() => logActivity(admin.email, "gelöscht", "ordner", null, `Ordner „${folder}“ (${r?.count ?? 0} Datei(en)) in den Papierkorb`));
   paths();
+  return r ? { ok: `Ordner „${r.label}“ gelöscht.`, trashIds: [r.id] } : { error: "Ordner nicht gefunden." };
 }
 
 /** Abgebrochene Uploads aufräumen */
@@ -272,11 +256,10 @@ export async function deleteFile(fd: FormData) {
   const admin = await assertAdmin();
   const id = uuid.safeParse(fd.get("id"));
   if (!id.success) return;
-  const { data } = await db().from("files").select("object_key, thumb_key, preview_key, name, project_id").eq("id", id.data).maybeSingle();
+  const { data } = await db().from("files").select("name, project_id").eq("id", id.data).maybeSingle();
   if (!data) return;
-  await db().from("files").delete().eq("id", id.data);
-  purgeObjects([data.object_key, data.thumb_key, data.preview_key]);
-  after(() => logActivity(admin.email, "gelöscht", "datei", id.data, `Datei „${data.name}“ gelöscht`));
+  await trashFiles([id.data], admin.name || admin.email);
+  after(() => logActivity(admin.email, "gelöscht", "datei", id.data, `Datei „${data.name}“ in den Papierkorb`));
   paths(data.project_id);
 }
 
@@ -393,17 +376,14 @@ export async function updateFiles(input: { ids: string[]; category?: string | nu
   return { ok: "Gespeichert." };
 }
 
-export async function deleteFiles(ids: string[]): Promise<{ ok?: string; error?: string }> {
+export async function deleteFiles(ids: string[]): Promise<{ ok?: string; error?: string; trashIds?: string[] }> {
   const admin = await assertAdmin();
   const parsed = idsSchema.safeParse(ids);
   if (!parsed.success) return { error: "Keine Dateien gewählt." };
-  const { data } = await db().from("files").select("id, object_key, thumb_key, preview_key").in("id", parsed.data);
-  const rows = data ?? [];
-  await db().from("files").delete().in("id", parsed.data);
-  purgeObjects(rows.flatMap((r) => [r.object_key, r.thumb_key, r.preview_key]));
-  after(() => logActivity(admin.email, "gelöscht", "datei", null, `${rows.length} Datei(en) gelöscht`));
+  const r = await trashFiles(parsed.data, admin.name || admin.email);
+  after(() => logActivity(admin.email, "gelöscht", "datei", null, `${r?.count ?? 0} Datei(en) in den Papierkorb`));
   paths();
-  return { ok: `${rows.length} Datei${rows.length === 1 ? "" : "en"} gelöscht.` };
+  return r ? { ok: `${r.count} Datei${r.count === 1 ? "" : "en"} gelöscht.`, trashIds: [r.id] } : { error: "Dateien nicht gefunden." };
 }
 
 /* ------------------------------ Herunterladen ------------------------------ */

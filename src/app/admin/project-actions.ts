@@ -1,5 +1,6 @@
 "use server";
 
+import { trashProject } from "@/lib/admin/delete";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -166,8 +167,8 @@ export async function deleteProject(fd: FormData) {
   const admin = await assertFullAccess();
   const id = uuid.safeParse(fd.get("id"));
   if (!id.success) return;
-  const { data } = await db().from("projects").delete().eq("id", id.data).select("number").maybeSingle();
-  await logActivity(admin.email, "gelöscht", "auftrag", id.data, `Auftrag ${data?.number ?? ""} gelöscht`);
+  const r = await trashProject(id.data, admin.name || admin.email);
+  await logActivity(admin.email, "gelöscht", "auftrag", id.data, `Auftrag ${r?.label ?? ""} in den Papierkorb`);
   paths();
   redirect("/admin/projekte");
 }
