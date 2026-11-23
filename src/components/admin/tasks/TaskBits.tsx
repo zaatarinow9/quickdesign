@@ -5,7 +5,13 @@ import { initials, personColor, type TaskStatus, type TeamMember } from "@/lib/t
 import { cn } from "@/lib/utils";
 
 export function Avatar({ email, team, size = 24 }: { email: string; team: TeamMember[]; size?: number }) {
-  const name = team.find((m) => m.email === email)?.name ?? email;
+  const m = team.find((x) => x.email === email);
+  const name = m?.name ?? email;
+  if (m?.avatar)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={m.avatar} alt={name} title={name} className="shrink-0 rounded-full object-cover ring-2 ring-white" style={{ width: size, height: size }} />
+    );
   return (
     <span
       title={name}

@@ -5,15 +5,11 @@ import { after } from "next/server";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
-import { env } from "@/lib/env";
-import { getSettings } from "@/lib/settings/server";
-import { mailCompany } from "@/lib/admin/company";
-import { sendMail } from "@/lib/email/send";
-import { taskAssignedEmail } from "@/lib/email/project-templates";
 import { putInTrash } from "@/lib/admin/trash";
+import { displayName } from "@/lib/admin/profile";
 import { joinFolder } from "@/lib/files/shared";
 import { teamMembers } from "@/lib/files/server";
-import { isTaskPriority, isTaskStatus, taskPriorityInfo, taskStatusInfo, type TaskPriority, type TaskStatus } from "@/lib/tasks/shared";
+import { isTaskPriority, isTaskStatus, taskPriorityInfo, taskStatusInfo, type TaskStatus } from "@/lib/tasks/shared";
 
 const uuid = z.uuid();
 const refresh = () => revalidatePath("/admin", "layout");
@@ -24,36 +20,15 @@ async function logEvent(taskId: string, actor: string, type: string, note: strin
   await db().from("task_events").insert({ task_id: taskId, actor, type, note: note?.slice(0, 500) ?? null });
 }
 
-/** E-Mail + Push an Kollegen (im Hintergrund) */
+/** Benachrichtigung (ohne E-Mail): Glocke in der Verwaltung + Push in der Mitarbeiter-App */
 function notify(taskId: string, to: string[], actor: { email: string; name: string }, kind: "neu" | "kommentar", comment?: string) {
   const list = [...new Set(to.map((e) => e.toLowerCase()))].filter((e) => e !== actor.email.toLowerCase());
   if (!list.length) return;
   after(async () => {
     const client = db();
-    const { data: t } = await client.from("tasks").select("title, description, due_date, priority, customer:customers(name, company_name)").eq("id", taskId).maybeSingle();
+    const { data: t } = await client.from("tasks").select("title, due_date").eq("id", taskId).maybeSingle();
     if (!t) return;
-    const s = await getSettings();
-    const cust = Array.isArray(t.customer) ? t.customer[0] : t.customer;
-    const url = `${env.siteUrl}/admin/aufgaben?aufgabe=${taskId}`;
     for (const email of list) {
-      await sendMail(
-        email,
-        taskAssignedEmail({
-          siteUrl: env.siteUrl,
-          company: mailCompany(s),
-          from: actor.name,
-          title: t.title,
-          description: t.description,
-          due: fmtDate(t.due_date),
-          priority: taskPriorityInfo[t.priority as TaskPriority]?.label ?? "Normal",
-          customer: cust ? cust.company_name || cust.name : null,
-          url,
-          kind,
-          comment: comment ?? null,
-        }),
-        { kind: "aufgabe", relatedId: taskId },
-      ).catch(() => {});
-      // Push in die Mitarbeiter-App
       await client
         .rpc("staff_notify", {
           p_category: "projekt",
@@ -61,7 +36,7 @@ function notify(taskId: string, to: string[], actor: { email: string; name: stri
           p_body_de: kind === "neu" ? `von ${actor.name}${t.due_date ? ` · fällig ${fmtDate(t.due_date)}` : ""}` : `${actor.name}: ${comment ?? ""}`,
           p_title_ar: kind === "neu" ? `مهمة جديدة: ${t.title}` : `تعليق: ${t.title}`,
           p_body_ar: kind === "neu" ? `من ${actor.name}` : `${actor.name}: ${comment ?? ""}`,
-          p_link: null,
+          p_link: `/tasks/${taskId}`,
           p_target: email,
         })
         .then(() => {}, () => {});
@@ -69,9 +44,16 @@ function notify(taskId: string, to: string[], actor: { email: string; name: stri
   });
 }
 
+/** Aufgabe als gelesen markieren (für die Zähler) */
+export async function markTaskSeen(taskId: string) {
+  const u = await actorOf();
+  if (!uuid.safeParse(taskId).success) return;
+  await db().from("task_seen").upsert({ task_id: taskId, email: u.email, seen_at: new Date().toISOString() }, { onConflict: "task_id,email" });
+}
+
 async function actorOf() {
   const admin = await assertAdmin();
-  return { email: admin.email.toLowerCase(), name: admin.name || admin.email };
+  return { email: admin.email.toLowerCase(), name: await displayName(admin.email, admin.name) };
 }
 
 async function validAssignees(list: string[] | undefined) {
@@ -113,6 +95,7 @@ export async function createTask(input: { title: string; status?: string; assign
     .single();
   if (error || !data) return { error: "Aufgabe konnte nicht angelegt werden." };
   await logEvent(data.id, actor.name, "erstellt", null);
+  await client.from("task_seen").upsert({ task_id: data.id, email: actor.email, seen_at: new Date(Date.now() + 1000).toISOString() }, { onConflict: "task_id,email" });
   notify(data.id, assignees, actor, "neu");
   refresh();
   return { id: data.id };
@@ -169,6 +152,7 @@ export async function updateTask(input: {
   const { error } = await client.from("tasks").update(patch).eq("id", input.id);
   if (error) return { error: "Speichern fehlgeschlagen." };
   for (const [type, note] of events) await logEvent(input.id, actor.name, type, note);
+  await client.from("task_seen").upsert({ task_id: input.id, email: actor.email, seen_at: new Date(Date.now() + 1000).toISOString() }, { onConflict: "task_id,email" });
   if (added.length) notify(input.id, added, actor, "neu");
   refresh();
   return { ok: true };
@@ -206,6 +190,8 @@ export async function addTaskComment(taskId: string, body: string): Promise<{ ok
   const client = db();
   const { error } = await client.from("task_comments").insert({ task_id: taskId, author: actor.name, body: text });
   if (error) return { error: "Kommentar konnte nicht gespeichert werden." };
+  await client.from("tasks").update({ updated_at: new Date().toISOString() }).eq("id", taskId);
+  await client.from("task_seen").upsert({ task_id: taskId, email: actor.email, seen_at: new Date(Date.now() + 1000).toISOString() }, { onConflict: "task_id,email" });
   const { data: t } = await client.from("tasks").select("assignees, created_by").eq("id", taskId).maybeSingle();
   // Alle Beteiligten informieren (ohne den Schreibenden)
   if (t) notify(taskId, [...((t.assignees as string[]) ?? []), t.created_by].filter(Boolean) as string[], actor, "kommentar", text.slice(0, 600));

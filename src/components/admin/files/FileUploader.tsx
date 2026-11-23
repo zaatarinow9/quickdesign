@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, Mail, SlidersHorizontal, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { abortUpload, completeUploadBatch, finishUpload, startUpload } from "@/app/admin/file-actions";
 import { datePrefix, PRINT_QUEUE, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { previewsFromFile } from "@/lib/files/preview-client";
@@ -208,8 +208,7 @@ export function FileUploader({
       if (sessionIds.current.length) {
         const ids = sessionIds.current;
         sessionIds.current = [];
-        const o = optsRef.current;
-        const done = await completeUploadBatch({ ids, notify: o.notify && !!o.assignedTo });
+        const done = await completeUploadBatch({ ids, notify: false });
         setResult(done.error ? { error: done.error } : { ok: done.ok });
         router.refresh();
       }
@@ -430,10 +429,7 @@ export function FileUploader({
                 ))}
               </select>
             </div>
-            <label className={cn("flex items-center gap-2 self-end pb-2.5 text-sm", !opts.assignedTo && "opacity-40")}>
-              <input type="checkbox" checked={opts.notify} disabled={!opts.assignedTo} onChange={(e) => setOpts((o) => ({ ...o, notify: e.target.checked }))} className="size-4 accent-[var(--color-accent)]" />
-              <Mail className="size-4 text-stone-dark" aria-hidden /> nach dem Upload per E-Mail benachrichtigen
-            </label>
+            <p className="self-end pb-2.5 text-xs text-stone-dark">Die Person sieht die Datei unter „Für mich“ und bekommt eine Benachrichtigung (Glocke + App).</p>
           </div>
         ) : null}
       </div>

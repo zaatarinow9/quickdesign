@@ -41,7 +41,7 @@ export type Task = {
   comment_count?: number;
 };
 
-export type TeamMember = { email: string; name: string };
+export type TeamMember = { email: string; name: string; avatar?: string | null };
 
 export const initials = (name: string) =>
   name

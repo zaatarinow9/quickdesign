@@ -55,7 +55,23 @@ export async function getTask(id: string) {
   };
 }
 
+/** Offene Aufgaben + Aufgaben mit neuer Aktivität, die ich noch nicht gesehen habe */
+export async function taskBadge(email: string): Promise<{ open: number; unread: string[] }> {
+  const me = email.toLowerCase();
+  const client = db();
+  const [{ data: mine }, { data: seen }] = await Promise.all([
+    client.from("tasks").select("id, updated_at, created_by, status, assignees").or(`assignees.cs.{${me}},created_by.eq.${me}`).neq("status", "erledigt").limit(500),
+    client.from("task_seen").select("task_id, seen_at").eq("email", me).limit(2000),
+  ]);
+  const seenAt = new Map((seen ?? []).map((s) => [s.task_id as string, s.seen_at as string]));
+  const list = mine ?? [];
+  const unread = list.filter((t) => {
+    const s = seenAt.get(t.id as string);
+    return s ? (t.updated_at as string) > s : t.created_by !== me;
+  });
+  return { open: list.filter((t) => ((t.assignees as string[]) ?? []).includes(me)).length, unread: unread.map((t) => t.id as string) };
+}
+
 export async function myOpenTaskCount(email: string) {
-  const { count } = await db().from("tasks").select("id", { count: "exact", head: true }).contains("assignees", [email.toLowerCase()]).neq("status", "erledigt");
-  return count ?? 0;
+  return (await taskBadge(email)).open;
 }

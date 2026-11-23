@@ -15,7 +15,7 @@ export { Avatar, StatusIcon } from "./TaskBits";
 import { StatusIcon } from "./TaskBits";
 
 /** Aufgabenliste nach Status gruppiert (wie ClickUp) oder als Tafel */
-export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMember[]; view: "liste" | "board" }) {
+export function TaskBoard({ tasks, team, view, unread = [] }: { tasks: Task[]; team: TeamMember[]; view: "liste" | "board"; unread?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -88,7 +88,10 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                         <span onClick={(e) => e.stopPropagation()} className="-ml-1 -mt-0.5">
                           <StatusMenu t={t} onPatch={patch(t)} size="sm" />
                         </span>
-                        <p className={cn("font-medium leading-snug", t.status === "erledigt" && "text-stone-dark line-through")}>{t.title}</p>
+                        <p className={cn("font-medium leading-snug", t.status === "erledigt" && "text-stone-dark line-through", unread.includes(t.id) && "font-bold")}>
+                          {unread.includes(t.id) ? <span className="mr-1.5 inline-block size-2 rounded-full bg-accent align-middle" /> : null}
+                          {t.title}
+                        </p>
                       </div>
                       {t.customer ? <p className="mt-0.5 truncate text-xs text-sky-700">{t.customer.company_name || t.customer.name}</p> : null}
                       <Meta t={t} team={team} onPatch={patch(t)} />
@@ -130,7 +133,8 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
             </button>
             {!isCollapsed ? (
               <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-ink/[0.06]">
-                <div className="hidden grid-cols-[minmax(0,1fr)_8rem_8.5rem_6.5rem_4rem] gap-3 border-b border-ink/[0.05] px-4 py-2 text-[0.7rem] font-medium uppercase tracking-wide text-stone md:grid">
+                <div className="hidden grid-cols-[1.75rem_minmax(0,1fr)_9rem_9rem_7rem_3rem] gap-x-3 border-b border-ink/[0.05] px-4 py-2 text-[0.7rem] font-medium uppercase tracking-wide text-stone lg:grid">
+                  <span />
                   <span>Aufgabe</span>
                   <span>Zuständig</span>
                   <span>Fällig</span>
@@ -140,10 +144,13 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                 <ul className="divide-y divide-ink/[0.05]">
                   {group.map((t) => {
                     return (
-                      <li key={t.id} className="group grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-4 py-2.5 hover:bg-ink/[0.02] md:grid-cols-[auto_minmax(0,1fr)_8rem_8.5rem_6.5rem_4rem]" onClick={() => open(t.id)}>
+                      <li key={t.id} className="group grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-4 py-2.5 hover:bg-ink/[0.02] lg:grid-cols-[1.75rem_minmax(0,1fr)_9rem_9rem_7rem_3rem]" onClick={() => open(t.id)}>
                         <StatusMenu t={t} onPatch={patch(t)} />
                         <span className="min-w-0">
-                          <span className={cn("block truncate font-medium", t.status === "erledigt" && "text-stone-dark line-through")}>{t.title}</span>
+                          <span className={cn("flex items-center gap-2 truncate font-medium", t.status === "erledigt" && "text-stone-dark line-through", unread.includes(t.id) && "font-bold")}>
+                            {unread.includes(t.id) ? <span className="size-2 shrink-0 rounded-full bg-accent" title="Neu für Sie" /> : null}
+                            <span className="truncate">{t.title}</span>
+                          </span>
                           <span className="flex flex-wrap items-center gap-x-3 text-xs text-stone-dark">
                             {t.customer ? <span className="truncate text-sky-700">{t.customer.company_name || t.customer.name}</span> : null}
                             {t.checklist_total ? (
@@ -151,21 +158,21 @@ export function TaskBoard({ tasks, team, view }: { tasks: Task[]; team: TeamMemb
                                 <ListChecks className="size-3.5" aria-hidden /> {t.checklist_done}/{t.checklist_total}
                               </span>
                             ) : null}
-                            <span className="md:hidden" onClick={(e) => e.stopPropagation()}>
+                            <span className="lg:hidden" onClick={(e) => e.stopPropagation()}>
                               <DueMenu t={t} onPatch={patch(t)} compact />
                             </span>
                           </span>
                         </span>
-                        <span className="hidden md:flex">
+                        <span className="hidden lg:flex">
                           <PeopleMenu key={t.assignees.join()} t={t} team={team} onPatch={patch(t)} />
                         </span>
-                        <span className="hidden md:flex">
+                        <span className="hidden lg:flex">
                           <DueMenu t={t} onPatch={patch(t)} />
                         </span>
-                        <span className="hidden md:flex">
+                        <span className="hidden lg:flex">
                           <PriorityMenu t={t} onPatch={patch(t)} />
                         </span>
-                        <span className="hidden items-center gap-1 text-sm text-stone-dark md:flex">
+                        <span className="hidden items-center gap-1 text-sm text-stone-dark lg:flex">
                           {t.comment_count ? (
                             <>
                               <MessageSquare className="size-3.5" aria-hidden /> {t.comment_count}
