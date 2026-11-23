@@ -8,7 +8,7 @@ import { activeVariants, areaFor, garmentKinds, isDarkHex, motifImage, type Fron
 import { money } from "@/lib/shop/format";
 import { useShop } from "./ShopProvider";
 import { GarmentPreview } from "./GarmentPreview";
-import { DiscountSeal } from "./Badges";
+import { DiscountPill } from "./Badges";
 import { ProductExtras, SizeQty } from "./ProductView";
 import { cn } from "@/lib/utils";
 
@@ -131,7 +131,7 @@ export function CustomizerView({
           <GarmentPreview key={`${colorId}-${view}`} blank={blank(view)} area={area(view)} motif={motifFor(view)} alt={`${L(p.name)} – ${color ? L(color.name) : ""}`} priority className="qd-fade" />
           {prePct ? (
             <span className="absolute end-4 top-4">
-              <DiscountSeal pct={prePct} size="lg" label="طلب مسبق" />
+              <DiscountPill pct={prePct} size="lg" />
             </span>
           ) : null}
           <div className="absolute inset-x-0 bottom-4 flex justify-center">

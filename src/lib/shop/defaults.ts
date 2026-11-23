@@ -145,7 +145,7 @@ const baseStore: ShopStore = {
   offers: [
     {
       id: "zwei-plus-eins",
-      active: true,
+      active: false,
       name: { de: "2 + 1: das dritte Textil 50 % günstiger", ar: "⁦2 + 1⁩: القطعة الثالثة أرخص بـ ⁦50%⁩" },
       badge: { de: "2 + 1", ar: "⁦2 + 1⁩" },
       scope: { type: "category", category: "textil", products: [] },
@@ -156,7 +156,7 @@ const baseStore: ShopStore = {
     },
     {
       id: "fahnen-menge",
-      active: true,
+      active: false,
       name: { de: "Mengenrabatt Fahnen", ar: "خصم كميات الأعلام" },
       badge: { de: "ab 10 Stück −10 %", ar: "من 10 قطع ⁦−10%⁩" },
       scope: { type: "products", products: ["fahne-revolution"] },
@@ -170,7 +170,7 @@ const baseStore: ShopStore = {
     },
     {
       id: "banner-folie-menge",
-      active: true,
+      active: false,
       name: { de: "Mengenrabatt Banner & Folien", ar: "خصم كميات اللافتات والملصقات" },
       badge: { de: "Mengenrabatt", ar: "خصم كميات" },
       scope: { type: "products", products: ["banner-syrien-frei", "folie-syria-hurra"] },
@@ -192,7 +192,7 @@ const baseStore: ShopStore = {
       pickup: { enabled: true, address: "QuickDesign, Richard-Wagner-Straße 73–75, 66111 Saarbrücken" },
     },
     // TODO(Inhaber): Vorbestellrabatt und Enddatum in der Shop-Verwaltung bestätigen.
-    preorder: { enabled: true, pct: 20, until: "2026-11-30", combine: false },
+    preorder: { enabled: true, pct: 10, until: "", combine: false },
     // TODO(Inhaber): Letzter Bestelltag für Lieferung vor dem 8.12.
     campaign: { anniversary: "2026-12-08", lastOrderDay: "2026-12-02" },
     whatsapp: "4915772785677",

@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Lang } from "@/lib/shop/config";
 import { money } from "@/lib/shop/format";
-import { DiscountSeal, OfferTag } from "./Badges";
+import { Palette } from "lucide-react";
+import { DiscountPill, OfferTag } from "./Badges";
 import type { ShopDict } from "@/lib/shop/i18n";
 import {
   activeVariants,
@@ -63,12 +64,13 @@ export function ProductCard({
       back: motifImage(back, dark),
     };
   })();
+  const designs = custom ? store.motifs.filter((m) => m.active).length : 0;
   return (
     <Link
       href={href}
-      className="group block h-full rounded-2xl border border-[var(--line)] bg-white p-2.5 transition hover:border-[var(--green)] hover:shadow-[0_14px_34px_-22px_rgba(5,66,57,0.5)]"
+      className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-0.5 hover:border-[var(--green)]/40 hover:shadow-[0_18px_40px_-24px_rgba(5,66,57,0.55)]"
     >
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-[var(--paper-2)]">
+      <div className="relative aspect-[4/4.2] overflow-hidden bg-[var(--paper-2)]">
         {custom ? (
           <>
             <GarmentPreview
@@ -83,11 +85,6 @@ export function ProductCard({
               motif={custom.back}
               className="absolute inset-0 opacity-0 transition duration-700 ease-out group-hover:opacity-100"
             />
-            <span className="absolute start-2.5 top-2.5 rounded-full bg-[var(--green)] px-2.5 py-1 text-[0.7rem] text-white shadow-sm">
-              {lang === "ar"
-                ? `${store.motifs.filter((m) => m.active).length} تصميم للاختيار`
-                : "Motiv wählen"}
-            </span>
           </>
         ) : (
           <Image
@@ -109,49 +106,53 @@ export function ProductCard({
           />
         ) : null}
         {pre ? (
-          <span className="absolute end-2.5 top-2.5 transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-105">
-            <DiscountSeal pct={pre} label={lang === "ar" ? "خصم" : "Rabatt"} />
-          </span>
-        ) : null}
-        {badge ? (
-          <span className="absolute bottom-2.5 start-2.5">
-            <OfferTag text={badge.badge[lang] || badge.badge.de} />
+          <span className="absolute end-2.5 top-2.5">
+            <DiscountPill pct={pre} />
           </span>
         ) : null}
       </div>
-      <div className="px-1.5 pb-1.5 pt-3">
-        <h3 className="text-[0.98rem] font-medium leading-snug">
+      <div className="flex flex-1 flex-col gap-2 px-3.5 pb-3.5 pt-3 sm:px-4 sm:pb-4">
+        <h3 className="line-clamp-2 text-[0.98rem] font-bold leading-snug text-[var(--ink)] sm:text-[1.05rem]">
           {p.name[lang]}
         </h3>
-        <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[0.95rem]">
-          {varies ? (
-            <span className="text-sm text-[var(--muted)]">{t.card.from}</span>
-          ) : null}
-          {pre ? (
-            <>
-              <span className="ltr-num font-bold text-[var(--green)]">
-                {money(Math.round((price * (100 - pre)) / 100))}
-              </span>
-              <span className="ltr-num text-sm text-[var(--muted)] line-through">
-                {money(price)}
-              </span>
-            </>
-          ) : (
-            <span className="ltr-num">{money(price)}</span>
-          )}
-        </p>
-        {p.colors.length > 1 ? (
-          <div className="mt-2 flex gap-1.5" aria-label={t.card.colors}>
-            {p.colors.map((c) => (
-              <span
-                key={c.id}
-                title={c.name[lang]}
-                className="size-3 rounded-full ring-1 ring-black/10"
-                style={{ background: c.hex }}
-              />
-            ))}
-          </div>
+        {designs ? (
+          <p className="flex items-center gap-1.5 text-[0.78rem] font-medium text-[var(--green)]">
+            <Palette className="size-3.5 shrink-0" strokeWidth={2} />
+            {lang === "ar" ? `${designs} تصميماً للاختيار` : `${designs} Motive zur Wahl`}
+          </p>
         ) : null}
+        {badge ? (
+          <span className="self-start">
+            <OfferTag text={badge.badge[lang] || badge.badge.de} />
+          </span>
+        ) : null}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
+          <p className="flex flex-wrap items-baseline gap-x-1.5 leading-none">
+            {varies ? <span className="text-[0.78rem] text-[var(--muted)]">{t.card.from}</span> : null}
+            {pre ? (
+              <>
+                <span className="ltr-num text-[1.05rem] font-bold text-[var(--green)]">
+                  {money(Math.round((price * (100 - pre)) / 100))}
+                </span>
+                <span className="ltr-num text-[0.8rem] text-[var(--muted)] line-through">{money(price)}</span>
+              </>
+            ) : (
+              <span className="ltr-num text-[1.05rem] font-bold">{money(price)}</span>
+            )}
+          </p>
+          {p.colors.length > 1 ? (
+            <div className="flex gap-1" aria-label={t.card.colors}>
+              {p.colors.map((c) => (
+                <span
+                  key={c.id}
+                  title={c.name[lang]}
+                  className="size-3.5 rounded-full ring-1 ring-black/10 ring-offset-1"
+                  style={{ background: c.hex }}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
     </Link>
   );
