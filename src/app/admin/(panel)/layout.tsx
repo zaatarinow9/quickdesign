@@ -38,7 +38,7 @@ export default async function PanelLayout({
           url={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}
           anonKey={process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ""}
         />
-        <main className="mx-auto w-full max-w-[88rem] px-4 py-7 sm:px-7 lg:px-10 lg:py-10 print:max-w-none print:p-0">
+        <main className="w-full max-w-[120rem] px-4 py-6 sm:px-6 lg:px-7 lg:py-7 print:max-w-none print:p-0">
           {children}
         </main>
         {modal}

@@ -213,6 +213,10 @@
 /* ------------------------------------------------------------------ */
 @layer components {
   .adm {
+    /* Arabische Zeichen in der Verwaltung: Thmanyah (Inter/Outfit haben keine arabischen Glyphen) */
+    --font-sans: var(--font-inter), var(--font-thmanyah), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-outfit), var(--font-inter), var(--font-thmanyah), ui-sans-serif, sans-serif;
+    font-family: var(--font-sans);
     background: #f7f6f3;
     color: var(--color-ink);
     min-height: 100dvh;

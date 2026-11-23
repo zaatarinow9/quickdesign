@@ -25,6 +25,7 @@ import {
   deleteFiles,
   deleteFolder,
   downloadList,
+  markPrinted,
   moveFiles,
   moveFolder,
   renameFolder,
@@ -39,6 +40,7 @@ import {
   fileStatusInfo,
   fileStatuses,
   isPrintDayFolder,
+  PRINT_QUEUE,
   printDayLabel,
   folderColors,
   formatBytes,
@@ -349,6 +351,26 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
       {selected.size ? (
         <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-accent/20 bg-accent/[0.06] px-4 py-2.5 text-sm backdrop-blur sm:px-5">
           <span className="font-semibold">{selected.size} ausgewählt</span>
+          {folder === PRINT_QUEUE ? (
+            <button
+              type="button"
+              className="adm-btn adm-btn-sm bg-emerald-600 text-white hover:bg-emerald-500"
+              onClick={() => {
+                const ids = [...selected];
+                const undo = hide(ids);
+                setSelected(new Set());
+                start(async () => {
+                  const r = await markPrinted(ids);
+                  if (r.error) {
+                    undo();
+                    toast(r.error, { tone: "error" });
+                  } else toast(r.ok ?? "Gedruckt.");
+                });
+              }}
+            >
+              <Check className="size-4" aria-hidden /> Gedruckt
+            </button>
+          ) : null}
           <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm bg-white" onClick={() => download({ ids: [...selected] })}>
             <Download className="size-4" aria-hidden /> Herunterladen
           </button>

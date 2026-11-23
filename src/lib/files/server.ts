@@ -176,10 +176,10 @@ export async function printDays(limit = 120): Promise<PrintDay[]> {
   ]);
   const map = new Map<string, PrintDay>();
   const day = (path: string) => {
-    const m = /^Druck\/(\d{4}-\d{2}-\d{2})(?:\/|$)/.exec(path);
+    const m = /^Druck\/(Gedruckt\/)?(\d{4}-\d{2}-\d{2})(?:\/|$)/.exec(path);
     if (!m) return null;
-    const p = `Druck/${m[1]}`;
-    const d = map.get(p) ?? { date: m[1], path: p, total: 0, size: 0, byStatus: {}, last: null };
+    const p = `Druck/${m[1] ?? ""}${m[2]}`;
+    const d = map.get(p) ?? { date: m[2], path: p, total: 0, size: 0, byStatus: {}, last: null };
     map.set(p, d);
     return d;
   };

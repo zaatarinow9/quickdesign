@@ -53,7 +53,7 @@ export function FileBoard({ files, thumbs, me }: { files: StoredFile[]; thumbs: 
         <span className="text-xs text-stone-dark">Karten in die nächste Spalte ziehen oder „→“ klicken.{pending ? " Speichert …" : ""}</span>
       </div>
 
-      <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:-mx-7 sm:px-7 lg:-mx-10 lg:px-10">
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-7 lg:px-7">
         <div className="grid min-w-[720px] grid-cols-3 gap-4">
           {fileStatuses.map((s) => {
             const col = list.filter((f) => f.status === s);

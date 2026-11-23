@@ -12,7 +12,7 @@ import { logActivity } from "@/lib/admin/log";
 import { sendMail } from "@/lib/email/send";
 import { fileNotifyEmail } from "@/lib/email/project-templates";
 import { deleteObject, headObject, isR2Configured, presignUpload } from "@/lib/files/r2";
-import { datePrefix, fileStatusInfo, folderColors, formatBytes, isFileStatus, type FileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, parentFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { PRINT_QUEUE, printedFolderFor, datePrefix, fileStatusInfo, folderColors, formatBytes, isFileStatus, type FileStatus, joinFolder, MAX_FILE_SIZE, normalizeFolder, parentFolder, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { logProjectEvent } from "@/lib/projects/server";
 import { trashFiles, trashFolder } from "@/lib/admin/delete";
 import type { ActionState } from "./document-actions";
@@ -431,4 +431,39 @@ export async function downloadList(input: { folder?: string; ids?: string[] }): 
     rows.map(async (r) => ({ path: rel(r), size: Number(r.size ?? 0), url: await presignDownload(r.object_key, r.name, { seconds: 6 * 3600 }) })),
   );
   return { name, items };
+}
+
+/* ------------------------------ Druck ------------------------------ */
+
+/** Als gedruckt markieren: Datei wandert in „Druck/Gedruckt/<heute>“ und ist fertig */
+export async function markPrinted(ids: string[]): Promise<{ ok?: string; error?: string; folder?: string }> {
+  const admin = await assertAdmin();
+  const parsed = idsSchema.safeParse(ids);
+  if (!parsed.success) return { error: "Keine Dateien gewählt." };
+  const folder = printedFolderFor(datePrefix());
+  await ensureFolders([folder], admin.email);
+  const actor = admin.name || admin.email;
+  const { data } = await db()
+    .from("files")
+    .update({ folder, status: "erledigt", status_changed_at: new Date().toISOString() })
+    .in("id", parsed.data)
+    .select("id");
+  const n = data?.length ?? 0;
+  after(() => logFileEvents(parsed.data, "gedruckt", folder, actor));
+  paths();
+  revalidatePath("/admin/dateien/druck");
+  return { ok: `${n} Datei${n === 1 ? "" : "en"} als gedruckt abgelegt.`, folder };
+}
+
+/** Zurück in die Warteschlange „Heute drucken“ */
+export async function requeuePrint(ids: string[]): Promise<{ ok?: string; error?: string }> {
+  const admin = await assertAdmin();
+  const parsed = idsSchema.safeParse(ids);
+  if (!parsed.success) return { error: "Keine Dateien gewählt." };
+  await ensureFolders([PRINT_QUEUE], admin.email);
+  await db().from("files").update({ folder: PRINT_QUEUE, status: "bearbeitung", status_changed_at: new Date().toISOString() }).in("id", parsed.data);
+  after(() => logFileEvents(parsed.data, "verschoben", PRINT_QUEUE, admin.name || admin.email));
+  paths();
+  revalidatePath("/admin/dateien/druck");
+  return { ok: "Zurück in „Heute drucken“." };
 }

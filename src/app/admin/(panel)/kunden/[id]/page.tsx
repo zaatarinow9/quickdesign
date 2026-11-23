@@ -129,7 +129,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       </div>
 
 
-      <nav className="sticky top-0 z-20 -mx-4 mt-6 overflow-x-auto bg-paper/85 px-4 py-2 backdrop-blur sm:-mx-7 sm:px-7 lg:-mx-10 lg:px-10" aria-label="Kundenakte">
+      <nav className="sticky top-0 z-20 -mx-4 mt-6 overflow-x-auto bg-paper/85 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-7 lg:px-7" aria-label="Kundenakte">
         <div className="flex w-max gap-1 rounded-2xl bg-ink/[0.05] p-1">
           {TABS.map(([key, label, Icon]) => (
             <NavLink

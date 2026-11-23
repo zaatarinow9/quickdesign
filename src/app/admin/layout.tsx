@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { thmanyahSans } from "@/app/shop/fonts";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return <div className="adm">{children}</div>;
+  return <div className={`adm ${thmanyahSans.variable}`}>{children}</div>;
 }

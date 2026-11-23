@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, CloudUpload, FolderUp, Loader2, Mail, SlidersHorizontal, X } from "lucide-react";
 import { abortUpload, completeUploadBatch, finishUpload, startUpload } from "@/app/admin/file-actions";
-import { datePrefix, printDayLabel, printFolderFor, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
+import { datePrefix, PRINT_QUEUE, fileCategories, formatBytes, MAX_FILE_SIZE, MAX_FILES_PER_UPLOAD, UPLOAD_CHUNK } from "@/lib/files/shared";
 import { previewsFromFile } from "@/lib/files/preview-client";
 import { savePreviews } from "@/lib/files/preview-upload";
 import { Notice } from "@/components/admin/ui";
@@ -92,7 +92,7 @@ export function FileUploader({
   const [drag, setDrag] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [dest, setDest] = useState<{ mode: "hier" | "druck" | "andere"; path: string }>({ mode: defaultTarget, path: folder });
-  const targetFolder = dest.mode === "druck" ? printFolderFor(datePrefix()) : dest.mode === "andere" ? dest.path : folder;
+  const targetFolder = dest.mode === "druck" ? PRINT_QUEUE : dest.mode === "andere" ? dest.path : folder;
   const [opts, setOpts] = useState({ projectId: defaultProjectId ?? "", message: "", assignedTo: "", notify: true, category: "", withDate: false });
   // Anzeige-Kopie des Upload-Zustands (die Arbeitsdaten liegen in Refs)
   const [view, setView] = useState<{ items: Item[]; running: boolean }>({ items: [], running: false });
@@ -340,7 +340,7 @@ export function FileUploader({
           {(
             [
               ["hier", `📁 ${folderLabel(folder)}`],
-              ["druck", `🖨 Druck heute · ${printDayLabel(datePrefix()).split(", ")[1] ?? datePrefix()}`],
+              ["druck", "🖨 Heute drucken"],
             ] as const
           ).map(([mode, label]) => (
             <button
