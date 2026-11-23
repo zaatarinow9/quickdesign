@@ -11,6 +11,7 @@ import { CustomerForm } from "@/components/admin/CustomerForm";
 import { CategoryChip, CategoryPicker } from "@/components/admin/CustomerCategories";
 import { ConfirmSubmit } from "@/components/admin/documents/panels";
 import { DeleteButton } from "@/components/admin/DeleteControls";
+import { NavLink } from "@/components/admin/NavLink";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileBrowser } from "@/components/admin/files/FileBrowser";
 import { Badge, Card, EmptyState, PageHeader, Stat, statusTone } from "@/components/admin/ui";
@@ -130,16 +131,17 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       <nav className="sticky top-0 z-20 -mx-4 mt-6 overflow-x-auto bg-paper/85 px-4 py-2 backdrop-blur sm:-mx-7 sm:px-7 lg:-mx-10 lg:px-10" aria-label="Kundenakte">
         <div className="flex w-max gap-1 rounded-2xl bg-ink/[0.05] p-1">
           {TABS.map(([key, label, Icon]) => (
-            <Link
+            <NavLink
               key={key}
               href={tabHref(key)}
+              eager
               scroll={false}
               className={cn("inline-flex h-9 items-center gap-2 rounded-xl px-3.5 text-sm transition", tab === key ? "bg-white font-semibold shadow-sm" : "text-stone-dark hover:text-ink")}
               aria-current={tab === key ? "page" : undefined}
             >
               <Icon className="size-4" aria-hidden /> {label}
               {counts[key] ? <span className="rounded-full bg-ink/[0.07] px-1.5 text-[0.7rem] tabular-nums">{counts[key]}</span> : null}
-            </Link>
+            </NavLink>
           ))}
         </div>
       </nav>
