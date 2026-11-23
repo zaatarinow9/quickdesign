@@ -54,7 +54,7 @@ export function ViewerShell({ back, modal = false, children }: { back: string; m
   }, []);
   return (
     <div
-      className="qd-fade-in fixed inset-0 z-[60] bg-black/70 p-0 backdrop-blur-md sm:p-4 lg:p-6"
+      className="qd-fade-in fixed inset-0 z-[60] bg-black/60 p-0 sm:p-4 lg:left-[17rem] lg:p-6"
       onMouseDown={(e) => {
         const t = e.target as HTMLElement;
         if (t === e.currentTarget || t.hasAttribute("data-viewer-backdrop")) close();
