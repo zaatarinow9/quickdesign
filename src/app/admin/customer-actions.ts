@@ -76,7 +76,7 @@ export async function saveCustomer(_prev: ActionState, fd: FormData): Promise<Ac
     revalidatePath("/admin/kunden");
     return { ok: "Kunde gespeichert." };
   }
-  const { data, error } = await client.from("customers").insert({ ...parsed.data, source: "manuell", created_by: admin.email }).select("id, customer_number, name, company_name").single();
+  const { data, error } = await client.from("customers").insert({ ...parsed.data, source: "manuell", created_by: admin.email }).select("id, customer_number, name, company_name, created_at").single();
   if (error || !data) return { error: "Kunde konnte nicht angelegt werden." };
   await ensureCustomerFolder(data);
   if (parsed.data.tags.length) await client.from("customer_categories").upsert(parsed.data.tags.map((name) => ({ name, sort: 100 })), { onConflict: "name", ignoreDuplicates: true });

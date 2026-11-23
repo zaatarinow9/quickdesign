@@ -77,6 +77,32 @@ export const joinFolder = (...parts: (string | null | undefined)[]) => normalize
 export const parentFolder = (path: string) => path.split("/").slice(0, -1).join("/");
 export const folderName = (path: string) => path.split("/").pop() || "Alle Dateien";
 
+/* ------------------------------ Jahr / Monat ------------------------------ */
+
+export const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+/** Monatsordner: „11 November“ (sortiert sich richtig) */
+export const monthFolderName = (m: number) => `${String(m).padStart(2, "0")} ${MONTHS_DE[m - 1]}`;
+/** Jahr und Monat eines Zeitpunkts in Berliner Zeit */
+export function berlinYearMonth(d: Date | string = new Date()) {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit" }).format(new Date(d)).split("-");
+  return { year: Number(y), month: Number(m) };
+}
+/** Ordner eines Monats unterhalb des Kundenordners: Kunden/2026/11 November */
+export const monthFolderPath = (root: string, d: Date | string = new Date()) => {
+  const { year, month } = berlinYearMonth(d);
+  return joinFolder(root, String(year), monthFolderName(month));
+};
+
+/** Dateitypen für die Suche */
+export const fileTypeGroups: Record<string, { label: string; ext: string[] }> = {
+  bilder: { label: "Bilder", ext: ["jpg", "jpeg", "png", "webp", "gif", "heic", "tif", "tiff", "bmp"] },
+  pdf: { label: "PDF", ext: ["pdf"] },
+  design: { label: "Design", ext: ["ai", "psd", "eps", "indd", "cdr", "svg", "afdesign", "sketch", "fig"] },
+  office: { label: "Office", ext: ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "csv", "txt"] },
+  video: { label: "Video", ext: ["mp4", "mov", "m4v", "avi", "webm"] },
+  archiv: { label: "Archiv", ext: ["zip", "rar", "7z"] },
+};
+
 /* ------------------------------ Vorschau ------------------------------ */
 
 export type ViewerKind = "image" | "tiff" | "heic" | "psd" | "pdf" | "eps" | "video" | "audio" | "text" | "csv" | "office" | "zip" | "font" | "none";

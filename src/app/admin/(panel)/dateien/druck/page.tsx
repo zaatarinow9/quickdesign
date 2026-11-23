@@ -2,11 +2,10 @@ import Link from "next/link";
 import { CalendarDays, ChevronRight, Printer } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { isR2Configured } from "@/lib/files/r2";
-import { allFolderPaths, fileCounts, printDays, projectOptions, teamMembers } from "@/lib/files/server";
+import { allFolderPaths, printDays, projectOptions, teamMembers } from "@/lib/files/server";
 import { fileStatuses, fileStatusInfo, formatBytes, printDayLabel, printFolderFor } from "@/lib/files/shared";
 import { todayBerlin } from "@/lib/documents/format";
 import { FileUploader } from "@/components/admin/files/FileUploader";
-import { DateienTabs } from "@/components/admin/files/DateienTabs";
 import { Card, EmptyState, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +27,13 @@ function StatusBar({ byStatus, total }: { byStatus: Partial<Record<string, numbe
 export default async function PrintPage() {
   await requireAdmin();
   const today = todayBerlin();
-  const [days, projects, team, allFolders, counts] = await Promise.all([printDays(), projectOptions(), teamMembers(), allFolderPaths(), fileCounts()]);
+  const [days, projects, team, allFolders] = await Promise.all([printDays(), projectOptions(), teamMembers(), allFolderPaths()]);
   const todayEntry = days.find((d) => d.date === today) ?? { date: today, path: printFolderFor(today), total: 0, size: 0, byStatus: {}, last: null };
   const past = days.filter((d) => d.date !== today);
 
   return (
     <>
       <PageHeader title="Druck – Tagesordner" description="Alles, was für den Druck hochgeladen wird, landet automatisch im Ordner des Tages. So sieht man sofort, was heute anliegt und was schon gedruckt ist." />
-      <div className="mb-5">
-        <DateienTabs active="druck" counts={{ alle: counts.alle, aktiv: counts.aktiv }} />
-      </div>
 
       <Card className="mb-6" title={<span className="flex items-center gap-2"><Printer className="size-4 text-accent" aria-hidden /> Heute · {printDayLabel(today)}</span>} action={<Link href={href(todayEntry.path)} className="text-xs text-accent hover:underline">Ordner öffnen →</Link>}>
         <div className="mb-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">

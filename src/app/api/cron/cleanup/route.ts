@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { db } from "@/lib/supabase/admin";
 import { safeEqual } from "@/lib/security";
 import { deleteObject, isR2Configured } from "@/lib/files/r2";
+import { ensureYearFolders } from "@/lib/customers/folder";
 
 /** Täglicher Job (Vercel Cron): Löschfristen laut Datenschutzerklärung umsetzen. */
 export async function GET(request: Request) {
@@ -29,6 +30,8 @@ export async function GET(request: Request) {
       staleUploads++;
     }
   }
+  // Kundenordner für das laufende Jahr (am 1. Januar entsteht so automatisch das neue Jahr mit 12 Monaten)
+  await ensureYearFolders().catch(() => {});
   // Papierkorb: nach 30 Tagen endgültig löschen (inkl. Speicherobjekte)
   let trashPurged = 0;
   {
