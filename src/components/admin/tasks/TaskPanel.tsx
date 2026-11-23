@@ -84,8 +84,8 @@ export function TaskPanel({ data, team, customers, projects, configured }: { dat
   const done = data.checklist.filter((c) => c.done).length;
 
   return (
-    <div className="qd-fade-in fixed inset-0 z-[55] flex items-stretch justify-center bg-ink/50 p-0 backdrop-blur-[3px] sm:p-3 lg:p-5" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="qd-pop-in flex h-full w-full max-w-[112rem] flex-col overflow-hidden bg-white shadow-2xl sm:rounded-3xl" role="dialog" aria-modal="true" aria-label={t.title}>
+    <div className="qd-fade-in fixed inset-0 z-[55] flex items-stretch justify-center bg-ink/35 p-0 sm:p-4 lg:left-[17rem] lg:p-6 xl:p-8" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <div className="qd-pop-in flex h-full w-full max-w-[96rem] flex-col overflow-hidden bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-ink/10 sm:rounded-3xl" role="dialog" aria-modal="true" aria-label={t.title}>
         {/* Kopf */}
         <header className="flex items-center gap-2 border-b border-ink/[0.07] px-4 py-3 sm:px-6">
           <span className="text-xs text-stone-dark">Aufgabe</span>

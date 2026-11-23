@@ -214,12 +214,22 @@
 @layer components {
   .adm {
     /* Arabische Zeichen in der Verwaltung: Thmanyah (Inter/Outfit haben keine arabischen Glyphen) */
-    --font-sans: var(--font-inter), var(--font-thmanyah), ui-sans-serif, system-ui, sans-serif;
-    --font-display: var(--font-outfit), var(--font-inter), var(--font-thmanyah), ui-sans-serif, sans-serif;
-    font-family: var(--font-sans);
+    font-family: var(--font-ar), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
     background: #f7f6f3;
     color: var(--color-ink);
     min-height: 100dvh;
+  }
+  .adm input,
+  .adm textarea,
+  .adm select,
+  .adm button {
+    font-family: inherit;
+  }
+  .adm h1,
+  .adm h2,
+  .adm h3,
+  .adm .font-display {
+    font-family: var(--font-ar), var(--font-outfit), var(--font-inter), ui-sans-serif, sans-serif;
   }
   .adm-card {
     background: #fff;
