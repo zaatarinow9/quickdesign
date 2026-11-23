@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { ArrowLeft, CalendarPlus, ChevronRight, FileDown, FileText, FolderOpen, Hammer, History, Inbox, LayoutGrid, Mail, Phone, Receipt, Ruler, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ListChecks, CalendarPlus, ChevronRight, FileDown, FileText, FolderOpen, Hammer, History, Inbox, LayoutGrid, Mail, Phone, Receipt, Ruler, ShieldCheck } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/settings/server";
@@ -41,6 +41,7 @@ const actionLabel: Record<string, string> = {
 const TABS = [
   ["uebersicht", "Übersicht", LayoutGrid],
   ["dateien", "Dateien", FolderOpen],
+  ["aufgaben", "Aufgaben", ListChecks],
   ["aufmass", "Aufmaße", Ruler],
   ["auftraege", "Aufträge", Hammer],
   ["dokumente", "Angebote & Rechnungen", FileText],
@@ -262,6 +263,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
         {tab === "aufmass" ? <CustomerMeasurements customerId={c.id} /> : null}
 
+        {tab === "aufgaben" ? <CustomerTasks customerId={c.id} me={admin.email.toLowerCase()} /> : null}
+
         {tab === "auftraege" ? (
           <Card
             title="Aufträge & Termine"
@@ -398,6 +401,28 @@ async function CustomerFiles({ customer, folderParam }: { customer: { id: string
 async function CustomerMeasurements({ customerId }: { customerId: string }) {
   const { MeasurementList } = await import("@/components/admin/measure/MeasurementList");
   return <MeasurementList customerId={customerId} />;
+}
+
+/* ------------------------------ Aufgaben ------------------------------ */
+
+async function CustomerTasks({ customerId, me }: { customerId: string; me: string }) {
+  const [{ listTasks }, { TaskBoard }, { NewTaskButton }, team, customers] = await Promise.all([
+    import("@/lib/tasks/server"),
+    import("@/components/admin/tasks/TaskBoard"),
+    import("@/components/admin/tasks/NewTaskButton"),
+    teamMembers(),
+    customerOptionsForFolders(),
+  ]);
+  const tasks = await listTasks({ customerId, includeDone: true });
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-stone-dark">{tasks.filter((t) => t.status !== "erledigt").length} offen · Klick öffnet die Aufgabe</p>
+        <NewTaskButton team={team} customers={customers} me={me} customerId={customerId} />
+      </div>
+      <TaskBoard tasks={tasks} team={team} view="liste" />
+    </div>
+  );
 }
 
 /* ------------------------------ Verlauf ------------------------------ */

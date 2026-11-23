@@ -14,6 +14,7 @@ import {
   History,
   Inbox,
   KeyRound,
+  ListChecks,
   Trash2,
   LayoutDashboard,
   LogOut,
@@ -37,7 +38,7 @@ import { cn } from "@/lib/utils";
 type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; exact?: boolean };
 type Group = { title: string; items: Item[] };
 
-function groups(fullAccess: boolean, newInquiries: number): Group[] {
+function groups(fullAccess: boolean, newInquiries: number, openTasks: number): Group[] {
   return [
     { title: "", items: [{ href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true }] },
     {
@@ -45,6 +46,7 @@ function groups(fullAccess: boolean, newInquiries: number): Group[] {
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
         { href: "/admin/kunden", label: "Kunden", icon: Users },
+        { href: "/admin/aufgaben", label: "Aufgaben", icon: ListChecks, badge: openTasks },
         { href: "/admin/aufmass", label: "Aufmaß", icon: Ruler },
         { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
       ],
@@ -99,11 +101,13 @@ const isActive = (it: Item, p: string) => (it.exact ? p === it.href : p === it.h
 export function Sidebar({
   fullAccess,
   newInquiries,
+  openTasks = 0,
   user,
   signOut,
 }: {
   fullAccess: boolean;
   newInquiries: number;
+  openTasks?: number;
   user: { name: string; email: string; role: string };
   signOut: () => Promise<void>;
 }) {
@@ -136,7 +140,7 @@ export function Sidebar({
           </Link>
         ))}
       </div>
-      {groups(fullAccess, newInquiries).map((g) => (
+      {groups(fullAccess, newInquiries, openTasks).map((g) => (
         <div key={g.title || "root"}>
           {g.title ? <p className="mb-1.5 px-3 text-[0.7rem] font-medium uppercase tracking-wider text-paper/35">{g.title}</p> : null}
           <ul className="space-y-0.5">
