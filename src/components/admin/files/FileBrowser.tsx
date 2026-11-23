@@ -130,10 +130,18 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
   const [dialog, setDialog] = useState<null | { type: "neu" } | { type: "verschieben" } | { type: "kategorie" } | { type: "ordner"; f: FolderEntry; mode: "umbenennen" | "verschieben" | "farbe" }>(null);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  // Sofort sichtbare Änderungen (optimistisch) – der Server bestätigt im Hintergrund
+  const [gone, setGone] = useState<Set<string>>(new Set());
+  const [goneFolders, setGoneFolders] = useState<Set<string>>(new Set());
+  const [patches, setPatches] = useState<Record<string, Partial<StoredFile>>>({});
+  const live = useMemo(
+    () => files.filter((f) => !gone.has(f.id)).map((f) => (patches[f.id] ? { ...f, ...patches[f.id] } : f)),
+    [files, gone, patches],
+  );
 
-  const categories = useMemo(() => [...new Set(files.map((f) => f.category).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "de")), [files]);
-  const shownFiles = useMemo(() => sortFiles(category ? files.filter((f) => f.category === category) : files, sort), [files, sort, category]);
-  const shownFolders = useMemo(() => sortFolders(folders, sort), [folders, sort]);
+  const categories = useMemo(() => [...new Set(live.map((f) => f.category).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "de")), [live]);
+  const shownFiles = useMemo(() => sortFiles(category ? live.filter((f) => f.category === category) : live, sort), [live, sort, category]);
+  const shownFolders = useMemo(() => sortFolders(folders.filter((f) => !goneFolders.has(f.path)), sort), [folders, goneFolders, sort]);
   const allSelected = shownFiles.length > 0 && shownFiles.every((f) => selected.has(f.id));
 
   const toggle = (id: string) =>
@@ -143,13 +151,43 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
       else n.add(id);
       return n;
     });
-  const run = (fn: () => Promise<{ ok?: string; error?: string } | void>, after?: () => void) =>
+  // Server-Aktionen aktualisieren die Seite selbst (revalidatePath) – kein zusätzliches refresh nötig
+  const run = (fn: () => Promise<{ ok?: string; error?: string } | void>, after?: () => void, undo?: () => void) => {
+    after?.();
     start(async () => {
-      const r = await fn();
-      setMsg(r && "error" in r && r.error ? r.error : r && "ok" in r && r.ok ? r.ok : null);
-      after?.();
-      router.refresh();
+      try {
+        const r = await fn();
+        const err = r && "error" in r && r.error ? r.error : null;
+        if (err) undo?.();
+        setMsg(err ?? (r && "ok" in r && r.ok ? r.ok : null));
+      } catch {
+        undo?.();
+        setMsg("Aktion fehlgeschlagen – bitte erneut versuchen.");
+      }
     });
+  };
+  /** Dateien sofort ausblenden (Löschen/Verschieben), bei Fehler wieder zeigen */
+  const hide = (ids: string[]) => {
+    setGone((g) => new Set([...g, ...ids]));
+    return () => setGone((g) => new Set([...g].filter((x) => !ids.includes(x))));
+  };
+  const patch = (ids: string[], p: Partial<StoredFile>) => {
+    const before = Object.fromEntries(ids.map((id) => [id, patches[id]]));
+    setPatches((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, { ...m[id], ...p }])) }));
+    return () => setPatches((m) => ({ ...m, ...before }) as Record<string, Partial<StoredFile>>);
+  };
+  const removeFolder = (path: string) => {
+    setGoneFolders((g) => new Set([...g, path]));
+    const fd = new FormData();
+    fd.set("folder", path);
+    run(
+      async () => {
+        await deleteFolder(fd);
+      },
+      undefined,
+      () => setGoneFolders((g) => new Set([...g].filter((x) => x !== path))),
+    );
+  };
 
   const nameOf = (email: string | null) => (email ? (team.find((m) => m.email === email)?.name ?? email) : null);
 
@@ -236,7 +274,13 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
             aria-label="Status setzen"
             className="adm-input h-8 w-auto py-0 text-xs"
             value=""
-            onChange={(e) => e.target.value && run(() => updateFiles({ ids: [...selected], status: e.target.value }))}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (!v) return;
+              const ids = [...selected];
+              const undo = patch(ids, { status: v as StoredFile["status"] });
+              run(() => updateFiles({ ids, status: v }), undefined, undo);
+            }}
           >
             <option value="">Status setzen …</option>
             {fileStatuses.map((s) => (
@@ -248,7 +292,12 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
           <button
             type="button"
             className="adm-btn adm-btn-ghost adm-btn-sm bg-white text-red-700"
-            onClick={() => window.confirm(`${selected.size} Datei(en) endgültig löschen?`) && run(() => deleteFiles([...selected]), () => setSelected(new Set()))}
+            onClick={() => {
+              if (!window.confirm(`${selected.size} Datei(en) endgültig löschen?`)) return;
+              const ids = [...selected];
+              const undo = hide(ids);
+              run(() => deleteFiles(ids), () => setSelected(new Set()), undo);
+            }}
           >
             <Trash2 className="size-4" aria-hidden /> Löschen
           </button>
@@ -285,7 +334,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                   </span>
                 ) : null}
               </Link>
-              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} />
+              <FolderMenu f={f} onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} />
             </div>
           ))}
           {shownFiles.map((f) => {
@@ -372,7 +421,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                     {f.fileCount} Datei{f.fileCount === 1 ? "" : "en"}
                   </td>
                   <td className="relative py-2.5 pr-4 text-right">
-                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} />
+                    <FolderMenu f={f} inline onPick={(mode) => setDialog({ type: "ordner", f, mode })} onDelete={() => removeFolder(f.path)} />
                   </td>
                 </tr>
               ))}
@@ -440,15 +489,18 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
             allFolders={allFolders}
             initial={folder}
             pending={pending}
-            onPick={(target) =>
+            onPick={(target) => {
+              const ids = [...selected];
+              const undo = !flat && target !== folder ? hide(ids) : patch(ids, { folder: target });
               run(
-                () => moveFiles({ ids: [...selected], folder: target }),
+                () => moveFiles({ ids, folder: target }),
                 () => {
                   setSelected(new Set());
                   setDialog(null);
                 },
-              )
-            }
+                undo,
+              );
+            }}
           />
         </Modal>
       ) : null}
@@ -460,13 +512,19 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                 key={c}
                 type="button"
                 disabled={pending}
-                onClick={() => run(() => updateFiles({ ids: [...selected], category: c }), () => setDialog(null))}
+                onClick={() => {
+                  const ids = [...selected];
+                  run(() => updateFiles({ ids, category: c }), () => setDialog(null), patch(ids, { category: c }));
+                }}
                 className="h-9 rounded-full bg-ink/[0.05] px-3.5 text-sm hover:bg-accent hover:text-white"
               >
                 {c}
               </button>
             ))}
-            <button type="button" disabled={pending} onClick={() => run(() => updateFiles({ ids: [...selected], category: null }), () => setDialog(null))} className="h-9 rounded-full px-3.5 text-sm text-stone-dark ring-1 ring-ink/10 hover:ring-ink/30">
+            <button type="button" disabled={pending} onClick={() => {
+                const ids = [...selected];
+                run(() => updateFiles({ ids, category: null }), () => setDialog(null), patch(ids, { category: null }));
+              }} className="h-9 rounded-full px-3.5 text-sm text-stone-dark ring-1 ring-ink/10 hover:ring-ink/30">
               Keine Kategorie
             </button>
           </div>
@@ -475,7 +533,10 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
             onSubmit={(e) => {
               e.preventDefault();
               const v = String(new FormData(e.currentTarget).get("c") ?? "").trim();
-              if (v) run(() => updateFiles({ ids: [...selected], category: v }), () => setDialog(null));
+              if (v) {
+                const ids = [...selected];
+                run(() => updateFiles({ ids, category: v }), () => setDialog(null), patch(ids, { category: v }));
+              }
             }}
           >
             <input name="c" className="adm-input" placeholder="Eigene Kategorie …" maxLength={60} />
@@ -497,7 +558,6 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
               const r = await renameFolder({ path: dialog.f.path, name });
               setMsg(r.error ?? null);
               setDialog(null);
-              router.refresh();
             })
           }
           onMove={(target) =>
@@ -505,14 +565,12 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
               const r = await moveFolder({ path: dialog.f.path, target });
               setMsg(r.error ?? null);
               setDialog(null);
-              router.refresh();
             })
           }
           onColor={(color) =>
             start(async () => {
-              await setFolderColor({ path: dialog.f.path, color });
               setDialog(null);
-              router.refresh();
+              await setFolderColor({ path: dialog.f.path, color });
             })
           }
         />
@@ -521,7 +579,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
   );
 }
 
-function FolderMenu({ f, onPick, inline }: { f: FolderEntry; onPick: (mode: "umbenennen" | "verschieben" | "farbe") => void; inline?: boolean }) {
+function FolderMenu({ f, onPick, onDelete, inline }: { f: FolderEntry; onPick: (mode: "umbenennen" | "verschieben" | "farbe") => void; onDelete: () => void; inline?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={cn(inline ? "relative inline-block" : "absolute right-2 top-2")}>
@@ -557,12 +615,16 @@ function FolderMenu({ f, onPick, inline }: { f: FolderEntry; onPick: (mode: "umb
                 <Icon className="size-4 text-stone-dark" aria-hidden /> {label}
               </button>
             ))}
-            <form action={deleteFolder} onSubmit={(e) => !window.confirm(`Ordner „${f.name}“ mit allen Dateien und Unterordnern endgültig löschen?`) && e.preventDefault()}>
-              <input type="hidden" name="folder" value={f.path} />
-              <button type="submit" className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50">
-                <Trash2 className="size-4" aria-hidden /> Löschen
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                if (window.confirm(`Ordner „${f.name}“ mit allen Dateien und Unterordnern endgültig löschen?`)) onDelete();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="size-4" aria-hidden /> Löschen
+            </button>
           </div>
         </>
       ) : null}

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
@@ -39,6 +40,15 @@ async function ensureFolders(paths: string[], actor: string, extra?: { color?: s
     if (extra.customerId !== undefined) patch.customer_id = extra.customerId;
     if (Object.keys(patch).length) await db().from("file_folders").update(patch).eq("path", normalizeFolder(paths[0]));
   }
+}
+
+/** Speicherobjekte im Hintergrund löschen – die Oberfläche wartet nicht darauf */
+function purgeObjects(keys: (string | null | undefined)[]) {
+  const list = keys.filter((k): k is string => !!k);
+  if (!list.length) return;
+  after(async () => {
+    for (let i = 0; i < list.length; i += 20) await Promise.all(list.slice(i, i + 20).map((k) => deleteObject(k).catch(() => {})));
+  });
 }
 
 /** Dateiname für den Speicherschlüssel: nur sichere Zeichen */
@@ -157,12 +167,14 @@ export async function completeUploadBatch(input: { ids: string[]; notify: boolea
   const first = list[0];
   if (!first) return { error: "Die Dateien sind nicht angekommen. Bitte erneut versuchen." };
   const folders = [...new Set(list.map((r) => r.folder).filter(Boolean))];
-  await logFileEvents(ids.data, "hochgeladen", folders[0] ?? null, admin.name || admin.email);
-  await logActivity(admin.email, "hochgeladen", "datei", first.id, `${total} Datei(en)${folders[0] ? ` in „${folders[0]}“` : ""}: ${list.map((d) => d.name).join(", ").slice(0, 250)}`);
-  if (first.project_id) await logProjectEvent(first.project_id, "datei", `${total} Datei(en) hochgeladen`, admin.email);
-
-  let note = "";
-  if (input.notify && first.assigned_to) {
+  const actor = admin.name || admin.email;
+  const notifyTo = input.notify && first.assigned_to ? first.assigned_to : null;
+  // Protokoll und E-Mail im Hintergrund – die Dateien sind sofort sichtbar
+  after(async () => {
+    await logFileEvents(ids.data, "hochgeladen", folders[0] ?? null, actor);
+    await logActivity(admin.email, "hochgeladen", "datei", first.id, `${total} Datei(en)${folders[0] ? ` in „${folders[0]}“` : ""}: ${list.map((d) => d.name).join(", ").slice(0, 250)}`);
+    if (first.project_id) await logProjectEvent(first.project_id, "datei", `${total} Datei(en) hochgeladen`, admin.email);
+    if (!notifyTo) return;
     const s = await getSettings();
     let project: string | null = null;
     if (first.project_id) {
@@ -171,14 +183,14 @@ export async function completeUploadBatch(input: { ids: string[]; notify: boolea
     }
     const shown = list.slice(0, 25).map((d) => ({ name: d.folder ? `${d.folder}/${d.name}` : d.name, size: formatBytes(Number(d.size)) }));
     if (total > shown.length) shown.push({ name: `… und ${total - shown.length} weitere`, size: "" });
-    const target = folders.length === 1 ? `/admin/dateien?ordner=${encodeURIComponent(folders[0])}` : `/admin/dateien?fuer=${encodeURIComponent(first.assigned_to)}`;
-    const res = await sendMail(
-      first.assigned_to,
-      fileNotifyEmail({ siteUrl: env.siteUrl, company: mailCompany(s), from: admin.name || admin.email, files: shown, message: first.message, project, url: `${env.siteUrl}${target}` }),
+    const target = folders.length === 1 ? `/admin/dateien?ordner=${encodeURIComponent(folders[0])}` : `/admin/dateien?fuer=${encodeURIComponent(notifyTo)}`;
+    await sendMail(
+      notifyTo,
+      fileNotifyEmail({ siteUrl: env.siteUrl, company: mailCompany(s), from: actor, files: shown, message: first.message, project, url: `${env.siteUrl}${target}` }),
       { kind: "datei", relatedId: first.id },
     );
-    note = res.ok ? ` ${first.assigned_to} wurde per E-Mail informiert.` : ` E-Mail fehlgeschlagen: ${res.error}`;
-  }
+  });
+  const note = notifyTo ? ` ${notifyTo} wird per E-Mail informiert.` : "";
   paths(first.project_id);
   return { ok: `${total} Datei${total === 1 ? "" : "en"} hochgeladen.${note}` };
 }
@@ -193,19 +205,12 @@ export async function deleteFolder(fd: FormData) {
   const { data: all } = await client.from("files").select("id, object_key, thumb_key, preview_key, folder").like("folder", `${folder.slice(0, 1)}%`).limit(20000);
   const data = (all ?? []).filter((r) => r.folder === folder || String(r.folder).startsWith(`${folder}/`));
   const rows = data ?? [];
-  for (let i = 0; i < rows.length; i += 10) {
-    await Promise.all(
-      rows
-        .slice(i, i + 10)
-        .flatMap((r) => [r.object_key, r.thumb_key, r.preview_key].filter(Boolean))
-        .map((k) => deleteObject(k as string).catch(() => {})),
-    );
-  }
   if (rows.length) await client.from("files").delete().in("id", rows.map((r) => r.id));
+  purgeObjects(rows.flatMap((r) => [r.object_key, r.thumb_key, r.preview_key]));
   const { data: metas } = await client.from("file_folders").select("path").like("path", `${folder.slice(0, 1)}%`).limit(5000);
   const gone = (metas ?? []).map((m) => String(m.path)).filter((p) => p === folder || p.startsWith(`${folder}/`));
   if (gone.length) await client.from("file_folders").delete().in("path", gone);
-  await logActivity(admin.email, "gelöscht", "ordner", null, `Ordner „${folder}“ mit ${rows.length} Datei(en) gelöscht`);
+  after(() => logActivity(admin.email, "gelöscht", "ordner", null, `Ordner „${folder}“ mit ${rows.length} Datei(en) gelöscht`));
   paths();
 }
 
@@ -269,10 +274,9 @@ export async function deleteFile(fd: FormData) {
   if (!id.success) return;
   const { data } = await db().from("files").select("object_key, thumb_key, preview_key, name, project_id").eq("id", id.data).maybeSingle();
   if (!data) return;
-  await deleteObject(data.object_key);
-  await Promise.all([data.thumb_key, data.preview_key].filter(Boolean).map((k) => deleteObject(k as string).catch(() => {})));
   await db().from("files").delete().eq("id", id.data);
-  await logActivity(admin.email, "gelöscht", "datei", id.data, `Datei „${data.name}“ gelöscht`);
+  purgeObjects([data.object_key, data.thumb_key, data.preview_key]);
+  after(() => logActivity(admin.email, "gelöscht", "datei", id.data, `Datei „${data.name}“ gelöscht`));
   paths(data.project_id);
 }
 
@@ -367,7 +371,7 @@ export async function moveFiles(input: { ids: string[]; folder: string }): Promi
   const folder = normalizeFolder(input.folder);
   await ensureFolders([folder].filter(Boolean), admin.email);
   await db().from("files").update({ folder }).in("id", ids.data);
-  await logFileEvents(ids.data, "verschoben", folder || "Alle Dateien", admin.name || admin.email);
+  after(() => logFileEvents(ids.data, "verschoben", folder || "Alle Dateien", admin.name || admin.email));
   paths();
   return { ok: `${ids.data.length} Datei${ids.data.length === 1 ? "" : "en"} verschoben.` };
 }
@@ -395,16 +399,9 @@ export async function deleteFiles(ids: string[]): Promise<{ ok?: string; error?:
   if (!parsed.success) return { error: "Keine Dateien gewählt." };
   const { data } = await db().from("files").select("id, object_key, thumb_key, preview_key").in("id", parsed.data);
   const rows = data ?? [];
-  for (let i = 0; i < rows.length; i += 10) {
-    await Promise.all(
-      rows
-        .slice(i, i + 10)
-        .flatMap((r) => [r.object_key, r.thumb_key, r.preview_key].filter(Boolean))
-        .map((k) => deleteObject(k as string).catch(() => {})),
-    );
-  }
   await db().from("files").delete().in("id", parsed.data);
-  await logActivity(admin.email, "gelöscht", "datei", null, `${rows.length} Datei(en) gelöscht`);
+  purgeObjects(rows.flatMap((r) => [r.object_key, r.thumb_key, r.preview_key]));
+  after(() => logActivity(admin.email, "gelöscht", "datei", null, `${rows.length} Datei(en) gelöscht`));
   paths();
   return { ok: `${rows.length} Datei${rows.length === 1 ? "" : "en"} gelöscht.` };
 }
