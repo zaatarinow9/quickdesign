@@ -270,3 +270,37 @@ ${button(opts.url, n === 1 ? "Datei öffnen" : "Dateien öffnen")}
   const text = [`${opts.from} hat ${n} Datei${n === 1 ? "" : "en"} hochgeladen.`, opts.project ? `Projekt: ${opts.project}` : "", opts.message ?? "", "", ...opts.files.map((f) => `- ${f.name} (${f.size})`), "", opts.url].filter((x) => x !== "").join("\n");
   return { subject: `Neue Datei${n === 1 ? "" : "en"}: ${opts.files[0]?.name ?? ""}${n > 1 ? ` (+${n - 1})` : ""}`.slice(0, 190), html, text };
 }
+
+/** Neue Aufgabe für einen Kollegen */
+export function taskAssignedEmail(opts: {
+  siteUrl: string;
+  company: Company;
+  from: string;
+  title: string;
+  description: string | null;
+  due: string | null;
+  priority: string;
+  customer: string | null;
+  url: string;
+  kind?: "neu" | "kommentar";
+  comment?: string | null;
+}): EmailContent {
+  const comment = opts.kind === "kommentar";
+  const html = layout({
+    siteUrl: opts.siteUrl,
+    company: opts.company,
+    preheader: comment ? `${opts.from} hat kommentiert: ${opts.title}` : `${opts.from} hat dir eine Aufgabe zugewiesen: ${opts.title}`,
+    body: `<p style="margin:0 0 4px;font-size:13px;color:${STONE};">${comment ? "Neuer Kommentar" : "Neue Aufgabe für dich"}</p>
+<p style="margin:0 0 16px;font-family:Outfit,Inter,Arial,sans-serif;font-size:22px;font-weight:700;">${escapeHtml(opts.title)}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:14px;">
+<tr><td style="padding:3px 14px 3px 0;color:${STONE};">${comment ? "Von" : "Zugewiesen von"}</td><td style="padding:3px 0;font-weight:600;">${escapeHtml(opts.from)}</td></tr>
+${opts.due ? `<tr><td style="padding:3px 14px 3px 0;color:${STONE};">Fällig</td><td style="padding:3px 0;font-weight:600;">${escapeHtml(opts.due)}</td></tr>` : ""}
+<tr><td style="padding:3px 14px 3px 0;color:${STONE};">Priorität</td><td style="padding:3px 0;font-weight:600;">${escapeHtml(opts.priority)}</td></tr>
+${opts.customer ? `<tr><td style="padding:3px 14px 3px 0;color:${STONE};">Kunde</td><td style="padding:3px 0;font-weight:600;">${escapeHtml(opts.customer)}</td></tr>` : ""}
+</table>
+${comment && opts.comment ? `<div style="margin:0 0 16px;padding:14px 16px;background:${PAPER};border-left:3px solid ${ACCENT};border-radius:8px;">${nl2br(opts.comment)}</div>` : opts.description ? `<div style="margin:0 0 16px;padding:14px 16px;background:${PAPER};border-left:3px solid ${ACCENT};border-radius:8px;">${nl2br(opts.description)}</div>` : ""}
+${button(opts.url, "Aufgabe öffnen")}`,
+  });
+  const text = [comment ? `${opts.from} hat kommentiert:` : `${opts.from} hat dir eine Aufgabe zugewiesen:`, opts.title, opts.due ? `Fällig: ${opts.due}` : "", `Priorität: ${opts.priority}`, opts.customer ? `Kunde: ${opts.customer}` : "", "", (comment ? opts.comment : opts.description) ?? "", "", opts.url].filter((x) => x !== "").join("\n");
+  return { subject: (comment ? `Kommentar: ${opts.title}` : `Neue Aufgabe: ${opts.title}`).slice(0, 190), html, text };
+}

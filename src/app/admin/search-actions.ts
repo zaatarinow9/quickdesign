@@ -12,7 +12,7 @@ export async function globalSearch(query: string): Promise<SearchHit[]> {
   if (t.length < 2) return [];
   const like = `%${t}%`;
   const c = db();
-  const [customers, files, folders, projects, docs, measures, inquiries] = await Promise.all([
+  const [customers, files, folders, projects, docs, measures, inquiries, tasks] = await Promise.all([
     c.from("customers").select("id, name, company_name, customer_number, city").or(`name.ilike.${like},company_name.ilike.${like},customer_number.ilike.${like},email.ilike.${like},phone.ilike.${like},city.ilike.${like}`).limit(6),
     c.from("files").select("id, name, folder").eq("complete", true).ilike("name", like).order("created_at", { ascending: false }).limit(6),
     c.from("file_folders").select("path").ilike("path", like).limit(5),
@@ -20,9 +20,11 @@ export async function globalSearch(query: string): Promise<SearchHit[]> {
     c.from("documents").select("id, kind, number, title, customer_name, company_name").or(`number.ilike.${like},title.ilike.${like},customer_name.ilike.${like},company_name.ilike.${like}`).limit(5),
     c.from("measurements").select("id, number, title, site_address").or(`number.ilike.${like},title.ilike.${like},site_address.ilike.${like}`).limit(5),
     c.from("inquiries").select("id, reference, name, company_name").or(`reference.ilike.${like},name.ilike.${like},company_name.ilike.${like},email.ilike.${like}`).limit(4),
+    c.from("tasks").select("id, title, status, due_date").or(`title.ilike.${like},description.ilike.${like}`).order("created_at", { ascending: false }).limit(5),
   ]);
   const hits: SearchHit[] = [];
   for (const r of customers.data ?? []) hits.push({ group: "Kunden", title: r.company_name || r.name, sub: [r.company_name ? r.name : null, r.customer_number, r.city].filter(Boolean).join(" · "), href: `/admin/kunden/${r.id}` });
+  for (const r of tasks.data ?? []) hits.push({ group: "Aufgaben", title: r.title, sub: r.status === "erledigt" ? "Erledigt" : r.due_date ? `fällig ${r.due_date.split("-").reverse().join(".")}` : undefined, href: `/admin/aufgaben?wer=alle&aufgabe=${r.id}` });
   for (const r of measures.data ?? []) hits.push({ group: "Aufmaße", title: `${r.number} · ${r.title}`, sub: r.site_address ?? undefined, href: `/admin/aufmass/${r.id}` });
   for (const r of projects.data ?? []) hits.push({ group: "Aufträge", title: `${r.number} · ${r.title}`, sub: r.company_name || r.customer_name || undefined, href: `/admin/projekte/${r.id}` });
   for (const r of docs.data ?? []) hits.push({ group: "Angebote & Rechnungen", title: `${r.kind === "rechnung" ? "Rechnung" : "Angebot"} ${r.number ?? "(Entwurf)"}`, sub: [r.company_name || r.customer_name, r.title].filter(Boolean).join(" · "), href: `/admin/${r.kind === "rechnung" ? "rechnungen" : "angebote"}/${r.id}` });

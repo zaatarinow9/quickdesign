@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { FileText, Folder, Hammer, Inbox, Loader2, RotateCcw, Ruler, Trash2, UserRound, Files } from "lucide-react";
+import { FileText, ListChecks, Folder, Hammer, Inbox, Loader2, RotateCcw, Ruler, Trash2, UserRound, Files } from "lucide-react";
 import { purgeItems, restoreItems } from "@/app/admin/trash-actions";
 import { useFeedback } from "./feedback";
 import { cn } from "@/lib/utils";
 
 type Item = { id: string; kind: string; label: string; detail: string | null; deleted_by: string | null; deleted_at: string; expires: string };
 
-const icon: Record<string, typeof Files> = { dateien: Files, ordner: Folder, kunde: UserRound, auftrag: Hammer, anfrage: Inbox, dokument: FileText, aufmass: Ruler };
-const kindName: Record<string, string> = { dateien: "Dateien", ordner: "Ordner", kunde: "Kunde", auftrag: "Auftrag", anfrage: "Anfrage", dokument: "Angebot / Entwurf", aufmass: "Aufmaß" };
+const icon: Record<string, typeof Files> = { dateien: Files, ordner: Folder, kunde: UserRound, auftrag: Hammer, anfrage: Inbox, dokument: FileText, aufmass: Ruler, aufgabe: ListChecks };
+const kindName: Record<string, string> = { dateien: "Dateien", ordner: "Ordner", kunde: "Kunde", auftrag: "Auftrag", anfrage: "Anfrage", dokument: "Angebot / Entwurf", aufmass: "Aufmaß", aufgabe: "Aufgabe" };
 const fmt = (iso: string) => new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Berlin" }).format(new Date(iso));
 const daysLeft = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 864e5));
 

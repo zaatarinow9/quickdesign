@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CornerDownLeft, FilePlus2, FileText, Folder, FolderUp, Hammer, Inbox, Loader2, Receipt, Ruler, Search, Trash2, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { CornerDownLeft, ListChecks, FilePlus2, FileText, Folder, FolderUp, Hammer, Inbox, Loader2, Receipt, Ruler, Search, Trash2, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { globalSearch, type SearchHit } from "@/app/admin/search-actions";
 import { cn } from "@/lib/utils";
 
 const actions: (SearchHit & { icon: LucideIcon })[] = [
   { group: "Schnell anlegen", title: "Neuer Kunde", href: "/admin/kunden/neu", icon: UserPlus },
   { group: "Schnell anlegen", title: "Neues Aufmaß", href: "/admin/aufmass/neu", icon: Ruler },
+  { group: "Gehe zu", title: "Aufgaben", href: "/admin/aufgaben", icon: ListChecks },
   { group: "Schnell anlegen", title: "Neues Angebot", href: "/admin/angebote/neu", icon: FilePlus2 },
   { group: "Schnell anlegen", title: "Dateien hochladen", href: "/admin/dateien", icon: FolderUp },
   { group: "Gehe zu", title: "Kunden", href: "/admin/kunden", icon: Users },
@@ -18,7 +19,7 @@ const actions: (SearchHit & { icon: LucideIcon })[] = [
   { group: "Gehe zu", title: "Rechnungen", href: "/admin/rechnungen", icon: Receipt },
   { group: "Gehe zu", title: "Papierkorb", href: "/admin/papierkorb", icon: Trash2 },
 ];
-const groupIcon: Record<string, LucideIcon> = { Kunden: Users, Aufmaße: Ruler, Aufträge: Hammer, "Angebote & Rechnungen": FileText, Ordner: Folder, Dateien: FileText, Anfragen: Inbox };
+const groupIcon: Record<string, LucideIcon> = { Aufgaben: ListChecks, Kunden: Users, Aufmaße: Ruler, Aufträge: Hammer, "Angebote & Rechnungen": FileText, Ordner: Folder, Dateien: FileText, Anfragen: Inbox };
 
 export const openSearch = () => window.dispatchEvent(new Event("qd:search"));
 

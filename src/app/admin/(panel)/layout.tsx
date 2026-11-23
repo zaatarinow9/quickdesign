@@ -1,5 +1,6 @@
 import { hasFullAccess, requireAdmin, roleLabels } from "@/lib/auth";
 import { countNewInquiries } from "@/lib/admin/stats";
+import { myOpenTaskCount } from "@/lib/tasks/server";
 import { signOut } from "@/app/admin/auth-actions";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { AdminLive } from "@/components/admin/AdminLive";
@@ -17,16 +18,15 @@ export default async function PanelLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }) {
-  const [admin, newInquiries] = await Promise.all([
-    requireAdmin(),
-    countNewInquiries(),
-  ]);
+  const [admin, newInquiries] = await Promise.all([requireAdmin(), countNewInquiries()]);
+  const openTasks = await myOpenTaskCount(admin.email);
   return (
     <FeedbackProvider>
       <div className="min-h-dvh lg:pl-[17rem] print:pl-0">
         <Sidebar
           fullAccess={hasFullAccess(admin.role)}
           newInquiries={newInquiries}
+          openTasks={openTasks}
           user={{
             name: admin.name ?? admin.email,
             email: admin.email,
