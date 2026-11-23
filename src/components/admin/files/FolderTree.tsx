@@ -30,7 +30,7 @@ function build(list: { path: string; color: string | null; customer: boolean }[]
 }
 
 /** Ordnerbaum links: Schnellzugriff, Kunden (Jahr → Monat → Kunde), weitere Ordner */
-export function FolderTree({ folders, customerRoot, thisMonth, counts }: { folders: { path: string; color: string | null; customer: boolean }[]; customerRoot: string; thisMonth: string; counts: { mine: number; active: number } }) {
+export function FolderTree({ folders, customerRoot, thisMonth, counts }: { folders: { path: string; color: string | null; customer: boolean }[]; customerRoot: string; thisMonth: string; counts: { mine: number; active: number; print?: number } }) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const current = pathname === "/admin/dateien" ? (sp.get("ordner") ?? "") : null;
@@ -52,9 +52,9 @@ export function FolderTree({ folders, customerRoot, thisMonth, counts }: { folde
     { label: "Alle Dateien", href: "/admin/dateien", icon: HardDrive, active: current === "" && !sp.get("q") && !sp.get("fuer") },
     { label: "Kunden – dieser Monat", href: href(thisMonth), icon: Users, active: current === thisMonth },
     { label: "Für mich", href: "/admin/dateien?fuer=mich", icon: UserRound, active: sp.get("fuer") === "mich", count: counts.mine },
-    { label: "Druck heute", href: "/admin/dateien/druck", icon: Printer, active: pathname === "/admin/dateien/druck" },
+    { label: "Heute drucken", href: "/admin/dateien/druck", icon: Printer, active: pathname === "/admin/dateien/druck", count: counts.print },
     { label: "Ablauf (Tafel)", href: "/admin/dateien/ablauf", icon: ClipboardList, active: pathname === "/admin/dateien/ablauf", count: counts.active },
-    { label: "Papierkorb", href: "/admin/papierkorb", icon: Trash2, active: false },
+    { label: "Papierkorb", href: "/admin/dateien/papierkorb", icon: Trash2, active: pathname === "/admin/dateien/papierkorb" },
   ];
 
   const renderNode = (n: Node, depth: number) => {

@@ -154,9 +154,14 @@ export type ViewMode = "raster" | "liste";
 /* ------------------------------ Druck-Tagesordner ------------------------------ */
 
 export const PRINT_ROOT = "Druck";
-/** Tagesordner für Druckdaten, z. B. "Druck/2026-11-19" */
+/** Warteschlange: alles, was heute gedruckt werden soll (leert sich, sobald gedruckt) */
+export const PRINT_QUEUE = "Druck/Heute drucken";
+/** Archiv: gedruckte Dateien landen automatisch im Ordner des Drucktages */
+export const PRINTED_ROOT = "Druck/Gedruckt";
+export const printedFolderFor = (date: string) => `${PRINTED_ROOT}/${date}`;
+/** alte Tagesordner (vor der Warteschlange): "Druck/2026-11-19" */
 export const printFolderFor = (date: string) => `${PRINT_ROOT}/${date}`;
-export const isPrintDayFolder = (path: string) => /^Druck\/\d{4}-\d{2}-\d{2}$/.test(path);
+export const isPrintDayFolder = (path: string) => /^Druck\/(Gedruckt\/)?\d{4}-\d{2}-\d{2}$/.test(path);
 export function printDayLabel(date: string) {
   const d = new Date(`${date}T12:00:00Z`);
   return new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(d);

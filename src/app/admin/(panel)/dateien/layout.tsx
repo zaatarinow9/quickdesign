@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/settings/server";
 import { fileCounts, folderIndex } from "@/lib/files/server";
-import { monthFolderPath, normalizeFolder } from "@/lib/files/shared";
+import { monthFolderPath, normalizeFolder, PRINT_QUEUE } from "@/lib/files/shared";
 import { ensureYearFolders } from "@/lib/customers/folder";
 import { FolderTree } from "@/components/admin/files/FolderTree";
 
@@ -14,20 +14,21 @@ export default async function FilesLayout({ children }: { children: React.ReactN
   const s = await getSettings();
   const root = normalizeFolder(s.files.customerRoot) || "Kunden";
   await ensureYearFolders().catch(() => {});
-  const [folders, counts, mine] = await Promise.all([
+  const [folders, counts, mine, print] = await Promise.all([
     folderIndex(),
     fileCounts(),
     db().from("files").select("id", { count: "exact", head: true }).eq("complete", true).eq("assigned_to", admin.email.toLowerCase()).neq("status", "erledigt"),
+    db().from("files").select("id", { count: "exact", head: true }).eq("complete", true).eq("folder", PRINT_QUEUE),
   ]);
   const tree = (
     <Suspense fallback={null}>
-      <FolderTree folders={folders} customerRoot={root} thisMonth={monthFolderPath(root)} counts={{ mine: mine.count ?? 0, active: counts.aktiv }} />
+      <FolderTree folders={folders} customerRoot={root} thisMonth={monthFolderPath(root)} counts={{ mine: mine.count ?? 0, active: counts.aktiv, print: print.count ?? 0 }} />
     </Suspense>
   );
   return (
-    <div className="lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)] lg:gap-7 xl:grid-cols-[17rem_minmax(0,1fr)]">
+    <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-5 xl:grid-cols-[16.5rem_minmax(0,1fr)]">
       <aside className="hidden lg:block">
-        <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-3xl bg-white p-3 shadow-sm ring-1 ring-ink/[0.06]">{tree}</div>
+        <div className="sticky top-5 max-h-[calc(100dvh-2.5rem)] overflow-y-auto rounded-3xl bg-white p-3 shadow-sm ring-1 ring-ink/[0.06]">{tree}</div>
       </aside>
       <details className="mb-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-ink/[0.06] lg:hidden">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
