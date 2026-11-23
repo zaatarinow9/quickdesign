@@ -261,6 +261,51 @@ export function FileUploader({
     paint(true);
   };
 
+  // Drag & Drop auf der ganzen Seite: Dateien oder Ordner irgendwo loslassen
+  const addRef = useRef(add);
+  useEffect(() => {
+    addRef.current = add;
+  });
+  useEffect(() => {
+    if (!configured) return;
+    let depth = 0;
+    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+    const enter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth++;
+      setDrag(true);
+    };
+    const over = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+    const leave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (!depth) setDrag(false);
+    };
+    const drop = (e: DragEvent) => {
+      if (!hasFiles(e) || !e.dataTransfer) return;
+      e.preventDefault();
+      depth = 0;
+      setDrag(false);
+      // Einträge müssen sofort (synchron) gelesen werden – filesFromDrop tut das vor dem ersten await
+      void filesFromDrop(e.dataTransfer).then((list) => addRef.current(list));
+    };
+    window.addEventListener("dragenter", enter);
+    window.addEventListener("dragover", over);
+    window.addEventListener("dragleave", leave);
+    window.addEventListener("drop", drop);
+    return () => {
+      window.removeEventListener("dragenter", enter);
+      window.removeEventListener("dragover", over);
+      window.removeEventListener("dragleave", leave);
+      window.removeEventListener("drop", drop);
+    };
+  }, [configured]);
+
   if (!configured) {
     return <Notice tone="warn">Der Cloud-Speicher ist noch nicht verbunden. Sobald die R2-Zugangsschlüssel in Vercel hinterlegt sind, funktioniert der Upload.</Notice>;
   }
@@ -394,20 +439,16 @@ export function FileUploader({
       </div>
 
       {/* Ablagefläche */}
+      {drag ? (
+        <div className="pointer-events-none fixed inset-0 z-[70] grid place-items-center bg-accent/10 p-6 backdrop-blur-[2px]">
+          <div className="grid place-items-center gap-3 rounded-3xl border-2 border-dashed border-accent bg-white/95 px-10 py-9 text-center shadow-2xl">
+            <CloudUpload className="size-12 text-accent" aria-hidden />
+            <p className="text-lg font-semibold">Loslassen zum Hochladen</p>
+            <p className="text-sm text-stone-dark">Dateien und ganze Ordner – die Struktur bleibt erhalten</p>
+          </div>
+        </div>
+      ) : null}
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "copy";
-          setDrag(true);
-        }}
-        onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrag(false);
-        }}
-        onDrop={async (e) => {
-          e.preventDefault();
-          setDrag(false);
-          add(await filesFromDrop(e.dataTransfer));
-        }}
         className={cn(
           "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed text-center transition-colors",
           compact ? "px-4 py-6" : "px-6 py-9",
