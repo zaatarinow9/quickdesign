@@ -6,12 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Calendar, Check, Flag, FolderOpen, History, ListChecks, Loader2, Paperclip, Plus, Send, Trash2, UserRound, Users, X } from "lucide-react";
 import { addChecklistItem, addTaskComment, deleteChecklistItem, deleteTask, toggleChecklistItem, updateTask } from "@/app/admin/task-actions";
 import { useFeedback } from "@/components/admin/feedback";
+import { DatePicker } from "@/components/admin/DatePicker";
 import { FileIcon } from "@/components/admin/files/FileIcon";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { personColor, taskPriorities, taskPriorityInfo, taskStatuses, taskStatusInfo, type Task, type TaskPriority, type TaskStatus, type TeamMember } from "@/lib/tasks/shared";
 import type { StoredFile } from "@/lib/files/shared";
 import { cn } from "@/lib/utils";
-import { Avatar, StatusIcon } from "./TaskBoard";
+import { Avatar, StatusIcon } from "./TaskBits";
 
 type Detail = {
   task: Task;
@@ -35,6 +36,7 @@ export function TaskPanel({ data, team, customers, projects, configured }: { dat
   const [title, setTitle] = useState(t.title);
   const [desc, setDesc] = useState(t.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(t.status);
+  const [due, setDue] = useState<string | null>(t.due_date);
   const [assignees, setAssignees] = useState<string[]>(t.assignees);
   const [pickPeople, setPickPeople] = useState(false);
   const [comment, setComment] = useState("");
@@ -82,8 +84,8 @@ export function TaskPanel({ data, team, customers, projects, configured }: { dat
   const done = data.checklist.filter((c) => c.done).length;
 
   return (
-    <div className="qd-fade-in fixed inset-0 z-[55] flex items-stretch justify-center bg-ink/50 p-0 backdrop-blur-[3px] sm:p-4 lg:p-8" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="qd-pop-in flex h-full w-full max-w-6xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-3xl" role="dialog" aria-modal="true" aria-label={t.title}>
+    <div className="qd-fade-in fixed inset-0 z-[55] flex items-stretch justify-center bg-ink/50 p-0 backdrop-blur-[3px] sm:p-3 lg:p-5" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <div className="qd-pop-in flex h-full w-full max-w-[112rem] flex-col overflow-hidden bg-white shadow-2xl sm:rounded-3xl" role="dialog" aria-modal="true" aria-label={t.title}>
         {/* Kopf */}
         <header className="flex items-center gap-2 border-b border-ink/[0.07] px-4 py-3 sm:px-6">
           <span className="text-xs text-stone-dark">Aufgabe</span>
@@ -185,7 +187,7 @@ export function TaskPanel({ data, team, customers, projects, configured }: { dat
                 </div>
               </Row>
               <Row icon={<Calendar className="size-4" />} label="Fällig">
-                <input type="date" defaultValue={t.due_date ?? ""} onChange={(e) => save({ due: e.target.value || null })} className="h-8 rounded-lg bg-transparent px-1 outline-none hover:bg-ink/[0.04]" aria-label="Fälligkeit" />
+                <DatePicker compact value={due} onChange={(v) => (setDue(v), save({ due: v }))} placeholder="Kein Datum" />
               </Row>
               <Row icon={<Flag className="size-4" />} label="Priorität">
                 <div className="flex flex-wrap gap-1">
@@ -295,7 +297,7 @@ export function TaskPanel({ data, team, customers, projects, configured }: { dat
           </div>
 
           {/* Rechts: Verlauf + Kommentare */}
-          <aside className="flex min-h-[22rem] flex-col border-t border-ink/[0.07] bg-[#faf9f6] lg:min-h-0 lg:border-l lg:border-t-0">
+          <aside className="flex min-h-[22rem] flex-col border-t border-ink/[0.07] bg-[#faf9f6] lg:min-h-0 lg:border-l lg:border-t-0 xl:w-[28rem]">
             <p className="flex items-center gap-2 border-b border-ink/[0.06] px-5 py-3 text-sm font-semibold">
               <History className="size-4 text-stone-dark" aria-hidden /> Verlauf & Kommentare
             </p>

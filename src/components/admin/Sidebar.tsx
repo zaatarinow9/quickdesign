@@ -22,6 +22,7 @@ import {
   Menu,
   Receipt,
   Search,
+  Timer,
   UserPlus,
   Ruler,
   Settings,
@@ -33,6 +34,7 @@ import {
 import { Logo } from "@/components/brand/Logo";
 import { openSearch } from "./CommandPalette";
 import { NavLink } from "./NavLink";
+import { openTimer } from "./time/TimerDock";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; exact?: boolean };
@@ -48,6 +50,7 @@ function groups(fullAccess: boolean, newInquiries: number, openTasks: number): G
         { href: "/admin/kunden", label: "Kunden", icon: Users },
         { href: "/admin/aufgaben", label: "Aufgaben", icon: ListChecks, badge: openTasks },
         { href: "/admin/aufmass", label: "Aufmaß", icon: Ruler },
+        { href: "/admin/zeiten", label: "Zeiterfassung", icon: Timer },
         { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
       ],
     },
@@ -126,6 +129,16 @@ export function Sidebar({
       >
         <Search className="size-4" aria-hidden /> <span className="flex-1 text-left">Suchen …</span>
         <kbd className="rounded bg-paper/10 px-1.5 text-[0.68rem]">Strg K</kbd>
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          openTimer();
+        }}
+        className="flex h-10 w-full items-center gap-2.5 rounded-xl bg-paper/[0.07] px-3 text-sm text-paper/80 ring-1 ring-paper/10 transition hover:bg-paper/[0.1] hover:text-paper"
+      >
+        <Timer className="size-4 text-accent" aria-hidden /> <span className="flex-1 text-left">Zeit erfassen</span>
       </button>
       <div className="grid grid-cols-3 gap-1.5">
         {(

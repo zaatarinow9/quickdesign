@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { ArrowLeft, ListChecks, CalendarPlus, ChevronRight, FileDown, FileText, FolderOpen, Hammer, History, Inbox, LayoutGrid, Mail, Phone, Receipt, Ruler, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Timer, ListChecks, CalendarPlus, ChevronRight, FileDown, FileText, FolderOpen, Hammer, History, Inbox, LayoutGrid, Mail, Phone, Receipt, Ruler, ShieldCheck } from "lucide-react";
 import { hasFullAccess, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/supabase/admin";
 import { getSettings } from "@/lib/settings/server";
@@ -12,6 +12,7 @@ import { CategoryChip, CategoryPicker } from "@/components/admin/CustomerCategor
 import { ConfirmSubmit } from "@/components/admin/documents/panels";
 import { DeleteButton } from "@/components/admin/DeleteControls";
 import { NavLink } from "@/components/admin/NavLink";
+import { StartTimerButton } from "@/components/admin/time/StartTimerButton";
 import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileBrowser } from "@/components/admin/files/FileBrowser";
 import { Badge, Card, EmptyState, PageHeader, Stat, statusTone } from "@/components/admin/ui";
@@ -42,6 +43,7 @@ const TABS = [
   ["uebersicht", "Übersicht", LayoutGrid],
   ["dateien", "Dateien", FolderOpen],
   ["aufgaben", "Aufgaben", ListChecks],
+  ["zeiten", "Zeiten", Timer],
   ["aufmass", "Aufmaße", Ruler],
   ["auftraege", "Aufträge", Hammer],
   ["dokumente", "Angebote & Rechnungen", FileText],
@@ -98,6 +100,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         }
         actions={
           <>
+            <StartTimerButton customerId={c.id} />
             <Link href={`/admin/kunden/${c.id}?tab=dateien`} className="adm-btn adm-btn-ghost">
               <FolderOpen className="size-4" aria-hidden /> Dateien
             </Link>
@@ -265,6 +268,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
         {tab === "aufgaben" ? <CustomerTasks customerId={c.id} me={admin.email.toLowerCase()} /> : null}
 
+        {tab === "zeiten" ? <CustomerTimes customerId={c.id} /> : null}
+
         {tab === "auftraege" ? (
           <Card
             title="Aufträge & Termine"
@@ -401,6 +406,14 @@ async function CustomerFiles({ customer, folderParam }: { customer: { id: string
 async function CustomerMeasurements({ customerId }: { customerId: string }) {
   const { MeasurementList } = await import("@/components/admin/measure/MeasurementList");
   return <MeasurementList customerId={customerId} />;
+}
+
+/* ------------------------------ Zeiten ------------------------------ */
+
+async function CustomerTimes({ customerId }: { customerId: string }) {
+  const [{ listEntries }, { TimeEntries }, customers] = await Promise.all([import("@/lib/time/server"), import("@/components/admin/time/TimeEntries"), customerOptionsForFolders()]);
+  const entries = await listEntries({ customerId, limit: 1000 });
+  return <TimeEntries entries={entries} customers={customers} customerId={customerId} />;
 }
 
 /* ------------------------------ Aufgaben ------------------------------ */
