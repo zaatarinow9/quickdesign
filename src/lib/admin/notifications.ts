@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/supabase/admin";
+import { visibleTo } from "@/lib/notify-filter";
 
 export type AdminNotification = { id: number; category: string; title: string; body: string; href: string | null; at: string; unread: boolean };
 
@@ -13,6 +14,7 @@ function toAdminHref(link: string | null): string | null {
   if (kind === "files") return `/admin/dateien/${id}/ansicht`;
   if (kind === "shop") return `/admin/shop`;
   if (kind === "tasks") return `/admin/aufgaben?wer=alle&aufgabe=${id}`;
+  if (kind === "appointments") return `/admin/termine?termin=${id}`;
   return null;
 }
 
@@ -21,7 +23,7 @@ export async function getNotifications(email: string): Promise<{ items: AdminNot
   const me = email.toLowerCase();
   const client = db();
   const [{ data }, { data: state }] = await Promise.all([
-    client.from("staff_notifications").select("id, category, title_de, body_de, link, created_at").or(`target_email.is.null,target_email.eq.${me}`).order("created_at", { ascending: false }).limit(30),
+    client.from("staff_notifications").select("id, category, title_de, body_de, link, created_at").or(visibleTo(me)).order("created_at", { ascending: false }).limit(30),
     client.from("staff_read_state").select("last_read_at").eq("user_email", me).maybeSingle(),
   ]);
   const last = state?.last_read_at ?? "1970-01-01";

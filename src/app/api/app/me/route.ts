@@ -1,5 +1,6 @@
 import { route } from "@/lib/app/auth";
 import { db } from "@/lib/supabase/admin";
+import { visibleTo } from "@/lib/notify-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,6 @@ export const GET = route(async (_req, u) => {
     .from("staff_notifications")
     .select("id", { count: "exact", head: true })
     .gt("created_at", since)
-    .or(`target_email.is.null,target_email.eq.${u.email}`);
+    .or(visibleTo(u.email));
   return { user: { email: u.email, name: who?.full_name || u.name, role: u.role, full: u.full }, unread: count ?? 0 };
 });

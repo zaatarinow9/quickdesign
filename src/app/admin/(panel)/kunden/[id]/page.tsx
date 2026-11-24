@@ -22,6 +22,7 @@ import { allFolderPaths, customerOptionsForFolders, listFiles, projectOptions, s
 import { isSortKey, normalizeFolder } from "@/lib/files/shared";
 import { formatAppointment, projectStatusInfo, type ProjectStatus } from "@/lib/projects/shared";
 import { cn } from "@/lib/utils";
+import { NewAppointmentButton } from "@/components/admin/appointments/NewAppointmentButton";
 
 export const metadata = { title: "Kunde" };
 
@@ -101,6 +102,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         actions={
           <>
             <StartTimerButton customerId={c.id} />
+            <NewAppointmentButton customerId={c.id} label="Termin" className="adm-btn adm-btn-ghost" />
             <Link href={`/admin/kunden/${c.id}?tab=dateien`} className="adm-btn adm-btn-ghost">
               <FolderOpen className="size-4" aria-hidden /> Dateien
             </Link>

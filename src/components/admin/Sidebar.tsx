@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
   ExternalLink,
   FilePlus2,
   FileText,
@@ -42,7 +43,7 @@ import { cn } from "@/lib/utils";
 type Item = { href: string; label: string; icon: typeof Inbox; badge?: number; badgeMuted?: boolean; exact?: boolean };
 type Group = { title: string; items: Item[] };
 
-function groups(fullAccess: boolean, newInquiries: number, openTasks: number, unreadTasks: number): Group[] {
+function groups(fullAccess: boolean, newInquiries: number, openTasks: number, unreadTasks: number, todayAppointments: number): Group[] {
   return [
     { title: "", items: [{ href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true }] },
     {
@@ -50,10 +51,11 @@ function groups(fullAccess: boolean, newInquiries: number, openTasks: number, un
       items: [
         { href: "/admin/anfragen", label: "Anfragen", icon: Inbox, badge: newInquiries },
         { href: "/admin/kunden", label: "Kunden", icon: Users },
+        { href: "/admin/termine", label: "Termine", icon: CalendarDays, badge: todayAppointments, badgeMuted: true },
         { href: "/admin/aufgaben", label: "Aufgaben", icon: ListChecks, badge: unreadTasks || openTasks, badgeMuted: !unreadTasks },
         { href: "/admin/aufmass", label: "Aufmaß", icon: Ruler },
         { href: "/admin/zeiten", label: "Zeiterfassung", icon: Timer },
-        { href: "/admin/projekte", label: "Aufträge & Termine", icon: Hammer },
+        { href: "/admin/projekte", label: "Aufträge", icon: Hammer },
       ],
     },
     {
@@ -108,6 +110,7 @@ export function Sidebar({
   newInquiries,
   openTasks = 0,
   unreadTasks = 0,
+  todayAppointments = 0,
   notifications,
   user,
   signOut,
@@ -116,6 +119,7 @@ export function Sidebar({
   newInquiries: number;
   openTasks?: number;
   unreadTasks?: number;
+  todayAppointments?: number;
   notifications: { items: Parameters<typeof NotificationBell>[0]["items"]; unread: number };
   user: { name: string; email: string; role: string; avatar?: string | null };
   signOut: () => Promise<void>;
@@ -160,7 +164,7 @@ export function Sidebar({
           </Link>
         ))}
       </div>
-      {groups(fullAccess, newInquiries, openTasks, unreadTasks).map((g) => (
+      {groups(fullAccess, newInquiries, openTasks, unreadTasks, todayAppointments).map((g) => (
         <div key={g.title || "root"}>
           {g.title ? <p className="mb-1.5 px-3 text-[0.7rem] font-medium uppercase tracking-wider text-paper/35">{g.title}</p> : null}
           <ul className="space-y-0.5">
