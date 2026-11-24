@@ -11,7 +11,6 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "de.quickdesign24.team",
       "supportsTablet": true,
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": [
