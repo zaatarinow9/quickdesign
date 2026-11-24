@@ -6,7 +6,6 @@ import { todayBerlin } from "@/lib/appointments/shared";
 import { getNotifications } from "@/lib/admin/notifications";
 import { db } from "@/lib/supabase/admin";
 import { runningEntry } from "@/lib/time/server";
-import { customerOptionsForFolders } from "@/lib/files/server";
 import { TimerDock } from "@/components/admin/time/TimerDock";
 import { signOut } from "@/app/admin/auth-actions";
 import { Sidebar } from "@/components/admin/Sidebar";
@@ -26,10 +25,9 @@ export default async function PanelLayout({
   modal: React.ReactNode;
 }) {
   const [admin, newInquiries] = await Promise.all([requireAdmin(), countNewInquiries()]);
-  const [tasks, running, customers, notifications, { data: profile }, appointmentsToday] = await Promise.all([
+  const [tasks, running, notifications, { data: profile }, appointmentsToday] = await Promise.all([
     taskBadge(admin.email),
     runningEntry(admin.email),
-    customerOptionsForFolders(),
     getNotifications(admin.email),
     db().from("staff_profiles").select("avatar_url, display_name").eq("email", admin.email.toLowerCase()).maybeSingle(),
     todayCount(admin.email, todayBerlin()),
@@ -56,7 +54,7 @@ export default async function PanelLayout({
         </main>
         {modal}
         <CommandPalette />
-        <TimerDock running={running} customers={customers} />
+        <TimerDock running={running} />
         <Suspense fallback={null}>
           <NavProgress />
         </Suspense>

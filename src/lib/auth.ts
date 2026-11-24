@@ -73,12 +73,35 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
   }
 });
 
+/**
+ * Schneller Weg für jede Verwaltungsseite: Das Token wird lokal geprüft (getClaims, ohne Anfrage
+ * an den Anmeldeserver). Nur wenn die Sitzung noch nicht vollständig bestätigt ist (aal1),
+ * geht es über den ausführlichen Weg mit Rückfragen.
+ */
+const fastAdmin = cache(async (): Promise<AdminUser | null> => {
+  try {
+    const supabase = await supabaseAuth();
+    const { data, error } = await supabase.auth.getClaims();
+    const claims = data?.claims as { sub?: string; email?: string; aal?: string } | undefined;
+    if (error || !claims?.sub || !claims.email || claims.aal !== "aal2") return null;
+    const role = await resolveRole({ id: claims.sub, email: claims.email, email_confirmed_at: "verified-by-mfa" });
+    if (!role) return null;
+    return { id: claims.sub, email: claims.email, role: role.role, name: role.name };
+  } catch {
+    return null;
+  }
+});
+
 export const getAdmin = cache(async (): Promise<AdminUser | null> => {
+  const fast = await fastAdmin();
+  if (fast) return fast;
   const state = await getAuthState();
   return state.status === "ok" ? state.admin : null;
 });
 
 export async function requireAdmin(): Promise<AdminUser> {
+  const fast = await fastAdmin();
+  if (fast) return fast;
   const state = await getAuthState();
   if (state.status === "mfa") redirect("/admin/login/bestaetigen");
   if (state.status === "enroll") redirect("/admin/2fa-einrichten");

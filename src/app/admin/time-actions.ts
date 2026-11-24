@@ -111,3 +111,10 @@ export async function deleteEntry(id: string) {
   await db().from("time_entries").delete().eq("id", id);
   refresh();
 }
+
+/** Kunden zur Auswahl in der Stoppuhr (wird erst beim Öffnen geladen) */
+export async function customerOptionsAction() {
+  await assertAdmin();
+  const { customerOptionsForFolders } = await import("@/lib/files/server");
+  return customerOptionsForFolders();
+}

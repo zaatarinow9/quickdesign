@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Pause, Play, Search, Square, Timer, Trash2, X } from "lucide-react";
-import { pauseTimer, resumeTimer, startTimer, stopTimer } from "@/app/admin/time-actions";
+import { customerOptionsAction, pauseTimer, resumeTimer, startTimer, stopTimer } from "@/app/admin/time-actions";
 import { useFeedback } from "@/components/admin/feedback";
 import { clock, elapsedSeconds, type TimeEntry } from "@/lib/time/shared";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,11 @@ export const openTimer = (customerId?: string) => window.dispatchEvent(new Custo
  * Zeiterfassung: schwebende Stoppuhr unten rechts, sichtbar auf allen Seiten.
  * Start mit Kunde + Notiz, Pause/Weiter, Stopp mit „Was wurde gemacht?“ → gespeichert beim Kunden.
  */
-export function TimerDock({ running, customers }: { running: TimeEntry | null; customers: Customer[] }) {
+let customerCache: Promise<Customer[]> | null = null;
+
+export function TimerDock({ running }: { running: TimeEntry | null }) {
+  // Kundenliste erst laden, wenn die Stoppuhr gebraucht wird (hält jede Seite schlank)
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const { toast } = useFeedback();
   const [pending, start] = useTransition();
   const [now, setNow] = useState(() => Date.now());
@@ -43,6 +47,19 @@ export function TimerDock({ running, customers }: { running: TimeEntry | null; c
     window.addEventListener("qd:timer", onOpen);
     return () => window.removeEventListener("qd:timer", onOpen);
   }, [local]);
+
+  useEffect(() => {
+    if (!dialog || customers.length) return;
+    customerCache ??= customerOptionsAction().catch(() => {
+      customerCache = null;
+      return [];
+    });
+    let alive = true;
+    void customerCache.then((list) => alive && setCustomers(list));
+    return () => {
+      alive = false;
+    };
+  }, [dialog, customers.length]);
 
   const secs = local ? elapsedSeconds(local, now) : 0;
   const paused = !!local?.paused_at;

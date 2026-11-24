@@ -32,7 +32,7 @@ export default function SplitText({
   lineClassName,
   delay = 0,
   stagger = 0.06,
-  duration = 1.1,
+  duration = 0.7,
   immediate = false,
 }: SplitTextProps) {
   const reduce = useReducedMotion();
