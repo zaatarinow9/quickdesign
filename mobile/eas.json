@@ -16,6 +16,13 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "sim-release": {
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Release"
+      },
+      "distribution": "internal"
     }
   },
   "submit": {
