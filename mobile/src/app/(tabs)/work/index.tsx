@@ -5,18 +5,19 @@ import { useApi } from "@/lib/api";
 import { fmt, useT } from "@/lib/i18n";
 import { projectTone, space } from "@/lib/theme";
 import { Chip, Empty, ErrorView, Item, List, Loading, Page, SearchBar, Segments, Txt, typeIcon } from "@/components/ui";
+import { Agenda } from "@/components/agenda";
 
 type P = { id: string; number: string; title: string; kind: string; status: string; customer_name: string; company_name: string | null; appointment_type: string | null; appointment_date: string | null; appointment_time: string | null; site_city: string | null };
-type Filter = "auftrag" | "aufgabe" | "done";
+type Filter = "termine" | "auftrag" | "aufgabe" | "done";
 
 export default function Work() {
   const { t, lang } = useT();
   const f = fmt(lang);
-  const [filter, setFilter] = useState<Filter>("auftrag");
+  const [filter, setFilter] = useState<Filter>("termine");
   const [q, setQ] = useState("");
-  const params = new URLSearchParams(filter === "done" ? { scope: "done" } : { kind: filter });
+  const params = new URLSearchParams(filter === "done" ? { scope: "done" } : { kind: filter === "termine" ? "auftrag" : filter });
   if (q.trim()) params.set("q", q.trim());
-  const { data, error, loading, refreshing, refresh, reload } = useApi<{ items: P[] }>(`/projects?${params}`);
+  const { data, error, loading, refreshing, refresh, reload } = useApi<{ items: P[] }>(filter === "termine" ? null : `/projects?${params}`);
   const items = [...(data?.items ?? [])].sort((a, b) => (a.appointment_date ?? "9999").localeCompare(b.appointment_date ?? "9999"));
   const today = new Date().toISOString().slice(0, 10);
 
@@ -27,18 +28,19 @@ export default function Work() {
   }
 
   return (
-    <Page title={t.project.title} refreshing={refreshing} onRefresh={refresh}>
-      <SearchBar value={q} onChange={setQ} placeholder={t.common.search} />
+    <Page title={filter === "termine" ? t.appt.title : t.project.title} refreshing={refreshing} onRefresh={refresh} actions={[{ icon: "add", onPress: () => router.push("/work/termin-neu") }]}>
+      {filter === "termine" ? null : <SearchBar value={q} onChange={setQ} placeholder={t.common.search} />}
       <Segments
         value={filter}
         onChange={setFilter}
         options={[
+          { value: "termine", label: t.appt.title },
           { value: "auftrag", label: t.project.orders },
           { value: "aufgabe", label: t.project.tasks },
           { value: "done", label: t.project.scope.done },
         ]}
       />
-      {loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !items.length ? <Empty text={t.common.empty} icon="calendar-outline" /> : (
+      {filter === "termine" ? <Agenda /> : loading ? <Loading /> : error && !data ? <ErrorView code={error} onRetry={reload} /> : !items.length ? <Empty text={t.common.empty} icon="calendar-outline" /> : (
         [...groups.entries()].map(([day, list]) => (
           <View key={day || "x"} style={{ marginTop: 22, paddingHorizontal: space.page }}>
             {day ? (

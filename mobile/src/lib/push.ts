@@ -46,11 +46,13 @@ export async function unregisterPush() {
 /** Link aus der Benachrichtigung → Bildschirm in der App */
 export function routeFor(link: string | null | undefined): string | null {
   if (!link) return null;
-  const m = link.match(/^\/(inquiries|shop|files|projects|documents)\/([0-9a-f-]{36})$/i);
+  const m = link.match(/^\/(inquiries|shop|files|projects|documents|appointments|tasks)\/([0-9a-f-]{36})$/i);
   if (!m) return null;
   const [, kind, id] = m;
   if (kind === "inquiries") return `/inquiries/${id}`;
   if (kind === "projects") return `/work/${id}`;
+  if (kind === "appointments") return `/work/termin/${id}`;
+  if (kind === "tasks") return null;
   if (kind === "files") return `/files/${id}`;
   if (kind === "shop") return `/more/shop/${id}`;
   return `/more/documents/${id}`;

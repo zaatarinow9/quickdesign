@@ -14,6 +14,7 @@ function toAdminHref(link: string | null): string | null {
   if (kind === "files") return `/admin/dateien/${id}/ansicht`;
   if (kind === "shop") return `/admin/shop`;
   if (kind === "tasks") return `/admin/aufgaben?wer=alle&aufgabe=${id}`;
+  if (kind === "appointments") return `/admin/termine?termin=${id}`;
   return null;
 }
 

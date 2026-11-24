@@ -1,6 +1,8 @@
 import { hasFullAccess, requireAdmin, roleLabels } from "@/lib/auth";
 import { countNewInquiries } from "@/lib/admin/stats";
 import { taskBadge } from "@/lib/tasks/server";
+import { todayCount } from "@/lib/appointments/server";
+import { todayBerlin } from "@/lib/appointments/shared";
 import { getNotifications } from "@/lib/admin/notifications";
 import { db } from "@/lib/supabase/admin";
 import { runningEntry } from "@/lib/time/server";
@@ -24,12 +26,13 @@ export default async function PanelLayout({
   modal: React.ReactNode;
 }) {
   const [admin, newInquiries] = await Promise.all([requireAdmin(), countNewInquiries()]);
-  const [tasks, running, customers, notifications, { data: profile }] = await Promise.all([
+  const [tasks, running, customers, notifications, { data: profile }, appointmentsToday] = await Promise.all([
     taskBadge(admin.email),
     runningEntry(admin.email),
     customerOptionsForFolders(),
     getNotifications(admin.email),
     db().from("staff_profiles").select("avatar_url, display_name").eq("email", admin.email.toLowerCase()).maybeSingle(),
+    todayCount(admin.email, todayBerlin()),
   ]);
   return (
     <FeedbackProvider>
@@ -39,6 +42,7 @@ export default async function PanelLayout({
           newInquiries={newInquiries}
           openTasks={tasks.open}
           unreadTasks={tasks.unread.length}
+          todayAppointments={appointmentsToday}
           notifications={notifications}
           user={{ name: profile?.display_name || admin.name || admin.email, email: admin.email, role: roleLabels[admin.role], avatar: profile?.avatar_url ?? null }}
           signOut={signOut}
