@@ -1,5 +1,6 @@
 import { route } from "@/lib/app/auth";
 import { db } from "@/lib/supabase/admin";
+import { visibleTo } from "@/lib/notify-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export const GET = route(async (_req, u) => {
     db()
       .from("staff_notifications")
       .select("id, category, title_de, body_de, title_ar, body_ar, link, created_at")
-      .or(`target_email.is.null,target_email.eq.${u.email}`)
+      .or(visibleTo(u.email))
       .order("created_at", { ascending: false })
       .limit(80),
     db().from("staff_read_state").select("last_read_at").eq("user_email", u.email).maybeSingle(),

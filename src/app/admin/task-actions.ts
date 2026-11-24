@@ -26,18 +26,23 @@ function notify(taskId: string, to: string[], actor: { email: string; name: stri
   if (!list.length) return;
   after(async () => {
     const client = db();
-    const { data: t } = await client.from("tasks").select("title, due_date").eq("id", taskId).maybeSingle();
+    const { data: t } = await client.from("tasks").select("title, due_date, customer:customers(name, company_name)").eq("id", taskId).maybeSingle();
     if (!t) return;
+    const c = (Array.isArray(t.customer) ? t.customer[0] : t.customer) as { name: string; company_name: string | null } | null;
+    const kunde = c ? c.company_name || c.name : null;
+    const due = fmtDate(t.due_date);
+    const text = (comment ?? "").replace(/\s+/g, " ").slice(0, 160);
     for (const email of list) {
       await client
-        .rpc("staff_notify", {
+        .rpc("staff_notify_grouped", {
           p_category: "projekt",
-          p_title_de: kind === "neu" ? `Neue Aufgabe: ${t.title}` : `Kommentar: ${t.title}`,
-          p_body_de: kind === "neu" ? `von ${actor.name}${t.due_date ? ` · fällig ${fmtDate(t.due_date)}` : ""}` : `${actor.name}: ${comment ?? ""}`,
-          p_title_ar: kind === "neu" ? `مهمة جديدة: ${t.title}` : `تعليق: ${t.title}`,
-          p_body_ar: kind === "neu" ? `من ${actor.name}` : `${actor.name}: ${comment ?? ""}`,
-          p_link: `/tasks/${taskId}`,
+          p_group: `task:${taskId}:${kind}`,
           p_target: email,
+          p_title_de: kind === "neu" ? `Neue Aufgabe für dich${kunde ? ` · ${kunde}` : ""}` : `${actor.name} hat kommentiert${kunde ? ` · ${kunde}` : ""}`,
+          p_body_de: kind === "neu" ? `${t.title}${due ? ` – fällig ${due}` : ""} (von ${actor.name})` : `${t.title}: ${text}`,
+          p_title_ar: kind === "neu" ? `مهمة جديدة لك${kunde ? ` · ${kunde}` : ""}` : `${actor.name} علّق${kunde ? ` · ${kunde}` : ""}`,
+          p_body_ar: kind === "neu" ? `${t.title} (من ${actor.name})` : `${t.title}: ${text}`,
+          p_link: `/tasks/${taskId}`,
         })
         .then(() => {}, () => {});
     }
