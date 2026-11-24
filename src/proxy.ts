@@ -66,8 +66,10 @@ async function withSession(request: NextRequest, build: () => NextResponse) {
       },
     },
   });
-  const { data } = await supabase.auth.getUser();
-  return { response, user: data.user };
+  // getClaims prüft das Token lokal (und erneuert es bei Bedarf) – kein zusätzlicher Weg zum Anmeldeserver
+  const { data } = await supabase.auth.getClaims();
+  const sub = data?.claims?.sub;
+  return { response, user: sub ? { id: sub } : null };
 }
 
 function privateHeaders(response: NextResponse) {

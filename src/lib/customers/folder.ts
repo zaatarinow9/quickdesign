@@ -58,11 +58,19 @@ export async function customerCategories(): Promise<{ name: string; color: strin
   return (data ?? []) as { name: string; color: string }[];
 }
 
-/** Jahresordner mit allen 12 Monaten anlegen (Kunden/2026/01 Januar … 12 Dezember) */
+const yearsDone = new Set<string>();
+
+/** Jahresordner mit allen 12 Monaten anlegen (Kunden/2026/01 Januar … 12 Dezember) – schreibt nur, wenn etwas fehlt */
 export async function ensureYearFolders(d: Date = new Date()) {
   const s = await getSettings();
   const root = normalizeFolder(s.files.customerRoot) || "Kunden";
   const year = Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric" }).format(d));
-  const rows = [root, joinFolder(root, String(year)), ...Array.from({ length: 12 }, (_, i) => joinFolder(root, String(year), monthFolderName(i + 1)))].map((path) => ({ path, created_by: "system" }));
-  await db().from("file_folders").upsert(rows, { onConflict: "path", ignoreDuplicates: true });
+  const memo = `${root}/${year}`;
+  if (yearsDone.has(memo)) return;
+  const paths = [root, joinFolder(root, String(year)), ...Array.from({ length: 12 }, (_, i) => joinFolder(root, String(year), monthFolderName(i + 1)))];
+  const { data } = await db().from("file_folders").select("path").in("path", paths);
+  const have = new Set((data ?? []).map((r) => r.path as string));
+  const missing = paths.filter((p) => !have.has(p));
+  if (missing.length) await db().from("file_folders").upsert(missing.map((path) => ({ path, created_by: "system" })), { onConflict: "path", ignoreDuplicates: true });
+  yearsDone.add(memo);
 }

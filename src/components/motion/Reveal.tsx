@@ -16,7 +16,7 @@ export default function Reveal({ delay = 0, y = 32, amount = 0.25, children, ...
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount }}
-      transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.6, delay: Math.min(delay, 0.3), ease: [0.16, 1, 0.3, 1] }}
       {...rest}
     >
       {children}

@@ -39,7 +39,7 @@ function HeroMark({ rotate }: { rotate: MotionValue<number> }) {
         aria-hidden
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.6, delay: 1, ease: EASE }}
+        transition={{ duration: 0.8, delay: 0.35, ease: EASE }}
         className="absolute inset-[-6%] rounded-full border border-dashed border-paper/10"
       >
         <div className="absolute inset-0 animate-[spin_24s_linear_infinite] motion-reduce:animate-none">
@@ -58,7 +58,7 @@ function HeroMark({ rotate }: { rotate: MotionValue<number> }) {
               style={{ transformBox: "fill-box", transformOrigin: "center" }}
               initial={{ opacity: 0, scale: 0.4, rotate: -35 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1.3, delay: 0.35 + i * 0.07, ease: EASE }}
+              transition={{ duration: 0.65, delay: 0.12 + i * 0.07, ease: EASE }}
             />
           ))}
         </svg>
@@ -71,7 +71,7 @@ function HeroMark({ rotate }: { rotate: MotionValue<number> }) {
         aria-hidden
         initial={{ opacity: 0, scale: 0.6, rotate: -90 }}
         animate={{ opacity: 1, scale: 1, rotate: 0 }}
-        transition={{ duration: 1.6, delay: 0.2, ease: EASE }}
+        transition={{ duration: 0.8, delay: 0.07, ease: EASE }}
       >
         <path d={LOGO_CORE} fill="currentColor" />
       </motion.svg>
@@ -115,14 +115,14 @@ export default function Hero() {
         aria-hidden
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 2.4, delay: 0.6 }}
+        transition={{ duration: 1.2, delay: 0.21 }}
         className="absolute right-[-10%] top-[10%] -z-10 h-[60vmax] w-[60vmax] rounded-full bg-[radial-gradient(circle,rgba(223,25,134,0.22)_0%,transparent_60%)] blur-2xl"
       />
       <motion.div
         aria-hidden
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 2.4, delay: 0.9 }}
+        transition={{ duration: 1.2, delay: 0.32 }}
         className="absolute bottom-[-30%] right-[18%] -z-10 h-[50vmax] w-[50vmax] rounded-full bg-[radial-gradient(circle,rgba(47,167,223,0.16)_0%,transparent_60%)] blur-2xl"
       />
       <CropMarks className="[&>span]:border-paper/25" inset={18} />
@@ -143,7 +143,7 @@ export default function Hero() {
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.1, ease: EASE }}
+          transition={{ duration: 0.5, delay: 0.03, ease: EASE }}
           className="eyebrow flex items-center gap-3 text-paper/60"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
@@ -165,7 +165,7 @@ export default function Hero() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.45, ease: EASE }}
+            transition={{ duration: 0.5, delay: 0.16, ease: EASE }}
             className="max-w-xl text-lg leading-relaxed text-paper/65"
           >
             QuickDesign gestaltet und produziert Werbung, die auffällt: vom Logo über Schilder und
@@ -175,7 +175,7 @@ export default function Hero() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.55, ease: EASE }}
+            transition={{ duration: 0.5, delay: 0.19, ease: EASE }}
             className="flex flex-wrap items-center gap-3"
           >
             <Button href="/kontakt" size="lg">
@@ -190,7 +190,7 @@ export default function Hero() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.9 }}
+          transition={{ duration: 0.5, delay: 0.32 }}
           className="mt-8 flex items-center justify-between gap-6 text-sm text-paper/50"
         >
           <a
