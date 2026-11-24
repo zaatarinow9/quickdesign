@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -11,6 +11,25 @@ import { listenForTaps, registerPush } from "@/lib/push";
 import { useColors } from "@/lib/theme";
 import { DEMO } from "@/lib/demo";
 import { LoginScreen, MfaScreen } from "@/components/login";
+import { installErrorHandler, reportError } from "@/lib/report";
+
+installErrorHandler();
+
+/** Fehler beim Anzeigen: Hinweis statt Absturz (expo-router) */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  useEffect(() => {
+    reportError(error, "render");
+  }, [error]);
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 28, backgroundColor: "#0b0b0c" }}>
+      <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700", textAlign: "center" }}>Etwas ist schiefgelaufen · حدث خطأ</Text>
+      <Text style={{ color: "#a1a1aa", fontSize: 13, marginTop: 10, textAlign: "center" }}>{error.message}</Text>
+      <Pressable onPress={() => void retry()} style={{ marginTop: 22, backgroundColor: "#df1986", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 }}>
+        <Text style={{ color: "#fff", fontWeight: "700" }}>Erneut versuchen · إعادة المحاولة</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 void SplashScreen.preventAutoHideAsync();
 

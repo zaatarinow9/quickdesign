@@ -357,26 +357,60 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 export const useT = () => useContext(LangCtx);
 
 /** Zahlen/Datum je Sprache (arabisch mit westlichen Ziffern – wie in der Verwaltung) */
+/** Intl-Aufrufe absichern: ein fehlendes Format darf die App nie abstürzen lassen */
+function safeDate(loc: string, o: Intl.DateTimeFormatOptions, d: Date) {
+  if (Number.isNaN(d.getTime())) return "–";
+  try {
+    return new Intl.DateTimeFormat(loc, o).format(d);
+  } catch {
+    try {
+      const { timeZone: _tz, ...rest } = o;
+      return new Intl.DateTimeFormat("de-DE", rest).format(d);
+    } catch {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+}
+function safeMoney(loc: string, v: number, o: Intl.NumberFormatOptions = {}) {
+  const n = Number.isFinite(v) ? v : 0;
+  try {
+    return new Intl.NumberFormat(loc, { style: "currency", currency: "EUR", ...o }).format(n);
+  } catch {
+    return `${n.toFixed(2).replace(".", ",")} €`;
+  }
+}
+
 export function fmt(lang: Lang) {
   const loc = lang === "ar" ? "ar-SY-u-nu-latn" : "de-DE";
   return {
-    money: (euro: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR" }).format(euro),
-    cents: (c: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR" }).format(c / 100),
+    money: (euro: number) => safeMoney(loc, euro),
+    cents: (c: number) => safeMoney(loc, c / 100),
     /** große Beträge ohne Cent (Kennzahlen) */
-    centsShort: (c: number) => new Intl.NumberFormat(loc, { style: "currency", currency: "EUR", maximumFractionDigits: c >= 100000 ? 0 : 2 }).format(c / 100),
-    date: (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat(loc, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" }).format(new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso)) : "–"),
+    centsShort: (c: number) => safeMoney(loc, c / 100, { maximumFractionDigits: c >= 100000 ? 0 : 2 }),
+    date: (iso: string | null | undefined) => (iso ? safeDate(loc, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" }, new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso)) : "–"),
     dateTime: (iso: string | null | undefined) =>
-      iso ? new Intl.DateTimeFormat(loc, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }).format(new Date(iso)) : "–",
+      iso ? safeDate(loc, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }, new Date(iso)) : "–",
     relative: (iso: string) => {
-      const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-      const rtf = new Intl.RelativeTimeFormat(loc, { numeric: "auto" });
-      if (diff < 60) return rtf.format(-Math.round(diff), "second");
-      if (diff < 3600) return rtf.format(-Math.round(diff / 60), "minute");
-      if (diff < 86400) return rtf.format(-Math.round(diff / 3600), "hour");
-      if (diff < 86400 * 7) return rtf.format(-Math.round(diff / 86400), "day");
-      return new Intl.DateTimeFormat(loc, { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
+      // Hermes (iOS) kennt Intl.RelativeTimeFormat nicht – daher selbst formuliert
+      const diff = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+      const ar = lang === "ar";
+      if (diff < 60) return ar ? "الآن" : "gerade eben";
+      if (diff < 3600) {
+        const n = Math.round(diff / 60);
+        return ar ? `منذ ${n} د` : `vor ${n} Min.`;
+      }
+      if (diff < 86400) {
+        const n = Math.round(diff / 3600);
+        return ar ? `منذ ${n} س` : `vor ${n} Std.`;
+      }
+      if (diff < 86400 * 7) {
+        const n = Math.round(diff / 86400);
+        if (n === 1) return ar ? "أمس" : "gestern";
+        return ar ? `منذ ${n} أيام` : `vor ${n} Tagen`;
+      }
+      return safeDate(loc, { day: "2-digit", month: "2-digit", year: "numeric" }, new Date(iso));
     },
-    weekday: (iso: string) => new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${iso}T12:00:00Z`)),
+    weekday: (iso: string) => safeDate(loc, { weekday: "long", day: "numeric", month: "long" }, new Date(`${iso}T12:00:00Z`)),
     bytes: (n: number) => (n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${(n / 1024).toFixed(0)} KB` : n < 1024 ** 3 ? `${(n / 1024 ** 2).toFixed(1)} MB` : `${(n / 1024 ** 3).toFixed(2)} GB`),
   };
 }
