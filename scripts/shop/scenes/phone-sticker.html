@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:T;font-weight:700;src:url(../fonts/thmanyahsans-Bold.woff2)}
+@font-face{font-family:T;font-weight:500;src:url(../fonts/thmanyahsans-Medium.woff2)}
+html,body{margin:0;width:1200px;height:1200px;overflow:hidden}
+.scene{position:relative;width:1200px;height:1200px;background:
+ radial-gradient(900px 700px at 40% 30%,#f4efe6,#e4dccd 70%,#d8cfbe)}
+.scene:after{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 30% 30%,rgba(0,0,0,.012) 0 2px,transparent 2px 5px)}
+.phone{position:absolute;width:470px;height:960px;border-radius:78px;transform:rotate(-14deg);
+ background:linear-gradient(145deg,#3a3d42 0%,#26282c 45%,#1b1c1f 100%);
+ box-shadow:inset 0 0 0 7px #55585d,inset 0 0 0 9px #1a1b1d,inset 18px 22px 40px rgba(255,255,255,.06),40px 50px 60px rgba(60,40,20,.35),10px 14px 18px rgba(0,0,0,.25)}
+.phone.p1{left:140px;top:90px}
+.phone.p2{left:630px;top:150px;transform:rotate(9deg);background:linear-gradient(145deg,#eef0ee 0%,#d9dcd8 50%,#c9ccc8 100%);box-shadow:inset 0 0 0 7px #f5f6f4,inset 0 0 0 9px #b8bbb7,40px 50px 60px rgba(60,40,20,.30),10px 14px 18px rgba(0,0,0,.18)}
+.cam{position:absolute;left:34px;top:34px;width:190px;height:200px;border-radius:52px;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(0,0,0,.25));box-shadow:inset 0 0 0 2px rgba(255,255,255,.12),0 6px 12px rgba(0,0,0,.35)}
+.p2 .cam{background:linear-gradient(145deg,rgba(255,255,255,.6),rgba(0,0,0,.08));box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 6px 12px rgba(0,0,0,.18)}
+.lens{position:absolute;width:74px;height:74px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#3b4a66 0 6px,#0b0d12 7px 22px,#22252b 23px 30px,#5a5e66 31px 33px,#2a2c31 34px);box-shadow:0 3px 6px rgba(0,0,0,.5)}
+.flash{position:absolute;width:20px;height:20px;border-radius:50%;background:radial-gradient(#fff8e6,#c9b98f)}
+/* Doming-Sticker: gewölbte, glänzende Harzschicht */
+.st{position:absolute;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.4),0 5px 9px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.6)}
+.st:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:
+ radial-gradient(70% 45% at 34% 22%,rgba(255,255,255,.75),rgba(255,255,255,.18) 38%,rgba(255,255,255,0) 60%),
+ radial-gradient(120% 120% at 50% 50%,rgba(0,0,0,0) 62%,rgba(0,0,0,.28) 100%);
+ box-shadow:inset 0 -6px 10px rgba(0,0,0,.18),inset 0 4px 6px rgba(255,255,255,.35)}
+.st img,.st svg{width:100%;height:100%;object-fit:contain;display:block}
+.round{border-radius:50%}
+.lbl{position:absolute;left:60px;bottom:56px;font-family:T;font-weight:500;font-size:30px;color:#6d6252}
+</style></head><body><div class="scene">
+ <div class="phone p1">
+  <div class="cam"><i class="lens" style="left:20px;top:18px"></i><i class="lens" style="left:20px;top:108px"></i><i class="lens" style="left:104px;top:62px"></i><i class="flash" style="left:130px;top:24px"></i></div>
+  <div class="st round" style="left:120px;top:340px;width:230px;height:230px;background:radial-gradient(circle,#1f6b45,#0f4d31)"><img src="../../../public/shop/motifs/nisr-gold-light.webp" style="padding:34px;box-sizing:border-box"></div>
+  <div class="st" style="left:96px;top:640px;width:280px;height:186px;border-radius:22px">
+   <svg viewBox="0 0 300 200" preserveAspectRatio="none"><rect width="300" height="67" fill="#007a3d"/><rect y="67" width="300" height="66" fill="#fff"/><rect y="133" width="300" height="67" fill="#111"/><g fill="#ce1126" id="s"><path d="M90 82l7.6 21.8 23.1.4-18.4 14 6.7 22.1L90 127.1l-19 13.2 6.7-22.1-18.4-14 23.1-.4z"/></g><use href="#s" x="60"/><use href="#s" x="120"/></svg></div>
+ </div>
+ <div class="phone p2">
+  <div class="cam"><i class="lens" style="left:20px;top:18px"></i><i class="lens" style="left:20px;top:108px"></i><i class="lens" style="left:104px;top:62px"></i><i class="flash" style="left:130px;top:24px"></i></div>
+  <div class="st round" style="left:110px;top:360px;width:250px;height:250px;background:#fff"><img src="../../../public/shop/motifs/hurriya-dark.webp" style="padding:42px;box-sizing:border-box"></div>
+  <div class="st round" style="left:150px;top:680px;width:170px;height:170px;background:#111"><img src="../../../public/shop/motifs/siegel-light.webp" style="padding:16px;box-sizing:border-box"></div>
+ </div>
+</div></body></html>
