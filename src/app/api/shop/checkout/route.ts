@@ -44,8 +44,8 @@ export async function POST(request: Request) {
   // genaue Lage für die Werkstatt: Motiv, Größe in cm, Abstand, Ausrichtung
   const motifText = (l: (typeof items)[number]) =>
     [
-      l.front ? `${l.frontPos === "chest" ? "صدر (شعار صغير)" : "أمام"}: ${l.front.name[L] || l.front.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "front", l.frontPos), l.frontPl?.ratio ?? null, l.frontPl?.pl ?? defaultPlacement, L)})` : "",
-      l.back ? `خلف: ${l.back.name[L] || l.back.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "back"), l.backPl?.ratio ?? null, l.backPl?.pl ?? defaultPlacement, L)})` : "",
+      l.front ? `أمام: ${l.front.name[L] || l.front.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "front", l.frontPos), l.frontPl?.ratio ?? null, l.frontPl?.pl ?? defaultPlacement, L, "front")})` : "",
+      l.back ? `خلف: ${l.back.name[L] || l.back.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "back"), l.backPl?.ratio ?? null, l.backPl?.pl ?? defaultPlacement, L, "back")})` : "",
     ].filter(Boolean).join(" · ");
   const variantName = (l: (typeof items)[number]) => [l.color?.name[L] || l.color?.name.de, l.variant.label[L] || l.variant.label.de, motifText(l)].filter(Boolean).join(" – ");
   const days = (d: string) => {

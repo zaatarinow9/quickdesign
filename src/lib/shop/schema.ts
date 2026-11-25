@@ -200,25 +200,40 @@ export type FrontPos = "center" | "chest";
 export const garmentKinds: GarmentKind[] = ["tshirt", "polo", "hoodie", "sweatshirt"];
 export const isGarment = (k: string): k is GarmentKind => (garmentKinds as string[]).includes(k);
 export const printAreas: Record<GarmentKind, { front: Area; chest: Area; back: Area }> = {
-  // Maximale Druckfläche (≈ A3, 30 × 40 cm) – am Foto ausgemessen; das Motiv bleibt immer darin
-  tshirt: { front: { x: 37.5, y: 19, w: 25, h: 33 }, chest: { x: 55, y: 21, w: 8, h: 8 }, back: { x: 37.5, y: 16, w: 25, h: 33 } },
-  // Polo: Brusttasche rechts im Bild – vorne daher unterhalb der Tasche, Brustlogo auf der anderen Seite
-  polo: { front: { x: 37, y: 48, w: 26, h: 27 }, chest: { x: 36, y: 32, w: 9, h: 9 }, back: { x: 37.5, y: 17, w: 25, h: 33 } },
-  // Hoodie: vorne zwischen Kordelenden und Bauchtasche, hinten unterhalb der Kapuze
-  hoodie: { front: { x: 37.5, y: 42, w: 25, h: 16 }, chest: { x: 56, y: 30, w: 8, h: 8 }, back: { x: 37, y: 31, w: 26, h: 33 } },
-  sweatshirt: { front: { x: 37.5, y: 18, w: 25, h: 33 }, chest: { x: 55, y: 20, w: 8, h: 8 }, back: { x: 37.5, y: 17, w: 25, h: 33 } },
+  // Ganze Vorder-/Rückseite des Rumpfes (ohne Ärmel, Kragen, Bund) – am Foto ausgemessen.
+  // Innerhalb davon frei verschieben und skalieren (Brust, Mitte, Bauch …).
+  tshirt: { front: { x: 31, y: 15, w: 38, h: 74 }, chest: { x: 55, y: 21, w: 8, h: 8 }, back: { x: 31, y: 13, w: 38, h: 76 } },
+  polo: { front: { x: 30, y: 24, w: 40, h: 66 }, chest: { x: 36, y: 32, w: 9, h: 9 }, back: { x: 31, y: 14, w: 38, h: 72 } },
+  hoodie: { front: { x: 31, y: 31, w: 38, h: 50 }, chest: { x: 56, y: 30, w: 8, h: 8 }, back: { x: 31, y: 31, w: 38, h: 50 } },
+  sweatshirt: { front: { x: 31, y: 14, w: 38, h: 68 }, chest: { x: 55, y: 20, w: 8, h: 8 }, back: { x: 31, y: 13, w: 38, h: 71 } },
 };
 /** Zentimeter je Prozent Bildbreite (aus Brustweite Größe M ÷ Körperbreite im Foto) */
 export const cmPerPct: Record<GarmentKind, number> = { tshirt: 1.2, polo: 1.1, hoodie: 1.2, sweatshirt: 1.2 };
+/** Unterkante Kragen/Kapuze im Foto (in % Bildhöhe) – für „cm unter dem Kragen“ */
+const collarY: Record<GarmentKind, { front: number; back: number }> = {
+  tshirt: { front: 11, back: 9 },
+  polo: { front: 16, back: 12 },
+  hoodie: { front: 28, back: 29 },
+  sweatshirt: { front: 11, back: 10 },
+};
 
 /**
  * Lage des Motivs in der Druckfläche: x/y = Position im freien Raum (0 = links/oben, 1 = rechts/unten),
- * s = Größe im Verhältnis zur größtmöglichen Fläche (0,25–1). So kann das Motiv nie über den Rand hinaus.
+ * s = Größe im Verhältnis zur größtmöglichen Fläche (0,1–1). So kann das Motiv nie über den Rand hinaus.
  */
 export type Placement = { x: number; y: number; s: number };
-export const defaultPlacement: Placement = { x: 0.5, y: 0.08, s: 0.72 };
+export const defaultPlacement: Placement = { x: 0.5, y: 0.06, s: 0.55 };
+/** Schnellwahl: Brust, Mitte, Bauch, kleines Logo (links/rechts im Bild) */
+export const placementPresets: { id: string; label: string; pl: Placement }[] = [
+  { id: "brust", label: "الصدر", pl: { x: 0.5, y: 0.06, s: 0.55 } },
+  { id: "mitte", label: "الوسط", pl: { x: 0.5, y: 0.45, s: 0.6 } },
+  { id: "bauch", label: "البطن", pl: { x: 0.5, y: 0.9, s: 0.5 } },
+  { id: "logo-l", label: "شعار صغير يسار", pl: { x: 0.2, y: 0.05, s: 0.2 } },
+  { id: "logo-r", label: "شعار صغير يمين", pl: { x: 0.8, y: 0.05, s: 0.2 } },
+  { id: "gross", label: "كبير", pl: { x: 0.5, y: 0.15, s: 0.95 } },
+];
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
-export const MIN_SCALE = 0.25;
+export const MIN_SCALE = 0.1;
 export function normPlacement(p: Partial<Placement> | null | undefined): Placement {
   const n = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
   return { x: clamp(n(p?.x, defaultPlacement.x), 0, 1), y: clamp(n(p?.y, defaultPlacement.y), 0, 1), s: clamp(n(p?.s, defaultPlacement.s), MIN_SCALE, 1) };
@@ -241,15 +256,16 @@ export function placeRect(area: Area, ratio: number, pl: Placement): Area {
   return { x: area.x + (area.w - w) * pl.x, y: area.y + (area.h - h) * pl.y, w, h };
 }
 /** Klartext für die Werkstatt: Größe in cm, Abstand von oben, Lage waagrecht */
-export function describePlacement(kind: string, area: Area, ratio: number | null, pl: Placement, lang: "de" | "ar" = "ar") {
-  const k = cmPerPct[isGarment(kind) ? kind : "tshirt"];
+export function describePlacement(kind: string, area: Area, ratio: number | null, pl: Placement, lang: "de" | "ar" = "ar", side: "front" | "back" = "front") {
+  const g = isGarment(kind) ? kind : "tshirt";
+  const k = cmPerPct[g];
   const r = placeRect(area, ratio ?? area.w / area.h, pl);
   const w = Math.round(r.w * k);
   const h = Math.round(r.h * k);
-  const top = Math.round((r.y - area.y) * k);
+  const top = Math.max(0, Math.round((r.y - collarY[g][side]) * k));
   const off = Math.round((r.x + r.w / 2 - (area.x + area.w / 2)) * k);
-  if (lang === "de") return `${w}×${h} cm, ${top} cm v. oben, ${off === 0 ? "mittig" : `${Math.abs(off)} cm ${off > 0 ? "rechts" : "links"}`}`;
-  return `${w}×${h} سم، ${top} سم من الأعلى، ${off === 0 ? "بالوسط" : `${Math.abs(off)} سم ${off > 0 ? "يمين" : "يسار"}`}`;
+  if (lang === "de") return `${w}×${h} cm, ${top} cm unter Kragen, ${off === 0 ? "mittig" : `${Math.abs(off)} cm ${off > 0 ? "rechts" : "links"}`}`;
+  return `${w}×${h} سم، ${top} سم تحت الياقة، ${off === 0 ? "بالوسط" : `${Math.abs(off)} سم ${off > 0 ? "يمين" : "يسار"}`}`;
 }
 
 /** Druckbereich für Ansicht + Position */

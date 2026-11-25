@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, Crosshair, Maximize2, Minus, Move, Plus, RotateCcw, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { activeVariants, areaFor, defaultPlacement, describePlacement, fmtPlacement, garmentKinds, isDarkHex, MIN_SCALE, motifImage, normPlacement, type FrontPos, type Motif, type Placement, type Product } from "@/lib/shop/schema";
+import { activeVariants, areaFor, defaultPlacement, describePlacement, fmtPlacement, garmentKinds, isDarkHex, MIN_SCALE, motifImage, normPlacement, placementPresets, type FrontPos, type Motif, type Placement, type Product } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { useShop } from "./ShopProvider";
 import { GarmentPreview } from "./GarmentPreview";
@@ -41,7 +41,7 @@ export function CustomizerView({
 
   const [colorId, setColorId] = useState(p.colors[0]?.id ?? "");
   const [place, setPlace] = useState<Place>("front");
-  const [frontPos, setFrontPos] = useState<FrontPos>("center");
+  const frontPos: FrontPos = "center";
   const [front, setFront] = useState<string>(motifs[0]?.id ?? "");
   const [back, setBack] = useState<string>(motifs[0]?.id ?? "");
   const [editing, setEditing] = useState<Side>("front");
@@ -166,6 +166,15 @@ export function CustomizerView({
             </div>
           </div>
         </div>
+        {sideOn(view) ? (
+          <PlacementControls
+            value={pl[view]}
+            onChange={(np) => setSidePl(view, np)}
+            onReset={() => setPl((x) => ({ ...x, [view]: defaultPlacement }))}
+            info={describePlacement(p.kind, area(view), ratios[view] ?? null, pl[view], "ar", view)}
+            side={sideName(view)}
+          />
+        ) : null}
         <div className="mt-3 grid grid-cols-2 gap-3">
           {(["front", "back"] as const).map((s) => (
             <button
@@ -182,15 +191,6 @@ export function CustomizerView({
             </button>
           ))}
         </div>
-        {sideOn(view) ? (
-          <PlacementControls
-            value={pl[view]}
-            onChange={(np) => setSidePl(view, np)}
-            onReset={() => setPl((x) => ({ ...x, [view]: view === "front" && frontPos === "chest" ? { x: 0.5, y: 0.5, s: 1 } : defaultPlacement }))}
-            info={describePlacement(p.kind, area(view), ratios[view] ?? null, pl[view])}
-            side={sideName(view)}
-          />
-        ) : null}
       </div>
 
       {/* Auswahl */}
@@ -273,31 +273,6 @@ export function CustomizerView({
               </button>
             ))}
           </div>
-          {sideOn("front") ? (
-            <div className="mt-3 flex items-center gap-2 rounded-xl bg-[var(--paper-2)] p-1.5" role="radiogroup" aria-label="مكان التصميم في الأمام">
-              {(
-                [
-                  ["center", "منتصف الصدر"],
-                  ["chest", "شعار صغير على الصدر"],
-                ] as const
-              ).map(([k, t]) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="radio"
-                  aria-checked={frontPos === k}
-                  onClick={() => {
-                    setFrontPos(k);
-                    setPl((x) => ({ ...x, front: k === "chest" ? { x: 0.5, y: 0.5, s: 1 } : defaultPlacement }));
-                    setView("front");
-                  }}
-                  className={cn("flex-1 rounded-lg px-3 py-2 text-sm transition", frontPos === k ? "bg-white font-medium text-[var(--green)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--ink)]")}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          ) : null}
         </div>
 
         {/* 3 Motiv */}
@@ -478,8 +453,15 @@ function PlacementControls({ value, onChange, onReset, info, side }: { value: Pl
     <div className="mt-3 rounded-2xl bg-[var(--card)] p-4 ring-1 ring-[var(--line)]">
       <p className="flex items-center gap-2 text-sm font-medium">
         <Move className="size-4 text-[var(--green)]" aria-hidden /> ضبط التصميم – {side}
-        <span className="ms-auto text-xs font-normal text-[var(--muted)]">اسحب التصميم على القطعة مباشرة</span>
+        <span className="ms-auto text-xs font-normal text-[var(--muted)]">اسحبه للتحريك · اسحب الزوايا أو استخدم إصبعين للتكبير</span>
       </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {placementPresets.map((x) => (
+          <button key={x.id} type="button" onClick={() => onChange(x.pl)} className="rounded-full bg-white px-3 py-1.5 text-xs ring-1 ring-[var(--line)] transition hover:ring-[var(--green)]">
+            {x.label}
+          </button>
+        ))}
+      </div>
       <div className="mt-3 flex items-center gap-2">
         <button type="button" className={btn} onClick={() => onChange({ s: value.s - 0.05 })} aria-label="تصغير">
           <Minus className="size-4" />
@@ -527,7 +509,7 @@ function PlacementControls({ value, onChange, onReset, info, side }: { value: Pl
           </button>
         </div>
       </div>
-      <p className="mt-3 text-xs text-[var(--muted)]">الإطار المنقّط = أقصى مساحة للطباعة. يصلنا الحجم والمكان بالضبط كما تراه هنا.</p>
+      <p className="mt-3 text-xs text-[var(--muted)]">الإطار المنقّط = كامل مساحة الطباعة على الأمام أو الخلف. يصلنا الحجم والمكان بالضبط كما تراه هنا.</p>
     </div>
   );
 }
