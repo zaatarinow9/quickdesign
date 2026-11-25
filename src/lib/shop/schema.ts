@@ -204,8 +204,9 @@ export const printAreas: Record<GarmentKind, { front: Area; chest: Area; back: A
   tshirt: { front: { x: 37.5, y: 19, w: 25, h: 33 }, chest: { x: 55, y: 21, w: 8, h: 8 }, back: { x: 37.5, y: 16, w: 25, h: 33 } },
   // Polo: Brusttasche rechts im Bild – vorne daher unterhalb der Tasche, Brustlogo auf der anderen Seite
   polo: { front: { x: 37, y: 48, w: 26, h: 27 }, chest: { x: 36, y: 32, w: 9, h: 9 }, back: { x: 37.5, y: 17, w: 25, h: 33 } },
-  hoodie: { front: { x: 39, y: 42, w: 22, h: 12 }, chest: { x: 56, y: 36, w: 8, h: 8 }, back: { x: 36, y: 26, w: 28, h: 28 } },
-  sweatshirt: { front: { x: 38, y: 17, w: 24, h: 24 }, chest: { x: 57, y: 17, w: 9, h: 9 }, back: { x: 37, y: 15, w: 26, h: 28 } },
+  // Hoodie: vorne zwischen Kordelenden und Bauchtasche, hinten unterhalb der Kapuze
+  hoodie: { front: { x: 37.5, y: 42, w: 25, h: 16 }, chest: { x: 56, y: 30, w: 8, h: 8 }, back: { x: 37, y: 31, w: 26, h: 33 } },
+  sweatshirt: { front: { x: 37.5, y: 18, w: 25, h: 33 }, chest: { x: 55, y: 20, w: 8, h: 8 }, back: { x: 37.5, y: 17, w: 25, h: 33 } },
 };
 /** Zentimeter je Prozent Bildbreite (aus Brustweite Größe M ÷ Körperbreite im Foto) */
 export const cmPerPct: Record<GarmentKind, number> = { tshirt: 1.2, polo: 1.1, hoodie: 1.2, sweatshirt: 1.2 };
