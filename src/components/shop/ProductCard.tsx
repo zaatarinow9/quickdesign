@@ -52,7 +52,8 @@ export function ProductCard({
   const custom = (() => {
     const c = p.colors[0];
     const ms = store.motifs.filter((m) => m.active);
-    if (!p.custom.enabled || !c?.blankFront || !c.blankBack || !ms.length)
+    // eigenes Vorschaubild (fertig gestaltetes Muster) hat Vorrang vor der Live-Vorschau
+    if (p.image || !p.custom.enabled || !c?.blankFront || !c.blankBack || !ms.length)
       return null;
     const dark = isDarkHex(c.hex);
     const back =
@@ -88,7 +89,7 @@ export function ProductCard({
           </>
         ) : (
           <Image
-            src={imageOf(p)}
+            src={p.custom.enabled && p.image ? p.image : imageOf(p)}
             alt={p.name[lang]}
             fill
             priority={priority}
