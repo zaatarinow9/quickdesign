@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Maximize2, Search, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, Crosshair, Maximize2, Minus, Move, Plus, RotateCcw, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { activeVariants, areaFor, garmentKinds, isDarkHex, motifImage, type FrontPos, type Motif, type Product } from "@/lib/shop/schema";
+import { activeVariants, areaFor, defaultPlacement, describePlacement, fmtPlacement, garmentKinds, isDarkHex, MIN_SCALE, motifImage, normPlacement, type FrontPos, type Motif, type Placement, type Product } from "@/lib/shop/schema";
 import { money } from "@/lib/shop/format";
 import { useShop } from "./ShopProvider";
 import { GarmentPreview } from "./GarmentPreview";
@@ -51,6 +51,10 @@ export function CustomizerView({
   const [added, setAdded] = useState(false);
   const [q, setQ] = useState("");
   const [viewer, setViewer] = useState<number | null>(null);
+  // Lage + Größe je Seite (bleibt beim Motivwechsel erhalten) und Seitenverhältnis der Motive
+  const [pl, setPl] = useState<Record<Side, Placement>>({ front: defaultPlacement, back: defaultPlacement });
+  const [ratios, setRatios] = useState<Record<Side, number | undefined>>({ front: undefined, back: undefined });
+  const setSidePl = (sd: Side, next: Partial<Placement>) => setPl((x) => ({ ...x, [sd]: normPlacement({ ...x[sd], ...next }) }));
 
   const color = p.colors.find((c) => c.id === colorId) ?? p.colors[0];
   const dark = color ? isDarkHex(color.hex) : false;
@@ -103,7 +107,7 @@ export function CustomizerView({
   const onAdd = () => {
     const lines = variants
       .filter((v) => (qtys[v.id] ?? 0) > 0)
-      .map((v) => ({ slug: p.id, color: colorId, size: v.id, qty: qtys[v.id], front: sideOn("front") ? front : undefined, frontPos: sideOn("front") ? frontPos : undefined, back: sideOn("back") ? back : undefined }));
+      .map((v) => ({ slug: p.id, color: colorId, size: v.id, qty: qtys[v.id], front: sideOn("front") ? front : undefined, frontPos: sideOn("front") ? frontPos : undefined, frontPl: sideOn("front") ? fmtPlacement(pl.front, ratios.front) : undefined, back: sideOn("back") ? back : undefined, backPl: sideOn("back") ? fmtPlacement(pl.back, ratios.back) : undefined }));
     if (!lines.length) {
       setHint(true);
       return;
@@ -128,7 +132,19 @@ export function CustomizerView({
       {/* Vorschau */}
       <div className="lg:sticky lg:top-24 lg:self-start">
         <div className="relative overflow-hidden rounded-2xl">
-          <GarmentPreview key={`${colorId}-${view}`} blank={blank(view)} area={area(view)} motif={motifFor(view)} alt={`${L(p.name)} – ${color ? L(color.name) : ""}`} priority className="qd-fade" />
+          <GarmentPreview
+            key={`${colorId}-${view}`}
+            blank={blank(view)}
+            area={area(view)}
+            motif={motifFor(view)}
+            placement={pl[view]}
+            onPlace={sideOn(view) ? (np) => setSidePl(view, np) : undefined}
+            onRatio={(r) => setRatios((x) => (x[view] === r ? x : { ...x, [view]: r }))}
+            showArea={sideOn(view)}
+            alt={`${L(p.name)} – ${color ? L(color.name) : ""}`}
+            priority
+            className="qd-fade"
+          />
           {prePct ? (
             <span className="absolute end-4 top-4">
               <DiscountPill pct={prePct} size="lg" />
@@ -158,7 +174,7 @@ export function CustomizerView({
               onClick={() => setView(s)}
               className={cn("overflow-hidden rounded-xl text-start transition", view === s ? "ring-2 ring-[var(--ink)]" : "ring-1 ring-[var(--line)] hover:ring-[var(--muted)]")}
             >
-              <GarmentPreview blank={blank(s)} area={area(s)} motif={motifFor(s)} />
+              <GarmentPreview blank={blank(s)} area={area(s)} motif={motifFor(s)} placement={pl[s]} />
               <span className="flex items-center justify-between bg-[var(--card)] px-3 py-2 text-xs">
                 {sideName(s)}
                 <span className={sideOn(s) ? "text-[var(--green)]" : "text-[var(--muted)]"}>{sideOn(s) ? L(byId(s === "front" ? front : back)?.name ?? { de: "", ar: "" }) : "بدون طباعة"}</span>
@@ -166,6 +182,15 @@ export function CustomizerView({
             </button>
           ))}
         </div>
+        {sideOn(view) ? (
+          <PlacementControls
+            value={pl[view]}
+            onChange={(np) => setSidePl(view, np)}
+            onReset={() => setPl((x) => ({ ...x, [view]: view === "front" && frontPos === "chest" ? { x: 0.5, y: 0.5, s: 1 } : defaultPlacement }))}
+            info={describePlacement(p.kind, area(view), ratios[view] ?? null, pl[view])}
+            side={sideName(view)}
+          />
+        ) : null}
       </div>
 
       {/* Auswahl */}
@@ -253,7 +278,7 @@ export function CustomizerView({
               {(
                 [
                   ["center", "منتصف الصدر"],
-                  ["chest", "الصدر – يسار"],
+                  ["chest", "شعار صغير على الصدر"],
                 ] as const
               ).map(([k, t]) => (
                 <button
@@ -263,6 +288,7 @@ export function CustomizerView({
                   aria-checked={frontPos === k}
                   onClick={() => {
                     setFrontPos(k);
+                    setPl((x) => ({ ...x, front: k === "chest" ? { x: 0.5, y: 0.5, s: 1 } : defaultPlacement }));
                     setView("front");
                   }}
                   className={cn("flex-1 rounded-lg px-3 py-2 text-sm transition", frontPos === k ? "bg-white font-medium text-[var(--green)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--ink)]")}
@@ -441,5 +467,67 @@ function PlaceIcon({ k, active }: { k: Place; active: boolean }) {
       {one(0, k !== "back")}
       {one(24, k !== "front")}
     </svg>
+  );
+}
+
+/** Feinjustierung: Größe (Regler, −/+), Verschieben (Pfeile), Zentrieren, Zurücksetzen */
+function PlacementControls({ value, onChange, onReset, info, side }: { value: Placement; onChange: (p: Partial<Placement>) => void; onReset: () => void; info: string; side: string }) {
+  const step = 0.08;
+  const btn = "grid size-9 place-items-center rounded-lg bg-white ring-1 ring-[var(--line)] transition hover:ring-[var(--muted)] active:scale-95";
+  return (
+    <div className="mt-3 rounded-2xl bg-[var(--card)] p-4 ring-1 ring-[var(--line)]">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Move className="size-4 text-[var(--green)]" aria-hidden /> ضبط التصميم – {side}
+        <span className="ms-auto text-xs font-normal text-[var(--muted)]">اسحب التصميم على القطعة مباشرة</span>
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <button type="button" className={btn} onClick={() => onChange({ s: value.s - 0.05 })} aria-label="تصغير">
+          <Minus className="size-4" />
+        </button>
+        <input
+          type="range"
+          min={MIN_SCALE * 100}
+          max={100}
+          value={Math.round(value.s * 100)}
+          onChange={(e) => onChange({ s: Number(e.target.value) / 100 })}
+          className="h-2 flex-1 cursor-pointer accent-[var(--green)]"
+          aria-label="حجم التصميم"
+        />
+        <button type="button" className={btn} onClick={() => onChange({ s: value.s + 0.05 })} aria-label="تكبير">
+          <Plus className="size-4" />
+        </button>
+        <span className="ltr-num w-11 text-end text-sm tabular-nums text-[var(--muted)]">{Math.round(value.s * 100)}%</span>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-3 gap-1" dir="ltr">
+          <span />
+          <button type="button" className={btn} onClick={() => onChange({ y: value.y - step })} aria-label="للأعلى">
+            <ArrowUp className="size-4" />
+          </button>
+          <span />
+          <button type="button" className={btn} onClick={() => onChange({ x: value.x - step })} aria-label="لليسار">
+            <ArrowLeft className="size-4" />
+          </button>
+          <button type="button" className={btn} onClick={() => onChange({ x: 0.5 })} aria-label="توسيط أفقي" title="توسيط">
+            <Crosshair className="size-4" />
+          </button>
+          <button type="button" className={btn} onClick={() => onChange({ x: value.x + step })} aria-label="لليمين">
+            <ArrowRight className="size-4" />
+          </button>
+          <span />
+          <button type="button" className={btn} onClick={() => onChange({ y: value.y + step })} aria-label="للأسفل">
+            <ArrowDown className="size-4" />
+          </button>
+          <span />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2 text-sm">
+          <p className="ltr-num leading-relaxed text-[var(--muted)]">{info}</p>
+          <button type="button" onClick={onReset} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[var(--green)] ring-1 ring-[var(--line)] hover:bg-white">
+            <RotateCcw className="size-3.5" aria-hidden /> الوضع المقترح
+          </button>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-[var(--muted)]">الإطار المنقّط = أقصى مساحة للطباعة. يصلنا الحجم والمكان بالضبط كما تراه هنا.</p>
+    </div>
   );
 }

@@ -200,11 +200,57 @@ export type FrontPos = "center" | "chest";
 export const garmentKinds: GarmentKind[] = ["tshirt", "polo", "hoodie", "sweatshirt"];
 export const isGarment = (k: string): k is GarmentKind => (garmentKinds as string[]).includes(k);
 export const printAreas: Record<GarmentKind, { front: Area; chest: Area; back: Area }> = {
-  tshirt: { front: { x: 38, y: 19, w: 24, h: 24 }, chest: { x: 57, y: 19, w: 9, h: 9 }, back: { x: 37, y: 17, w: 26, h: 28 } },
-  polo: { front: { x: 39, y: 33, w: 22, h: 19 }, chest: { x: 57.5, y: 25, w: 8, h: 8 }, back: { x: 37, y: 18, w: 26, h: 26 } },
+  // Maximale Druckfläche (≈ A3, 30 × 40 cm) – am Foto ausgemessen; das Motiv bleibt immer darin
+  tshirt: { front: { x: 37.5, y: 19, w: 25, h: 33 }, chest: { x: 55, y: 21, w: 8, h: 8 }, back: { x: 37.5, y: 16, w: 25, h: 33 } },
+  // Polo: Brusttasche rechts im Bild – vorne daher unterhalb der Tasche, Brustlogo auf der anderen Seite
+  polo: { front: { x: 37, y: 48, w: 26, h: 27 }, chest: { x: 36, y: 32, w: 9, h: 9 }, back: { x: 37.5, y: 17, w: 25, h: 33 } },
   hoodie: { front: { x: 39, y: 42, w: 22, h: 12 }, chest: { x: 56, y: 36, w: 8, h: 8 }, back: { x: 36, y: 26, w: 28, h: 28 } },
   sweatshirt: { front: { x: 38, y: 17, w: 24, h: 24 }, chest: { x: 57, y: 17, w: 9, h: 9 }, back: { x: 37, y: 15, w: 26, h: 28 } },
 };
+/** Zentimeter je Prozent Bildbreite (aus Brustweite Größe M ÷ Körperbreite im Foto) */
+export const cmPerPct: Record<GarmentKind, number> = { tshirt: 1.2, polo: 1.1, hoodie: 1.2, sweatshirt: 1.2 };
+
+/**
+ * Lage des Motivs in der Druckfläche: x/y = Position im freien Raum (0 = links/oben, 1 = rechts/unten),
+ * s = Größe im Verhältnis zur größtmöglichen Fläche (0,25–1). So kann das Motiv nie über den Rand hinaus.
+ */
+export type Placement = { x: number; y: number; s: number };
+export const defaultPlacement: Placement = { x: 0.5, y: 0.08, s: 0.72 };
+const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+export const MIN_SCALE = 0.25;
+export function normPlacement(p: Partial<Placement> | null | undefined): Placement {
+  const n = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+  return { x: clamp(n(p?.x, defaultPlacement.x), 0, 1), y: clamp(n(p?.y, defaultPlacement.y), 0, 1), s: clamp(n(p?.s, defaultPlacement.s), MIN_SCALE, 1) };
+}
+/** „x,y,s,r" (r = Seitenverhältnis des Motivs) ↔ Objekt */
+export function parsePlacement(str?: string | null): { pl: Placement; ratio: number | null } | null {
+  if (!str) return null;
+  const [x, y, s, r] = str.split(",").map(Number);
+  if (![x, y, s].every(Number.isFinite)) return null;
+  return { pl: normPlacement({ x, y, s }), ratio: Number.isFinite(r) && r > 0.1 && r < 10 ? r : null };
+}
+export const fmtPlacement = (pl: Placement, ratio?: number | null) => [pl.x, pl.y, pl.s].map((v) => v.toFixed(3)).join(",") + (ratio ? `,${ratio.toFixed(3)}` : "");
+/** Rechteck des Motivs (in % des Bildes) */
+export function placeRect(area: Area, ratio: number, pl: Placement): Area {
+  const b = area.w / area.h;
+  const w0 = ratio > b ? area.w : area.h * ratio;
+  const h0 = ratio > b ? area.w / ratio : area.h;
+  const w = w0 * pl.s;
+  const h = h0 * pl.s;
+  return { x: area.x + (area.w - w) * pl.x, y: area.y + (area.h - h) * pl.y, w, h };
+}
+/** Klartext für die Werkstatt: Größe in cm, Abstand von oben, Lage waagrecht */
+export function describePlacement(kind: string, area: Area, ratio: number | null, pl: Placement, lang: "de" | "ar" = "ar") {
+  const k = cmPerPct[isGarment(kind) ? kind : "tshirt"];
+  const r = placeRect(area, ratio ?? area.w / area.h, pl);
+  const w = Math.round(r.w * k);
+  const h = Math.round(r.h * k);
+  const top = Math.round((r.y - area.y) * k);
+  const off = Math.round((r.x + r.w / 2 - (area.x + area.w / 2)) * k);
+  if (lang === "de") return `${w}×${h} cm, ${top} cm v. oben, ${off === 0 ? "mittig" : `${Math.abs(off)} cm ${off > 0 ? "rechts" : "links"}`}`;
+  return `${w}×${h} سم، ${top} سم من الأعلى، ${off === 0 ? "بالوسط" : `${Math.abs(off)} سم ${off > 0 ? "يمين" : "يسار"}`}`;
+}
+
 /** Druckbereich für Ansicht + Position */
 export function areaFor(kind: string, side: "front" | "back", pos: FrontPos = "center"): Area {
   const a = printAreas[isGarment(kind) ? kind : "tshirt"];
@@ -219,7 +265,7 @@ export const motifById = (s: ShopStore, id?: string) => (id ? s.motifs.find((m) 
 export const motifImage = (m: Motif, darkFabric: boolean) => (darkFabric ? m.light || m.dark : m.dark || m.light);
 
 /** Warenkorbzeile gegen den Katalog prüfen (Preise nie aus dem Browser) */
-export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number; front?: string; back?: string; frontPos?: string }) {
+export function resolveLine(s: ShopStore, line: { slug: string; color: string; size: string; qty: number; front?: string; back?: string; frontPos?: string; frontPl?: string; backPl?: string }) {
   const product = productById(s, line.slug);
   if (!product) return null;
   const color = product.colors.length ? (product.colors.find((c) => c.id === line.color) ?? null) : null;
@@ -238,6 +284,8 @@ export function resolveLine(s: ShopStore, line: { slug: string; color: string; s
     if (front && back) extraCents = product.custom.extraSideCents;
   }
   const frontPos: FrontPos = front && line.frontPos === "chest" ? "chest" : "center";
-  return { product, color, variant, qty, front, back, frontPos, extraCents };
+  const frontPl = front ? (parsePlacement(line.frontPl) ?? { pl: defaultPlacement, ratio: null }) : null;
+  const backPl = back ? (parsePlacement(line.backPl) ?? { pl: defaultPlacement, ratio: null }) : null;
+  return { product, color, variant, qty, front, back, frontPos, frontPl, backPl, extraCents };
 }
 export type ResolvedLine = NonNullable<ReturnType<typeof resolveLine>>;
