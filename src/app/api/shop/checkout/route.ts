@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isLang, SHOP_HOSTS, SHOP_URL } from "@/lib/shop/config";
-import { resolveLine } from "@/lib/shop/schema";
+import { areaFor, defaultPlacement, describePlacement, fmtPlacement, resolveLine } from "@/lib/shop/schema";
 import { getStore } from "@/lib/shop/store";
 import { priceCart } from "@/lib/shop/pricing";
 import { createCheckoutSession, createCoupon, isStripeConfigured } from "@/lib/shop/stripe";
@@ -10,7 +10,7 @@ import { clientIpHash, rateLimit } from "@/lib/security";
 const schema = z.object({
   lang: z.string(),
   items: z
-    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(30), qty: z.number().int().min(1).max(1000), front: z.string().max(40).optional(), back: z.string().max(40).optional(), frontPos: z.enum(["center", "chest"]).optional() }))
+    .array(z.object({ slug: z.string().max(80), color: z.string().max(40), size: z.string().max(30), qty: z.number().int().min(1).max(1000), front: z.string().max(40).optional(), back: z.string().max(40).optional(), frontPos: z.enum(["center", "chest"]).optional(), frontPl: z.string().max(40).optional(), backPl: z.string().max(40).optional() }))
     .min(1)
     .max(40),
 });
@@ -41,8 +41,12 @@ export async function POST(request: Request) {
   const sh = store.settings.shipping;
   const base = origin(request);
   const L = lang === "ar" ? "ar" : "de";
+  // genaue Lage für die Werkstatt: Motiv, Größe in cm, Abstand, Ausrichtung
   const motifText = (l: (typeof items)[number]) =>
-    [l.front ? `${l.frontPos === "chest" ? "صدر يسار" : "أمام"}: ${l.front.name[L] || l.front.name.de}` : "", l.back ? `خلف: ${l.back.name[L] || l.back.name.de}` : ""].filter(Boolean).join(" · ");
+    [
+      l.front ? `${l.frontPos === "chest" ? "صدر (شعار صغير)" : "أمام"}: ${l.front.name[L] || l.front.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "front", l.frontPos), l.frontPl?.ratio ?? null, l.frontPl?.pl ?? defaultPlacement, L)})` : "",
+      l.back ? `خلف: ${l.back.name[L] || l.back.name.de} (${describePlacement(l.product.kind, areaFor(l.product.kind, "back"), l.backPl?.ratio ?? null, l.backPl?.pl ?? defaultPlacement, L)})` : "",
+    ].filter(Boolean).join(" · ");
   const variantName = (l: (typeof items)[number]) => [l.color?.name[L] || l.color?.name.de, l.variant.label[L] || l.variant.label.de, motifText(l)].filter(Boolean).join(" – ");
   const days = (d: string) => {
     const [a, b] = d.split(/[–-]/).map((x) => parseInt(x, 10));
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
           product_data: {
             name: `${l.product.name[L] || l.product.name.de} – ${variantName(l)}`,
             description: l.unitPct ? `${l.product.tagline.de || l.product.name.de} · ${l.unitOffer?.de ?? "Rabatt"} (−${l.unitPct} %)` : l.product.tagline.de || undefined,
-            metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id, front: l.front?.id ?? "", front_pos: l.front ? l.frontPos : "", back: l.back?.id ?? "" },
+            metadata: { slug: l.product.id, color: l.color?.id ?? "", size: l.variant.id, front: l.front?.id ?? "", front_pos: l.front ? l.frontPos : "", front_pl: l.frontPl ? fmtPlacement(l.frontPl.pl, l.frontPl.ratio) : "", back: l.back?.id ?? "", back_pl: l.backPl ? fmtPlacement(l.backPl.pl, l.backPl.ratio) : "" },
           },
         },
       })),

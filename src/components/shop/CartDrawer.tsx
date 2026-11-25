@@ -63,7 +63,7 @@ export function CartDrawer() {
     const m = r.front ?? r.back;
     const blank = side === "front" ? r.color?.blankFront : r.color?.blankBack;
     if (!m || !blank) return null;
-    return <GarmentPreview blank={blank} area={areaFor(r.product.kind, side, r.frontPos)} motif={motifImage(m, isDarkHex(r.color?.hex ?? "#fff"))} className="absolute inset-0" />;
+    return <GarmentPreview blank={blank} area={areaFor(r.product.kind, side, r.frontPos)} motif={motifImage(m, isDarkHex(r.color?.hex ?? "#fff"))} placement={(side === "front" ? r.frontPl : r.backPl)?.pl} className="absolute inset-0" />;
   };
   const waText = encodeURIComponent(`${t.product.whatsappMsg}\n\n${rows.map(({ r }) => `• ${r.qty}× ${r.product.name[lang]} – ${describe(r)}`).join("\n")}`);
   const side = lang === "ar" ? "-100%" : "100%";

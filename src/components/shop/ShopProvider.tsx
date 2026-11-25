@@ -6,8 +6,8 @@ import type { ShopDict } from "@/lib/shop/i18n";
 import { resolveLine, type ShopStore } from "@/lib/shop/schema";
 
 /** front/back: Motiv-IDs beim Selbstgestalten (leer = keine Seite) */
-export type CartLine = { slug: string; color: string; size: string; qty: number; front?: string; back?: string; frontPos?: "center" | "chest" };
-const sameLine = (a: CartLine, b: CartLine) => a.slug === b.slug && a.color === b.color && a.size === b.size && (a.front ?? "") === (b.front ?? "") && (a.back ?? "") === (b.back ?? "") && (a.frontPos ?? "center") === (b.frontPos ?? "center");
+export type CartLine = { slug: string; color: string; size: string; qty: number; front?: string; back?: string; frontPos?: "center" | "chest"; frontPl?: string; backPl?: string };
+const sameLine = (a: CartLine, b: CartLine) => a.slug === b.slug && a.color === b.color && a.size === b.size && (a.front ?? "") === (b.front ?? "") && (a.back ?? "") === (b.back ?? "") && (a.frontPos ?? "center") === (b.frontPos ?? "center") && (a.frontPl ?? "") === (b.frontPl ?? "") && (a.backPl ?? "") === (b.backPl ?? "");
 
 type Ctx = {
   lang: Lang;
