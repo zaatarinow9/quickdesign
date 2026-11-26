@@ -13,6 +13,7 @@ import { ViewerKeys, ViewerShell, ViewerClose } from "@/components/admin/files/V
 import { DeleteButton } from "@/components/admin/DeleteControls";
 import { FileIcon } from "@/components/admin/files/FileIcon";
 import { Notice } from "@/components/admin/ui";
+import { CopyLink, fileLink } from "@/components/admin/files/CopyLink";
 
 
 const MIME: Record<string, string> = { ai: "application/pdf", pdf: "application/pdf", svg: "image/svg+xml", mov: "video/mp4", m4v: "video/mp4", txt: "text/plain; charset=utf-8" };
@@ -84,6 +85,7 @@ export async function FileViewScreen({ id, modal = false }: { id: string; modal?
               <ChevronRight className="size-5" />
             </Link>
           ) : null}
+          <CopyLink path={fileLink(f.id)} iconOnly className="grid size-9 place-items-center rounded-lg hover:bg-white/10" title="Link zu dieser Datei kopieren – nur für Personen mit Zugang zur Verwaltung" />
           <a href={url} target="_blank" rel="noopener" className="grid size-9 place-items-center rounded-lg hover:bg-white/10" title="In neuem Tab öffnen" aria-label="In neuem Tab öffnen">
             <ExternalLink className="size-4" />
           </a>

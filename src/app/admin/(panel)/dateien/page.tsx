@@ -10,6 +10,7 @@ import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileBrowser } from "@/components/admin/files/FileBrowser";
 import { FileSearch } from "@/components/admin/files/FileSearch";
 import { Card, EmptyState } from "@/components/admin/ui";
+import { CopyLink, folderLink } from "@/components/admin/files/CopyLink";
 
 export const metadata = { title: "Dateien" };
 
@@ -82,6 +83,7 @@ export default async function FilesPage({ searchParams }: { searchParams: Promis
           <h1 className="flex min-w-0 items-center gap-2.5 text-2xl font-bold tracking-tight">
             {searching ? <Search className="size-6 text-accent" aria-hidden /> : <FolderOpen className="size-6 text-accent" aria-hidden />}
             <span className="truncate">{title}</span>
+            {!flat && folder ? <CopyLink path={folderLink(folder)} iconOnly className="grid size-8 shrink-0 place-items-center rounded-lg text-stone-dark hover:bg-ink/[0.06] hover:text-accent" title="Link zu diesem Ordner kopieren – nur für Personen mit Zugang zur Verwaltung" /> : null}
           </h1>
           {searching ? (
             <p className="mt-1 text-sm text-stone-dark">
