@@ -57,7 +57,8 @@ import { useFeedback } from "@/components/admin/feedback";
 import { canSaveFolders, downloadFolder, type DownloadProgress } from "./download";
 import { FileStatusSelect } from "./FileStatusSelect";
 import { cn } from "@/lib/utils";
-import { CopyLink, copyLink, fileLink, folderLink } from "./CopyLink";
+import { CopyLink, copyLink } from "./CopyLink";
+import { fileLink, folderLink } from "@/lib/files/links";
 
 type Props = {
   files: StoredFile[];
