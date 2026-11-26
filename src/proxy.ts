@@ -117,7 +117,13 @@ export async function proxy(request: NextRequest) {
     return isLogin ? NextResponse.next() : NextResponse.redirect(new URL("/admin/login", request.url));
   }
   const { response, user } = await withSession(request, () => NextResponse.next({ request }));
-  if (!user && !isLogin) return redirectWithCookies(new URL("/admin/login", request.url), response);
+  if (!user && !isLogin) {
+    const r = redirectWithCookies(new URL("/admin/login", request.url), response);
+    // geteilter Link (Datei/Ordner): nach der Anmeldung dorthin zurück – nur Pfade innerhalb der Verwaltung
+    const target = `${pathname}${request.nextUrl.search}`;
+    if (pathname !== "/admin" && target.length < 1500) r.cookies.set("qd_weiter", target, { httpOnly: true, secure: true, sameSite: "lax", path: "/admin", maxAge: 900 });
+    return r;
+  }
   return privateHeaders(response);
 }
 

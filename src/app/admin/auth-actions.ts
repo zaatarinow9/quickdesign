@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertSession, getAuthState, resolveRole } from "@/lib/auth";
@@ -9,6 +10,15 @@ import { db } from "@/lib/supabase/admin";
 import { clientIpHash, hashKey, rateLimit } from "@/lib/security";
 import { logActivity } from "@/lib/admin/log";
 import type { ActionState } from "./document-actions";
+
+/** Ziel nach der Anmeldung: gemerkter Verwaltungs-Link (geteilte Datei/Ordner) oder Übersicht */
+async function afterLogin(): Promise<string> {
+  const jar = await cookies();
+  const t = jar.get("qd_weiter")?.value ?? "";
+  jar.delete({ name: "qd_weiter", path: "/admin" });
+  // nur interne Verwaltungspfade (kein offener Redirect)
+  return /^\/admin\/(?!login)[^\s\\]*$/.test(t) && !t.startsWith("//") ? t : "/admin";
+}
 
 const credentials = z.object({ email: z.email().max(254), password: z.string().min(1).max(200) });
 
@@ -35,7 +45,7 @@ export async function signIn(_prev: ActionState, fd: FormData): Promise<ActionSt
   await logActivity(parsed.data.email, "anmeldung", "konto", data.user.id, "Anmeldung");
   const state = await getAuthState();
   if (state.status === "mfa") redirect("/admin/login/bestaetigen");
-  redirect("/admin");
+  redirect(await afterLogin());
 }
 
 export async function verifyMfa(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -48,7 +58,7 @@ export async function verifyMfa(_prev: ActionState, fd: FormData): Promise<Actio
   const supabase = await supabaseAuth();
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: state.factorId, code });
   if (error) return { error: "Der Code ist ungültig oder abgelaufen." };
-  redirect("/admin");
+  redirect(await afterLogin());
 }
 
 export async function signOut() {

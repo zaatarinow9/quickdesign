@@ -9,6 +9,7 @@ import {
   Download,
   Folder,
   FolderInput,
+  Link2,
   FolderPlus,
   LayoutGrid,
   List,
@@ -56,6 +57,7 @@ import { useFeedback } from "@/components/admin/feedback";
 import { canSaveFolders, downloadFolder, type DownloadProgress } from "./download";
 import { FileStatusSelect } from "./FileStatusSelect";
 import { cn } from "@/lib/utils";
+import { CopyLink, copyLink, fileLink, folderLink } from "./CopyLink";
 
 type Props = {
   files: StoredFile[];
@@ -483,6 +485,7 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                 >
                   <Check className="size-4" />
                 </button>
+                <CopyLink path={fileLink(f.id)} iconOnly className="absolute right-12 top-3.5 grid size-7 place-items-center rounded-lg bg-white/90 text-stone-dark opacity-0 shadow-sm ring-1 ring-ink/10 transition hover:text-accent group-hover:opacity-100 max-sm:opacity-100" />
                 <button
                   type="button"
                   onClick={() => void removeFiles([f.id])}
@@ -568,7 +571,8 @@ export function FileBrowser({ files, folders, thumbs, folder, flat, initialView,
                   <td className="py-2">
                     <FileStatusSelect id={f.id} status={f.status} />
                   </td>
-                  <td className="py-2 pr-4 text-right">
+                  <td className="whitespace-nowrap py-2 pr-4 text-right">
+                    <CopyLink path={fileLink(f.id)} iconOnly className="inline-grid size-8 place-items-center rounded-md text-stone-dark hover:bg-ink/[0.06] hover:text-accent" />
                     <a href={`/admin/dateien/${f.id}`} className="inline-grid size-8 place-items-center rounded-md text-stone-dark hover:bg-ink/[0.06]" title="Herunterladen" aria-label="Herunterladen">
                       <Download className="size-4" />
                     </a>
@@ -790,6 +794,17 @@ function FolderMenu({
                 <Icon className="size-4 text-stone-dark" aria-hidden /> {label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                void copyLink(folderLink(f.path));
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 hover:bg-ink/[0.04]"
+              title="Link zum Ordner – nur für Personen mit Zugang zur Verwaltung"
+            >
+              <Link2 className="size-4 text-stone-dark" aria-hidden /> Link kopieren
+            </button>
             <button
               type="button"
               onClick={() => {
