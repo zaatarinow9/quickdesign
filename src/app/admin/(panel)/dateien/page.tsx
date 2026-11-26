@@ -10,7 +10,8 @@ import { FileUploader } from "@/components/admin/files/FileUploader";
 import { FileBrowser } from "@/components/admin/files/FileBrowser";
 import { FileSearch } from "@/components/admin/files/FileSearch";
 import { Card, EmptyState } from "@/components/admin/ui";
-import { CopyLink, folderLink } from "@/components/admin/files/CopyLink";
+import { CopyLink } from "@/components/admin/files/CopyLink";
+import { folderLink } from "@/lib/files/links";
 
 export const metadata = { title: "Dateien" };
 

@@ -4,9 +4,6 @@ import { useState } from "react";
 import { Check, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** interner Verwaltungs-Link (nur mit Anmeldung erreichbar – wer keinen Zugang hat, landet beim Login) */
-export const fileLink = (id: string) => `/admin/dateien/${id}/ansicht`;
-export const folderLink = (path: string) => (path ? `/admin/dateien?ordner=${encodeURIComponent(path)}` : "/admin/dateien");
 
 export async function copyLink(path: string) {
   const url = `${window.location.origin}${path}`;
